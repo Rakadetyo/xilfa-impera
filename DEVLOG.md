@@ -1,51 +1,23 @@
 # Devlog — Xilfa Impera
 
-## 2025-04-23 — Foundation
+## 2025-04-23 — Foundation + Live Deploy
 
 ### Done
 - Project scaffold: uv, FastAPI, Jinja2, uvicorn, python-dotenv, aiofiles
 - Landing page: hero / about / schedule / social — black+white+gold palette
 - GitHub repo: github.com/Rakadetyo/xilfa-impera
 - CI/CD: GitHub Actions → SSH → deploy.sh impera 8000
+- GitHub Actions secrets set (SERVER_HOST, SERVER_USER, DEPLOY_SSH_KEY)
+- `~/scripts/deploy.sh` updated on GCP — now supports uvicorn + port arg, backwards-compatible with stash
+- Server uses **Caddy** (not nginx) — added `@impera` block proxying `:8000`
+- DNS A record added on Cloudflare for `impera.xilfa.tech` → 34.69.152.71 (proxied)
+- First deploy ran successfully — app live at impera.xilfa.tech
 
-### Pending (server-side)
-1. Update `~/scripts/deploy.sh` on GCP to support uvicorn:
-
-```bash
-#!/bin/bash
-APP_NAME=$1
-GIT_REPO=$2
-APP_PORT=${3:-5000}
-APP_DIR=~/apps/$APP_NAME
-
-mkdir -p $APP_DIR
-
-if [ -d "$APP_DIR/.git" ]; then
-    cd $APP_DIR && git pull
-else
-    rm -rf $APP_DIR && git clone $GIT_REPO $APP_DIR && cd $APP_DIR
-fi
-
-[ ! -d ".venv" ] && python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-mkdir -p instance
-
-pkill -f ":$APP_PORT" 2>/dev/null || true
-
-if grep -rq "fastapi" pyproject.toml 2>/dev/null; then
-    nohup uvicorn main:app --host=0.0.0.0 --port=$APP_PORT > ~/logs/$APP_NAME.log 2>&1 &
-else
-    FLASK_APP=main.py nohup flask run --host=0.0.0.0 --port=$APP_PORT > ~/logs/$APP_NAME.log 2>&1 &
-fi
-
-echo "Deployed $APP_NAME → port $APP_PORT"
-```
-
-2. Add nginx server block for `impera.xilfa.tech` → see PLAN.md
-3. Add GitHub Actions secrets to xilfa-impera repo (same values as stash)
+### Fixes during setup
+- `TemplateResponse` signature changed in Starlette 1.0 — updated to `templates.TemplateResponse(request, "index.html")`
+- Empty `app/static/` dir not tracked by git — added `.gitkeep` files
 
 ### Next
 - Fill in real social links (Instagram, WhatsApp, Reclub)
 - Fill in member/session count stats on About section
-- Phase 2 planning once landing is live
+- Phase 2 planning

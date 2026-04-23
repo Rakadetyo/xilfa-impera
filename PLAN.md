@@ -24,8 +24,10 @@ into a full community platform over time.
 - [x] 1.3 Landing page — hero, about, schedule, social links
 - [x] 1.4 Git + GitHub repo (github.com/Rakadetyo/xilfa-impera)
 - [x] 1.5 CI/CD — GitHub Actions → deploy.sh impera 8000
-- [ ] 1.6 Nginx server block for impera.xilfa.tech
-- [ ] 1.7 Update deploy.sh on server to support uvicorn
+- [x] 1.6 Caddy block for impera.xilfa.tech → localhost:8000
+- [x] 1.7 deploy.sh updated on server to support uvicorn + port arg
+- [x] 1.8 DNS A record on Cloudflare → 34.69.152.71 (proxied)
+- [x] 1.9 GitHub Actions secrets set
 
 ### Phase 2 — Community Features
 - [ ] Event/game schedule management
@@ -38,34 +40,10 @@ into a full community platform over time.
 - [ ] Photo gallery
 - [ ] Registration / join form
 
-## Server Setup Notes
+## Server Notes
 
-### deploy.sh update required
-Current deploy.sh starts apps with `nohup flask run`. Needs updating to
-support uvicorn for FastAPI apps. Pass port as 3rd arg.
-
-See updated deploy.sh snippet in DEVLOG.md — 2025-04-23 entry.
-
-### Nginx server block (impera.xilfa.tech)
-```nginx
-server {
-    listen 80;
-    server_name impera.xilfa.tech;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-Add to `/etc/nginx/sites-available/impera.xilfa.tech` and symlink to `sites-enabled/`.
-Then: `sudo nginx -t && sudo systemctl reload nginx`
-
-### GitHub Actions secrets required
-Same secrets as xilfa-stash:
-- `SERVER_HOST`
-- `SERVER_USER`
-- `DEPLOY_SSH_KEY`
+- **Reverse proxy**: Caddy (not nginx) at `/etc/caddy/Caddyfile`
+- **App port**: 8000
+- **App dir**: `~/apps/impera`
+- **Logs**: `~/logs/impera.log`
+- **DNS**: Cloudflare, proxied — zone `4259168f6dc9cd639d4c088059a4f626`
