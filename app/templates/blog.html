@@ -65,6 +65,8 @@
     <!-- Blog Grid -->
     <section class="px-6 pb-24">
         <div class="max-w-7xl mx-auto">
+            <!-- Store all post IDs for navigation -->
+            <div id="allPostIds" data-ids="{{ posts | map(attribute='id') | list }}"></div>
             <div class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
                 {% for post in posts %}
                 <div class="break-inside-avoid">
@@ -76,7 +78,7 @@
                         <div class="aspect-[3/4] bg-[#1a1a1a] overflow-hidden relative flex flex-col rounded-t-sm">
                             <!-- Price tag -->
                             <div class="absolute top-0 left-0 z-20">
-                                <div class="bg-red-600 text-white text-xs font-bold px-3 py-1 rotate-[-5deg] comic-border" style="box-shadow: 2px 2px 0 #000;">COMIC</div>
+                                <div class="bg-red-600 text-white text-xs font-bold px-3 py-1 rotate-[-5deg] comic-border" style="box-shadow: 2px 2px 0 #000;">{{ post.post_type }}</div>
                             </div>
 
                             {% if post.cover_image %}
@@ -89,23 +91,24 @@
                             <div class="flex-1 flex flex-col items-center justify-center relative overflow-hidden" style="background-color: #FFD700;">
                                 <!-- Comic dot pattern -->
                                 <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle, #E31837 1px, transparent 1px); background-size: 6px 6px;"></div>
-                                <span class="text-3xl font-display text-black mt-2 relative z-10" style="text-shadow: 2px 2px 0 #fff;">COMING SOON</span>
                             </div>
                             {% endif %}
                             <!-- Title with comic shout bubble -->
                             <div class="absolute top-8 left-0 right-0 px-4 flex justify-center items-start">
                                 <div class="relative">
-                                    <div class="bg-yellow-400 px-6 py-3 comic-border">
+                                    <div class="bg-white px-6 py-3 comic-border">
                                         <h3 class="text-2xl md:text-3xl font-display text-center text-black">{{ post.title }}</h3>
                                     </div>
-                                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-400 rotate-45 border-b-2 border-r-2 border-black"></div>
+                                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-b-2 border-r-2 border-black"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Date at bottom with black bg -->
-                        <div class="absolute bottom-2 left-2 right-2 p-2 text-center bg-black comic-border-white">
-                            <p class="text-xs text-accent font-accent">{{ post.created_at[:10] }}</p>
+                        <!-- Date and Author at bottom -->
+                        <div class="absolute bottom-2 left-2 right-2 p-2 flex justify-between items-center bg-black comic-border-white">
+                            <p class="text-xs text-accent font-accent w-1/3 text-left">{{ post.username }}</p>
+                            <p class="text-xs text-white font-bold w-1/3 text-center">- I M P E R A -</p>
+                            <p class="text-xs text-accent font-accent w-1/3 text-right">#{{ post.created_at[:10] }}</p>
                         </div>
                     </div>
                 </div>
@@ -134,10 +137,14 @@
         <!-- Modal Content -->
         <div class="absolute inset-4 md:inset-12 lg:inset-20 flex">
             <!-- Close button -->
-            <button onclick="closeModal()" class="absolute -top-2 right-0 z-10 text-[#F5F0E6] hover:text-accent text-4xl font-bold p-4">&times;</button>
+            <button onclick="closeModal()" class="absolute -top-2 right-0 z-20 text-[#F5F0E6] hover:text-accent text-4xl font-bold p-4">&times;</button>
+
+            <!-- Navigation -->
+            <button onclick="prevPost()" class="absolute left-2 top-1/2 -translate-y-1/2 z-20 text-[#F5F0E6] hover:text-accent text-3xl font-bold p-2">‹</button>
+            <button onclick="nextPost()" class="absolute right-2 top-1/2 -translate-y-1/2 z-20 text-[#F5F0E6] hover:text-accent text-3xl font-bold p-2">›</button>
 
             <!-- Comic Book / Magazine -->
-            <div class="grid grid-cols-2 w-full max-w-6xl mx-auto bg-[#F5F0E6] rounded-lg overflow-hidden relative" style="border: 4px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.4);">
+            <div id="modalContent" class="grid grid-cols-2 w-full max-w-6xl mx-auto bg-[#F5F0E6] rounded-lg overflow-hidden relative" style="border: 4px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.4);">
                 <!-- Book spine/crease -->
                 <div class="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/5 to-black/10 pointer-events-none z-10"></div>
 
@@ -152,13 +159,13 @@
                 </div>
 
                 <!-- Cell 2: Top Text -->
-                <div class="p-6 overflow-y-auto bg-[#F5F0E6] text-black relative">
-                    <div class="border-b-2 border-black pb-2 mb-4">
-                        <p class="text-xs font-bold uppercase tracking-widest text-red-600">HIGHLIGHTS</p>
+                <div class="p-5 overflow-y-auto bg-[#F5F0E6] text-black">
+                    <div class="border-b-2 border-black pb-2 mb-3">
+                        <p id="modalPostType" class="text-xs font-bold uppercase tracking-widest text-red-600"></p>
                     </div>
-                    <p id="modalDate" class="text-xs text-gray-500 uppercase tracking-widest mb-2"></p>
-                    <h2 id="modalTitle" class="text-2xl font-display mb-2"></h2>
-                    <p id="modalAuthor" class="text-sm text-gray-600 mb-4"></p>
+                    <p id="modalDate" class="text-xs text-gray-500 uppercase tracking-widest mb-1"></p>
+                    <h2 id="modalTitle" class="text-xl font-display mb-1"></h2>
+                    <p id="modalAuthor" class="text-sm text-gray-600 mb-2"></p>
                     <div id="modalBodyTop" class="prose prose-sm"></div>
                 </div>
 
@@ -170,20 +177,17 @@
                 </div>
 
                 <!-- Cell 4: Middle Text -->
-                <div class="p-6 overflow-y-auto bg-[#F5F0E6] text-black relative">
+                <div class="p-5 overflow-y-auto bg-[#F5F0E6] text-black">
                     <div id="modalBodyMiddle" class="prose prose-sm"></div>
                 </div>
 
-                <!-- Cell 5: Bottom - Title/Abstract (left) -->
-                <div class="p-6 overflow-y-auto bg-[#F5F0E6] text-black relative">
-                    <div class="bg-yellow-400 p-4 border-2 border-black" style="box-shadow: 3px 3px 0px #000;">
-                        <p class="text-xs font-bold uppercase tracking-widest text-black mb-1">Abstract</p>
-                        <p id="modalAbstract" class="text-sm font-bold text-black"></p>
-                    </div>
+                <!-- Cell 5: Bottom - Abstract (left) -->
+                <div class="p-4 overflow-y-auto bg-[#F5F0E6] text-black">
+                    <p id="modalAbstract" class="text-sm italic"></p>
                 </div>
 
                 <!-- Cell 6: Bottom Text -->
-                <div class="p-6 overflow-y-auto bg-[#F5F0E6] text-black relative">
+                <div class="p-5 overflow-y-auto bg-[#F5F0E6] text-black">
                     <div id="modalBodyBottom" class="prose prose-sm"></div>
                 </div>
             </div>
@@ -192,9 +196,18 @@
 
     <script>
         let currentPostId = null;
+        let allPostIds = [];
+
+        // Parse post IDs from hidden element
+        function getAllPostIds() {
+            const el = document.getElementById('allPostIds');
+            const idsStr = el.dataset.ids.replace(/[\[\]]/g, '');
+            return idsStr ? idsStr.split(',').map(id => parseInt(id.trim())) : [];
+        }
 
         async function openModal(postId) {
             currentPostId = postId;
+            allPostIds = getAllPostIds();
             const modal = document.getElementById('comicModal');
             modal.classList.remove('hidden');
 
@@ -207,6 +220,7 @@
             const authorEl = document.getElementById('modalAuthor');
             const dateEl = document.getElementById('modalDate');
             const abstractEl = document.getElementById('modalAbstract');
+            const postTypeEl = document.getElementById('modalPostType');
 
             imagesTopEl.innerHTML = '<div class="animate-pulse">Loading...</div>';
             imagesMiddleEl.innerHTML = '';
@@ -218,7 +232,8 @@
                 titleEl.textContent = post.title;
                 authorEl.textContent = `By ${post.author}`;
                 dateEl.textContent = post.created_at;
-                abstractEl.textContent = post.abstract || '';
+                abstractEl.textContent = post.summary || '';
+                postTypeEl.textContent = post.post_type || 'HIGHLIGHT';
 
                 // Split body into 3 parts for cells 2, 4, 6
                 const bodyText = post.body || '';
@@ -258,8 +273,24 @@
             currentPostId = null;
         }
 
+        function prevPost() {
+            if (allPostIds.length === 0) return;
+            const idx = allPostIds.indexOf(currentPostId);
+            const prevIdx = idx <= 0 ? allPostIds.length - 1 : idx - 1;
+            openModal(allPostIds[prevIdx]);
+        }
+
+        function nextPost() {
+            if (allPostIds.length === 0) return;
+            const idx = allPostIds.indexOf(currentPostId);
+            const nextIdx = idx >= allPostIds.length - 1 ? 0 : idx + 1;
+            openModal(allPostIds[nextIdx]);
+        }
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeModal();
+            if (e.key === 'ArrowLeft') prevPost();
+            if (e.key === 'ArrowRight') nextPost();
         });
     </script>
 </body>

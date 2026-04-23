@@ -26,7 +26,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             body TEXT NOT NULL,
-            abstract TEXT DEFAULT '',
+            summary TEXT DEFAULT '',
+            post_type TEXT DEFAULT 'HIGHLIGHT',
             author_id INTEGER NOT NULL,
             status TEXT CHECK(status IN ('draft', 'published')) DEFAULT 'draft',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -45,11 +46,17 @@ def init_db():
         )
     """)
 
-    # Add abstract column if not exists
+    # Add summary column if not exists (renamed from abstract)
     cursor.execute("PRAGMA table_info(posts)")
     columns = [row[1] for row in cursor.fetchall()]
-    if 'abstract' not in columns:
-        cursor.execute("ALTER TABLE posts ADD COLUMN abstract TEXT DEFAULT ''")
+    if 'abstract' in columns:
+        cursor.execute("ALTER TABLE posts RENAME COLUMN abstract TO summary")
+    elif 'summary' not in columns:
+        cursor.execute("ALTER TABLE posts ADD COLUMN summary TEXT DEFAULT ''")
+
+    # Add post_type column if not exists
+    if 'post_type' not in columns:
+        cursor.execute("ALTER TABLE posts ADD COLUMN post_type TEXT DEFAULT 'HIGHLIGHT'")
 
     conn.commit()
     conn.close()

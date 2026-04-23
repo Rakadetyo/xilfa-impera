@@ -49,7 +49,7 @@ async def blog(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT p.id, p.title, p.body, p.status, p.created_at, u.username,
+        SELECT p.id, p.title, p.body, p.status, p.post_type, p.created_at, u.username,
                (SELECT filename FROM post_images WHERE post_id = p.id ORDER BY display_order LIMIT 1) as cover_image
         FROM posts p
         JOIN users u ON p.author_id = u.id
@@ -66,7 +66,7 @@ async def get_post(post_id: int):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT p.id, p.title, p.body, p.abstract, p.status, p.created_at, p.updated_at, u.username
+        SELECT p.id, p.title, p.body, p.summary, p.post_type, p.status, p.created_at, p.updated_at, u.username
         FROM posts p
         JOIN users u ON p.author_id = u.id
         WHERE p.id = ?
@@ -89,7 +89,8 @@ async def get_post(post_id: int):
         "id": post["id"],
         "title": post["title"],
         "body": post["body"],
-        "abstract": post["abstract"],
+        "summary": post["summary"],
+        "post_type": post["post_type"],
         "status": post["status"],
         "author": post["username"],
         "created_at": post["created_at"],
@@ -192,7 +193,7 @@ async def new_post_page(request: Request):
     return templates.TemplateResponse(request, "post_form.html", {"request": request, "post": None, "user": user})
 
 @app.post("/admin/posts")
-async def create_post(request: Request, title: str = Form(...), body: str = Form(...), abstract: str = Form(""), status: str = Form("draft")):
+async def create_post(request: Request, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -200,8 +201,8 @@ async def create_post(request: Request, title: str = Form(...), body: str = Form
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO posts (title, body, abstract, author_id, status) VALUES (?, ?, ?, ?, ?)",
-        (title, body, abstract, user["id"], status)
+        "INSERT INTO posts (title, body, summary, post_type, author_id, status) VALUES (?, ?, ?, ?, ?, ?)",
+        (title, body, summary, post_type, user["id"], status)
     )
     post_id = cursor.lastrowid
     conn.commit()
@@ -236,7 +237,7 @@ async def edit_post_page(request: Request, post_id: int):
     })
 
 @app.post("/admin/posts/{post_id}")
-async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), abstract: str = Form(""), status: str = Form("draft")):
+async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -244,8 +245,8 @@ async def update_post(request: Request, post_id: int, title: str = Form(...), bo
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE posts SET title = ?, body = ?, abstract = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (title, body, abstract, status, post_id)
+        "UPDATE posts SET title = ?, body = ?, summary = ?, post_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (title, body, summary, post_type, status, post_id)
     )
     conn.commit()
     conn.close()

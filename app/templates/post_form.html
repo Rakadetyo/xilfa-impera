@@ -68,15 +68,27 @@
                     >
                 </div>
 
-                <!-- Abstract -->
+                <!-- Summary -->
                 <div>
-                    <label class="block text-sm font-bold mb-2">Abstract (brief description)</label>
+                    <label class="block text-sm font-bold mb-2">Summary (brief description)</label>
                     <textarea
-                        name="abstract"
+                        name="summary"
                         rows="3"
                         class="w-full bg-panel border-2 border-black px-4 py-3 focus:outline-none focus:border-accent comic-border resize-none"
-                        placeholder="Short abstract for the modal..."
-                    >{{ post.abstract if post else '' }}</textarea>
+                        placeholder="Short summary for the modal..."
+                    >{{ post.summary if post else '' }}</textarea>
+                </div>
+
+                <!-- Post Type -->
+                <div>
+                    <label class="block text-sm font-bold mb-2">Post Type</label>
+                    <input
+                        type="text"
+                        name="post_type"
+                        value="{{ post.post_type if post else 'HIGHLIGHT' }}"
+                        class="w-full bg-panel border-2 border-black px-4 py-3 focus:outline-none focus:border-accent comic-border"
+                        placeholder="e.g., HIGHLIGHT, COMIC, STORY..."
+                    >
                 </div>
 
                 <!-- Body -->
