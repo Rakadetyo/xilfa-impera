@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impera — BSD Basketball Community</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A84C',
+                        'gold-light': '#E5C878',
+                        'surface': '#141414',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-[#0a0a0a] text-[#f5f5f5]">
+
+    <!-- Nav -->
+    <nav class="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <span class="text-xl font-black tracking-widest text-gold">IMPERA</span>
+            <a href="#join" class="text-sm border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-black transition-all duration-200 font-medium">Join Us</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(201,168,76,0.07)_0%,_transparent_70%)]"></div>
+        <div class="text-center px-6 relative z-10">
+            <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-8">BSD — Gading Serpong</p>
+            <h1 class="text-8xl md:text-[11rem] font-black tracking-tight mb-6 leading-none">IMPERA</h1>
+            <p class="text-gray-400 text-lg md:text-xl mb-12 max-w-lg mx-auto leading-relaxed">Basketball community. Every Saturday at 18:00.<br>Show up, compete, grow.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#schedule" class="bg-gold text-black font-semibold px-10 py-3.5 hover:bg-gold-light transition-colors duration-200 tracking-wide">Play With Us</a>
+                <a href="#about" class="border border-white/20 text-white px-10 py-3.5 hover:border-white/50 transition-colors duration-200 tracking-wide">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="py-28 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-20 items-center">
+                <div>
+                    <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-5">About</p>
+                    <h2 class="text-4xl md:text-5xl font-bold mb-7 leading-tight">Built for Those<br>Who Play.</h2>
+                    <p class="text-gray-400 text-lg leading-relaxed mb-5">Impera is a basketball community rooted in BSD-Gading Serpong. We bring together players of all levels who share a love for the game.</p>
+                    <p class="text-gray-400 text-lg leading-relaxed">No politics, no drama — just ball. Whether you're seasoned or just starting, you're welcome on our court.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-[#141414] border border-white/5 p-7">
+                        <p class="text-4xl font-black text-gold mb-2">—</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">Members</p>
+                    </div>
+                    <div class="bg-[#141414] border border-white/5 p-7">
+                        <p class="text-4xl font-black text-gold mb-2">—</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">Sessions</p>
+                    </div>
+                    <div class="bg-[#141414] border border-white/5 p-7">
+                        <p class="text-4xl font-black text-gold mb-2">BSD</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">Home Court</p>
+                    </div>
+                    <div class="bg-[#141414] border border-white/5 p-7">
+                        <p class="text-4xl font-black text-gold mb-2">SAT</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">Every Week</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Schedule -->
+    <section id="schedule" class="py-28 px-6 bg-[#0d0d0d]">
+        <div class="max-w-6xl mx-auto">
+            <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-5">Schedule</p>
+            <h2 class="text-4xl md:text-5xl font-bold mb-16">When We Run.</h2>
+            <div class="border border-white/10">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-8 border-b border-white/5 gap-4">
+                    <div>
+                        <p class="text-xl font-semibold mb-1">Regular Session</p>
+                        <p class="text-gray-400">BSD — Gading Serpong Area</p>
+                    </div>
+                    <div class="sm:text-right">
+                        <p class="text-gold text-3xl font-black">18:00</p>
+                        <p class="text-gray-500 text-sm uppercase tracking-widest">Every Saturday</p>
+                    </div>
+                </div>
+                <div class="p-8 text-gray-500 text-sm leading-relaxed">
+                    Venue details are shared in the WhatsApp group before each session. Join us to stay updated.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Join / Social -->
+    <section id="join" class="py-28 px-6">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-5">Connect</p>
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">Ready to Run?</h2>
+            <p class="text-gray-400 text-lg mb-16 max-w-md mx-auto leading-relaxed">Find us on social media or reach out directly. Court details shared in the group.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="flex items-center justify-center gap-3 border border-white/10 px-10 py-4 hover:border-gold hover:text-gold transition-all duration-200 group">
+                    <span class="text-xs font-semibold tracking-[0.3em] uppercase">Instagram</span>
+                </a>
+                <a href="#" class="flex items-center justify-center gap-3 border border-white/10 px-10 py-4 hover:border-gold hover:text-gold transition-all duration-200 group">
+                    <span class="text-xs font-semibold tracking-[0.3em] uppercase">WhatsApp</span>
+                </a>
+                <a href="#" class="flex items-center justify-center gap-3 border border-white/10 px-10 py-4 hover:border-gold hover:text-gold transition-all duration-200 group">
+                    <span class="text-xs font-semibold tracking-[0.3em] uppercase">Reclub</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-8 px-6 text-center text-gray-700 text-sm">
+        <p>© 2025 Impera &mdash; BSD Gading Serpong</p>
+    </footer>
+
+</body>
+</html>
