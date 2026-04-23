@@ -117,15 +117,15 @@ async def login(request: Request, username: str = Form(...), password: str = For
     return RedirectResponse("/admin", status_code=302)
 
 # --- Register Routes ---
-@app.get("/daftar", response_class=HTMLResponse)
+@app.get("/joinbang", response_class=HTMLResponse)
 async def register_page(request: Request):
     error = request.query_params.get("error")
     return templates.TemplateResponse(request, "register.html", {"request": request, "error": error})
 
-@app.post("/daftar")
+@app.post("/joinbang")
 async def register(request: Request, username: str = Form(...), password: str = Form(...)):
     if len(password) < 6:
-        return RedirectResponse("/daftar?error=Password must be at least 6 characters", status_code=302)
+        return RedirectResponse("/joinbang?error=Password must be at least 6 characters", status_code=302)
 
     conn = get_db()
     cursor = conn.cursor()
@@ -133,7 +133,7 @@ async def register(request: Request, username: str = Form(...), password: str = 
     cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
     if cursor.fetchone():
         conn.close()
-        return RedirectResponse("/daftar?error=Username already taken", status_code=302)
+        return RedirectResponse("/joinbang?error=Username already taken", status_code=302)
 
     password_hash = bcrypt.hash(password)
     cursor.execute(
