@@ -13,8 +13,10 @@ into a full community platform over time.
 - **Deploy**: GitHub Actions → SSH → deploy.sh
 
 ## Design
-- Colors: Black (#0a0a0a) dominant, white/silver text, gold (#C9A84C) accent
-- Tone: Clean, minimal, community-first
+- Theme: Comic-book / Spider-Verse streetball aesthetic
+- Colors: Black (#0a0a0a) dominant, white/silver text, gold (#C9A84C) accent, silver (#71717A) secondary
+- Fonts: Bangers (display), Permanent Marker (accents), Inter (body)
+- Effects: Halftone dots, comic borders, stripe dividers, glitch text shadows
 
 ## Phases
 
@@ -28,6 +30,7 @@ into a full community platform over time.
 - [x] 1.7 deploy.sh updated on server to support uvicorn + port arg
 - [x] 1.8 DNS A record on Cloudflare → 34.69.152.71 (proxied)
 - [x] 1.9 GitHub Actions secrets set
+- [x] 1.10 Hero redesign — video bg, halftone pattern, comic styling, animated crown logo
 
 ### Phase 2 — Community Features
 - [ ] Event/game schedule management
