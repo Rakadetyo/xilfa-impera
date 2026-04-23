@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                        panel: '#111111',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .comic-border { border: 3px solid #000; box-shadow: 4px 4px 0px #000; }
+    </style>
+</head>
+<body class="bg-[#0a0a0a] text-[#F5F0E6]">
+    <!-- Nav -->
+    <nav class="fixed top-0 w-full z-50 bg-[#0a0a0a]/90 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
+                <span class="text-sm text-gray-500">/ Admin</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-400">Hi, {{ user.username }}</span>
+                <form method="POST" action="/admin/logout">
+                    <button type="submit" class="text-sm text-red-400 hover:text-red-300">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="pt-24 px-6 pb-12">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-4xl font-display">Dashboard</h1>
+                <a href="/admin/new" class="bg-accent text-black font-bold px-6 py-3 comic-border hover:bg-accent-light transition-colors">
+                    + New Post
+                </a>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-panel border-2 border-black p-6 comic-border">
+                    <p class="text-4xl font-display text-accent">{{ stats.total }}</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest">Total Posts</p>
+                </div>
+                <div class="bg-panel border-2 border-black p-6 comic-border">
+                    <p class="text-4xl font-display text-gray-400">{{ stats.drafts }}</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest">Drafts</p>
+                </div>
+                <div class="bg-panel border-2 border-black p-6 comic-border">
+                    <p class="text-4xl font-display text-green-400">{{ stats.published }}</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest">Published</p>
+                </div>
+            </div>
+
+            <!-- Posts Table -->
+            <div class="bg-panel border-2 border-black comic-border overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-black/50">
+                        <tr>
+                            <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-400">Title</th>
+                            <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-400">Author</th>
+                            <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-400">Images</th>
+                            <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-400">Date</th>
+                            <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-400">Status</th>
+                            <th class="text-right p-4 text-sm font-bold uppercase tracking-widest text-gray-400">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        {% for post in posts %}
+                        <tr class="hover:bg-white/5">
+                            <td class="p-4 font-bold">{{ post.title }}</td>
+                            <td class="p-4 text-gray-400">{{ post.username }}</td>
+                            <td class="p-4 text-gray-400">{{ post.image_count }}</td>
+                            <td class="p-4 text-gray-500 text-sm">{{ post.created_at[:10] }}</td>
+                            <td class="p-4">
+                                <span class="px-3 py-1 text-xs font-bold uppercase tracking-widest {% if post.status == 'published' %}bg-green-900 text-green-300{% else %}bg-gray-700 text-gray-400{% endif %}">
+                                    {{ post.status }}
+                                </span>
+                            </td>
+                            <td class="p-4 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <button
+                                        onclick="toggleStatus({{ post.id }})"
+                                        class="px-3 py-1 text-xs font-bold {% if post.status == 'published' %}text-yellow-400 hover:text-yellow-300{% else %}text-green-400 hover:text-green-300{% endif %}"
+                                    >
+                                        {{ 'Unpublish' if post.status == 'published' else 'Publish' }}
+                                    </button>
+                                    <a href="/admin/posts/{{ post.id }}" class="px-3 py-1 text-xs font-bold text-blue-400 hover:text-blue-300">Edit</a>
+                                    <button
+                                        onclick="deletePost({{ post.id }})"
+                                        class="px-3 py-1 text-xs font-bold text-red-400 hover:text-red-300"
+                                    >Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if not posts %}
+                <div class="p-12 text-center text-gray-500">
+                    No posts yet. <a href="/admin/new" class="text-accent hover:underline">Create one!</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function toggleStatus(postId) {
+            if (!confirm('Toggle post status?')) return;
+            const res = await fetch(`/admin/posts/${postId}/toggle`, { method: 'POST' });
+            if (res.ok) location.reload();
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('Delete this post? This cannot be undone.')) return;
+            const res = await fetch(`/admin/posts/${postId}/delete`, { method: 'POST' });
+            if (res.ok) location.reload();
+        }
+    </script>
+</body>
+</html>

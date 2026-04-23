@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                        'gold-light': '#A1A1AA',
+                        panel: '#111111',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .comic-border { border: 3px solid #000; box-shadow: 4px 4px 0px #000; }
+        .comic-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .comic-card:hover {
+            transform: translateY(-8px) rotate(-1deg);
+            box-shadow: 8px 8px 0px #000;
+        }
+        .corner-fold {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 30px 30px 0;
+            border-color: transparent #000 transparent transparent;
+        }
+        .corner-fold::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -30px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 30px 30px 0;
+            border-color: transparent #F5F0E6 transparent transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#0a0a0a] text-[#F5F0E6]">
+    <!-- Nav -->
+    <nav class="fixed top-0 w-full z-50 bg-[#0a0a0a]/90 backdrop-blur-md border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <a href="/" class="text-2xl font-display tracking-widest text-accent">IMPERA</a>
+            <div class="flex gap-6">
+                <a href="/" class="text-sm text-gray-400 hover:text-accent transition-colors">Home</a>
+                <a href="/blog" class="text-sm text-accent font-bold">Blog</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <section class="pt-32 pb-16 px-6 text-center">
+        <h1 class="text-6xl md:text-8xl font-display mb-4">COMICS</h1>
+        <p class="text-gray-400 text-lg">Latest sessions, stories, and highlights</p>
+    </section>
+
+    <!-- Blog Grid -->
+    <section class="px-6 pb-24">
+        <div class="max-w-7xl mx-auto">
+            <div class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+                {% for post in posts %}
+                <div class="break-inside-avoid">
+                    <div
+                        class="comic-card relative bg-panel comic-border cursor-pointer overflow-hidden group"
+                        onclick="openModal({{ post.id }})"
+                    >
+                        <!-- Cover Image -->
+                        <div class="aspect-[3/4] bg-gray-800 overflow-hidden">
+                            {% if post.cover_image %}
+                            <img
+                                src="/static/img/comics/{{ post.cover_image }}"
+                                alt="{{ post.title }}"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            >
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center bg-gray-700">
+                                <span class="text-4xl">🏀</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Corner fold -->
+                        <div class="corner-fold"></div>
+
+                        <!-- Overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+
+                        <!-- Content -->
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+                            <p class="text-xs text-accent font-accent mb-1">{{ post.created_at[:10] }}</p>
+                            <h3 class="text-xl font-display leading-tight">{{ post.title }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not posts %}
+            <div class="text-center py-16">
+                <p class="text-gray-500 text-xl font-accent">No posts yet!</p>
+                <p class="text-gray-600 mt-2">Check back soon for updates.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t-2 border-black py-8 px-6 text-center text-gray-600 text-sm">
+        <p class="font-accent">© 2025 Impera — BSD Gading Serpong</p>
+    </footer>
+
+    <!-- Modal -->
+    <div id="comicModal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/90" onclick="closeModal()"></div>
+
+        <!-- Modal Content -->
+        <div class="absolute inset-4 md:inset-12 lg:inset-20 flex">
+            <!-- Close button -->
+            <button onclick="closeModal()" class="absolute top-0 right-0 z-10 text-white hover:text-accent text-4xl font-bold p-4">&times;</button>
+
+            <!-- Comic Book -->
+            <div class="flex w-full max-w-6xl mx-auto bg-[#1a1a1a] comic-border overflow-hidden">
+                <!-- Left: Images -->
+                <div class="w-3/5 p-6 overflow-y-auto">
+                    <div id="modalImages" class="columns-2 gap-3 space-y-3">
+                        <!-- Images loaded via JS -->
+                    </div>
+                </div>
+
+                <!-- Spine -->
+                <div class="w-2 bg-gradient-to-r from-black to-gray-800"></div>
+
+                <!-- Right: Content -->
+                <div class="w-2/5 p-8 overflow-y-auto bg-[#F5F0E6] text-black">
+                    <p id="modalDate" class="text-xs text-gray-500 uppercase tracking-widest mb-2"></p>
+                    <h2 id="modalTitle" class="text-3xl font-display mb-4"></h2>
+                    <p id="modalAuthor" class="text-sm text-gray-600 mb-4"></p>
+                    <div id="modalBody" class="prose prose-sm prose-invert"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPostId = null;
+
+        async function openModal(postId) {
+            currentPostId = postId;
+            const modal = document.getElementById('comicModal');
+            modal.classList.remove('hidden');
+
+            const imagesEl = document.getElementById('modalImages');
+            const titleEl = document.getElementById('modalTitle');
+            const bodyEl = document.getElementById('modalBody');
+            const authorEl = document.getElementById('modalAuthor');
+            const dateEl = document.getElementById('modalDate');
+
+            imagesEl.innerHTML = '<div class="animate-pulse">Loading...</div>';
+
+            try {
+                const res = await fetch(`/api/blog/${postId}`);
+                const post = await res.json();
+
+                titleEl.textContent = post.title;
+                bodyEl.textContent = post.body;
+                authorEl.textContent = `By ${post.author}`;
+                dateEl.textContent = post.created_at;
+
+                if (post.images && post.images.length > 0) {
+                    imagesEl.innerHTML = post.images.map(img => `
+                        <div class="break-inside-avoid">
+                            <img src="/static/img/comics/${img.filename}" class="w-full comic-border" alt="">
+                        </div>
+                    `).join('');
+                } else {
+                    imagesEl.innerHTML = '<div class="text-gray-500">No images</div>';
+                }
+            } catch (e) {
+                imagesEl.innerHTML = '<div class="text-red-500">Error loading images</div>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('comicModal').classList.add('hidden');
+            currentPostId = null;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>
