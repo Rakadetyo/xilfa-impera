@@ -10,91 +10,156 @@
             theme: {
                 extend: {
                     colors: {
-                        gold: '#C9A84C',
-                        'gold-light': '#E5C878',
-                        'surface': '#141414',
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                        'gold-light': '#A1A1AA',
+                        'surface': '#111111',
+                        'panel': '#111111',
+                        ink: '#000000',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .halftone {
+            background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .halftone-center {
+            background-image: radial-gradient(circle, rgba(255,255,255,0.15) 50%, transparent 50%);
+            background-size: 8px 8px;
+            background-position: 0 0;
+            background-repeat: repeat;
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 60%);
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 60%);
+        }
+        .comic-border {
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px #000;
+        }
+        .comic-border-light {
+            border: 3px solid rgba(255,255,255,0.3);
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+        }
+        .stripe-divider {
+            background: repeating-linear-gradient(
+                -45deg, #71717A, #71717A 4px, transparent 4px, transparent 20px
+            );
+            height: 8px;
+        }
+        .glitch-text {
+            text-shadow: 2px 2px 0 #C9A84C, -6px -6px 0 #000000;
+        }
+        .comic-panel {
+            border-left: 4px solid #000;
+            background: linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 100%);
+        }
+    </style>
 </head>
 <body class="bg-[#0a0a0a] text-[#f5f5f5]">
 
     <!-- Nav -->
-    <nav class="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5">
-        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <span class="text-xl font-black tracking-widest text-gold">IMPERA</span>
-            <a href="#join" class="text-sm border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-black transition-all duration-200 font-medium">Join Us</a>
+    <nav class="fixed top-0 w-full z-50 bg-[#0a0a0a]/90 backdrop-blur-md border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
+            <a href="#join" class="text-sm bg-gold text-white border-2 border-black px-5 py-2 hover:bg-gold-light hover:text-black transition-all duration-150 font-bold comic-border">Join Us</a>
         </div>
     </nav>
 
     <!-- Hero -->
     <section class="min-h-screen flex items-center justify-center relative overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(201,168,76,0.07)_0%,_transparent_70%)]"></div>
+        <!-- Video Background -->
+        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&loop=1&playlist=dQw4w9WgXcQ&controls=0" class="absolute inset-0 w-screen h-screen brightness-20 contrast-110" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        <!-- Fallback gradient if video fails -->
+        <div class="absolute inset-0 bg-[#0a0a0a]/50"></div>
+        <!-- Halftone dots in center -->
+        <div class="absolute inset-0 halftone-center"></div>
+        <!-- Dark overlay with center vignette for readability -->
+        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/40"></div>
+        <!-- Dark vignette behind text -->
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.9)_0%,transparent_50%)]"></div>
+
         <div class="text-center px-6 relative z-10">
-            <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-8">BSD — Gading Serpong</p>
-            <h1 class="text-8xl md:text-[11rem] font-black tracking-tight mb-6 leading-none">IMPERA</h1>
-            <p class="text-gray-400 text-lg md:text-xl mb-12 max-w-lg mx-auto leading-relaxed">Basketball community. Every Saturday at 18:00.<br>Show up, compete, grow.</p>
+            <!-- Logo/Crest -->
+            <div class="mb-6 inline-block">
+                <svg width="80" height="80" viewBox="0 0 64 64" fill="none" class="mx-auto comic-border bg-black/50 rounded-full p-2">
+                    <circle cx="32" cy="32" r="28" stroke="#C9A84C" stroke-width="3" fill="#1a1a1a"/>
+                    <path d="M32 4 Q46 18 46 32 Q46 46 32 60" stroke="#C9A84C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    <path d="M32 4 Q18 18 18 32 Q18 46 32 60" stroke="#C9A84C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    <line x1="4" y1="32" x2="60" y2="32" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <p class="text-accent text-sm font-accent tracking-[0.3em] uppercase mb-6">BSD — Gading Serpong</p>
+            <h1 class="text-8xl md:text-[10rem] font-display tracking-tight mb-4 leading-none text-white glitch-text" style="-webkit-text-stroke: 1px black;">IMPERA</h1>
+            <p class="text-gray-300 text-lg md:text-xl mb-12 max-w-lg mx-auto leading-relaxed">Basketball community. Every Saturday at 18:00.<br>Show up, compete, grow.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#schedule" class="bg-gold text-black font-semibold px-10 py-3.5 hover:bg-gold-light transition-colors duration-200 tracking-wide">Play With Us</a>
-                <a href="#about" class="border border-white/20 text-white px-10 py-3.5 hover:border-white/50 transition-colors duration-200 tracking-wide">Learn More</a>
+                <a href="#schedule" class="bg-gold text-white font-bold px-10 py-4 hover:bg-gold-light hover:text-black transition-all duration-150 tracking-wide comic-border text-lg">Play With Us</a>
+                <a href="#about" class="bg-white text-black font-bold px-10 py-4 hover:bg-gray-200 transition-all duration-150 tracking-wide comic-border text-lg">Learn More</a>
             </div>
         </div>
     </section>
 
     <!-- About -->
-    <section id="about" class="py-28 px-6">
+    <section id="about" class="py-28 px-6 relative halftone">
+        <div class="stripe-divider mb-20"></div>
         <div class="max-w-6xl mx-auto">
             <div class="grid md:grid-cols-2 gap-20 items-center">
-                <div>
-                    <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-5">About</p>
-                    <h2 class="text-4xl md:text-5xl font-bold mb-7 leading-tight">Built for Those<br>Who Play.</h2>
+                <div class="comic-panel pl-6">
+                    <p class="text-accent text-sm font-accent tracking-[0.4em] uppercase mb-5">About</p>
+                    <h2 class="text-5xl md:text-6xl font-display mb-7 leading-tight">Built for Those<br>Who Play.</h2>
                     <p class="text-gray-400 text-lg leading-relaxed mb-5">Impera is a basketball community rooted in BSD-Gading Serpong. We bring together players of all levels who share a love for the game.</p>
                     <p class="text-gray-400 text-lg leading-relaxed">No politics, no drama — just ball. Whether you're seasoned or just starting, you're welcome on our court.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-[#141414] border border-white/5 p-7">
-                        <p class="text-4xl font-black text-gold mb-2">—</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Members</p>
+                    <div class="bg-panel border-2 border-black p-6 comic-border">
+                        <p class="text-4xl font-display text-accent mb-2">—</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Members</p>
                     </div>
-                    <div class="bg-[#141414] border border-white/5 p-7">
-                        <p class="text-4xl font-black text-gold mb-2">—</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Sessions</p>
+                    <div class="bg-panel border-2 border-black p-6 comic-border">
+                        <p class="text-4xl font-display text-accent mb-2">—</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Sessions</p>
                     </div>
-                    <div class="bg-[#141414] border border-white/5 p-7">
-                        <p class="text-4xl font-black text-gold mb-2">BSD</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Home Court</p>
+                    <div class="bg-panel border-2 border-black p-6 comic-border">
+                        <p class="text-3xl font-display text-accent mb-2">BSD</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Home Court</p>
                     </div>
-                    <div class="bg-[#141414] border border-white/5 p-7">
-                        <p class="text-4xl font-black text-gold mb-2">SAT</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Every Week</p>
+                    <div class="bg-panel border-2 border-black p-6 comic-border">
+                        <p class="text-3xl font-display text-gold mb-2">SAT</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Every Week</p>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="stripe-divider mt-20"></div>
     </section>
 
     <!-- Schedule -->
-    <section id="schedule" class="py-28 px-6 bg-[#0d0d0d]">
+    <section id="schedule" class="py-28 px-6 bg-[#0d0d0d] relative halftone">
         <div class="max-w-6xl mx-auto">
-            <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-5">Schedule</p>
-            <h2 class="text-4xl md:text-5xl font-bold mb-16">When We Run.</h2>
-            <div class="border border-white/10">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-8 border-b border-white/5 gap-4">
+            <p class="text-accent text-sm font-accent tracking-[0.4em] uppercase mb-5">Schedule</p>
+            <h2 class="text-5xl md:text-6xl font-display mb-16">When We Run.</h2>
+            <div class="border-2 border-black bg-panel">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-8 border-b-2 border-black gap-4">
                     <div>
-                        <p class="text-xl font-semibold mb-1">Regular Session</p>
+                        <p class="text-xl font-bold mb-1">Regular Session</p>
                         <p class="text-gray-400">BSD — Gading Serpong Area</p>
                     </div>
                     <div class="sm:text-right">
-                        <p class="text-gold text-3xl font-black">18:00</p>
-                        <p class="text-gray-500 text-sm uppercase tracking-widest">Every Saturday</p>
+                        <p class="text-gold text-4xl font-display">18:00</p>
+                        <p class="text-gray-500 text-sm uppercase tracking-widest font-bold">Every Saturday</p>
                     </div>
                 </div>
-                <div class="p-8 text-gray-500 text-sm leading-relaxed">
+                <div class="p-8 text-gray-500 text-sm leading-relaxed bg-black/30">
                     Venue details are shared in the WhatsApp group before each session. Join us to stay updated.
                 </div>
             </div>
@@ -102,28 +167,29 @@
     </section>
 
     <!-- Join / Social -->
-    <section id="join" class="py-28 px-6">
+    <section id="join" class="py-28 px-6 relative">
+        <div class="stripe-divider mb-16"></div>
         <div class="max-w-6xl mx-auto text-center">
-            <p class="text-gold text-xs font-semibold tracking-[0.4em] uppercase mb-5">Connect</p>
-            <h2 class="text-4xl md:text-5xl font-bold mb-6">Ready to Run?</h2>
-            <p class="text-gray-400 text-lg mb-16 max-w-md mx-auto leading-relaxed">Find us on social media or reach out directly. Court details shared in the group.</p>
+            <h2 class="text-6xl md:text-7xl font-display mb-4 text-accent glitch-text">GET IN THE GAME</h2>
+            <p class="text-gray-400 text-lg mb-12 max-w-md mx-auto leading-relaxed">Find us on social media or reach out directly. Court details shared in the group.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#" class="flex items-center justify-center gap-3 border border-white/10 px-10 py-4 hover:border-gold hover:text-gold transition-all duration-200 group">
-                    <span class="text-xs font-semibold tracking-[0.3em] uppercase">Instagram</span>
+                <a href="#" class="flex items-center justify-center gap-3 border-2 border-black bg-white text-black px-10 py-4 hover:bg-accent hover:border-accent hover:text-black transition-all duration-150 group comic-border">
+                    <span class="text-xs font-bold tracking-[0.3em] uppercase">Instagram</span>
                 </a>
-                <a href="#" class="flex items-center justify-center gap-3 border border-white/10 px-10 py-4 hover:border-gold hover:text-gold transition-all duration-200 group">
-                    <span class="text-xs font-semibold tracking-[0.3em] uppercase">WhatsApp</span>
+                <a href="#" class="flex items-center justify-center gap-3 border-2 border-black bg-white text-black px-10 py-4 hover:bg-accent hover:border-accent hover:text-black transition-all duration-150 group comic-border">
+                    <span class="text-xs font-bold tracking-[0.3em] uppercase">WhatsApp</span>
                 </a>
-                <a href="#" class="flex items-center justify-center gap-3 border border-white/10 px-10 py-4 hover:border-gold hover:text-gold transition-all duration-200 group">
-                    <span class="text-xs font-semibold tracking-[0.3em] uppercase">Reclub</span>
+                <a href="#" class="flex items-center justify-center gap-3 border-2 border-black bg-white text-black px-10 py-4 hover:bg-accent hover:border-accent hover:text-black transition-all duration-150 group comic-border">
+                    <span class="text-xs font-bold tracking-[0.3em] uppercase">Reclub</span>
                 </a>
             </div>
         </div>
+        <div class="stripe-divider mt-16"></div>
     </section>
 
     <!-- Footer -->
-    <footer class="border-t border-white/5 py-8 px-6 text-center text-gray-700 text-sm">
-        <p>© 2025 Impera &mdash; BSD Gading Serpong</p>
+    <footer class="border-t-2 border-black py-8 px-6 text-center text-gray-600 text-sm halftone">
+        <p class="font-accent">© 2025 Impera — BSD Gading Serpong</p>
     </footer>
 
 </body>
