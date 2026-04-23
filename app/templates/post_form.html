@@ -68,6 +68,17 @@
                     >
                 </div>
 
+                <!-- Abstract -->
+                <div>
+                    <label class="block text-sm font-bold mb-2">Abstract (brief description)</label>
+                    <textarea
+                        name="abstract"
+                        rows="3"
+                        class="w-full bg-panel border-2 border-black px-4 py-3 focus:outline-none focus:border-accent comic-border resize-none"
+                        placeholder="Short abstract for the modal..."
+                    >{{ post.abstract if post else '' }}</textarea>
+                </div>
+
                 <!-- Body -->
                 <div>
                     <label class="block text-sm font-bold mb-2">Body</label>

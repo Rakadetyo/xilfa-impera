@@ -26,6 +26,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             body TEXT NOT NULL,
+            abstract TEXT DEFAULT '',
             author_id INTEGER NOT NULL,
             status TEXT CHECK(status IN ('draft', 'published')) DEFAULT 'draft',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -43,6 +44,12 @@ def init_db():
             FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
         )
     """)
+
+    # Add abstract column if not exists
+    cursor.execute("PRAGMA table_info(posts)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if 'abstract' not in columns:
+        cursor.execute("ALTER TABLE posts ADD COLUMN abstract TEXT DEFAULT ''")
 
     conn.commit()
     conn.close()

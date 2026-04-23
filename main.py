@@ -61,12 +61,12 @@ async def blog(request: Request):
     return templates.TemplateResponse(request, "blog.html", {"request": request, "posts": posts})
 
 @app.get("/api/blog/{post_id}")
-async def get_post(post_id: Request):
+async def get_post(post_id: int):
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT p.id, p.title, p.body, p.status, p.created_at, p.updated_at, u.username
+        SELECT p.id, p.title, p.body, p.abstract, p.status, p.created_at, p.updated_at, u.username
         FROM posts p
         JOIN users u ON p.author_id = u.id
         WHERE p.id = ?
@@ -89,6 +89,7 @@ async def get_post(post_id: Request):
         "id": post["id"],
         "title": post["title"],
         "body": post["body"],
+        "abstract": post["abstract"],
         "status": post["status"],
         "author": post["username"],
         "created_at": post["created_at"],
@@ -191,7 +192,7 @@ async def new_post_page(request: Request):
     return templates.TemplateResponse(request, "post_form.html", {"request": request, "post": None, "user": user})
 
 @app.post("/admin/posts")
-async def create_post(request: Request, title: str = Form(...), body: str = Form(...), status: str = Form("draft")):
+async def create_post(request: Request, title: str = Form(...), body: str = Form(...), abstract: str = Form(""), status: str = Form("draft")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -199,8 +200,8 @@ async def create_post(request: Request, title: str = Form(...), body: str = Form
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO posts (title, body, author_id, status) VALUES (?, ?, ?, ?)",
-        (title, body, user["id"], status)
+        "INSERT INTO posts (title, body, abstract, author_id, status) VALUES (?, ?, ?, ?, ?)",
+        (title, body, abstract, user["id"], status)
     )
     post_id = cursor.lastrowid
     conn.commit()
@@ -235,7 +236,7 @@ async def edit_post_page(request: Request, post_id: int):
     })
 
 @app.post("/admin/posts/{post_id}")
-async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), status: str = Form("draft")):
+async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), abstract: str = Form(""), status: str = Form("draft")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -243,8 +244,8 @@ async def update_post(request: Request, post_id: int, title: str = Form(...), bo
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE posts SET title = ?, body = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (title, body, status, post_id)
+        "UPDATE posts SET title = ?, body = ?, abstract = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (title, body, abstract, status, post_id)
     )
     conn.commit()
     conn.close()
