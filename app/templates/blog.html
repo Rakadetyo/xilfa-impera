@@ -37,6 +37,13 @@
             transform: translateY(-8px) rotate(-1deg);
             box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
         }
+        @keyframes lightboxIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-lightbox {
+            animation: lightboxIn 0.3s ease-out;
+        }
         .glitch-text {
             -webkit-text-stroke: 2px black;
             color: #FFD700;
@@ -144,9 +151,9 @@
             <button onclick="nextPost()" class="absolute right-2 top-1/2 -translate-y-1/2 z-20 text-[#F5F0E6] hover:text-accent text-3xl font-bold p-2">›</button>
 
             <!-- Comic Book / Magazine -->
-            <div id="modalContent" class="grid grid-cols-2 w-full max-w-6xl mx-auto bg-[#F5F0E6] rounded-lg overflow-hidden relative" style="border: 4px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.4);">
+            <div id="modalContent" class="grid grid-cols-1 md:grid-cols-2 w-full max-w-6xl mx-auto bg-[#F5F0E6] rounded-lg overflow-hidden relative" style="border: 4px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.4);">
                 <!-- Book spine/crease -->
-                <div class="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/5 to-black/10 pointer-events-none z-10"></div>
+                <div class="hidden md:block absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/5 to-black/10 pointer-events-none z-10"></div>
 
                 <!-- Page number -->
                 <div class="absolute bottom-4 left-8 z-10 text-xs text-gray-400 font-mono">PAGE 01</div>
@@ -191,6 +198,15 @@
                     <div id="modalBodyBottom" class="prose prose-sm"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="imageLightbox" class="fixed inset-0 z-[60] hidden" onclick="closeLightbox()">
+        <div class="absolute inset-0 bg-black/95" onclick="closeLightbox()"></div>
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 z-10 text-white hover:text-accent text-4xl font-bold">&times;</button>
+        <div class="absolute inset-0 flex items-center justify-center p-8" onclick="event.stopPropagation()">
+            <img id="lightboxImage" src="" class="max-w-full max-h-full object-contain animate-lightbox">
         </div>
     </div>
 
@@ -251,13 +267,13 @@
 
                     imagesTopEl.innerHTML = topImages.map(img => `
                         <div class="break-inside-avoid mb-2">
-                            <img src="/static/img/comics/${img.filename}" class="w-full border-2 border-black" alt="" style="box-shadow: 2px 2px 0px #000;">
+                            <img src="/static/img/comics/${img.filename}" class="w-full border-2 border-black cursor-zoom-in" alt="" style="box-shadow: 2px 2px 0px #000;" onclick="openLightbox('/static/img/comics/${img.filename}')">
                         </div>
                     `).join('');
 
                     imagesMiddleEl.innerHTML = middleImages.map(img => `
                         <div class="break-inside-avoid mb-2">
-                            <img src="/static/img/comics/${img.filename}" class="w-full border-2 border-black" alt="" style="box-shadow: 2px 2px 0px #000;">
+                            <img src="/static/img/comics/${img.filename}" class="w-full border-2 border-black cursor-zoom-in" alt="" style="box-shadow: 2px 2px 0px #000;" onclick="openLightbox('/static/img/comics/${img.filename}')">
                         </div>
                     `).join('');
                 } else {
@@ -271,6 +287,15 @@
         function closeModal() {
             document.getElementById('comicModal').classList.add('hidden');
             currentPostId = null;
+        }
+
+        function openLightbox(src) {
+            document.getElementById('lightboxImage').src = src;
+            document.getElementById('imageLightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('imageLightbox').classList.add('hidden');
         }
 
         function prevPost() {
@@ -288,7 +313,10 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape') {
+                closeLightbox();
+                closeModal();
+            }
             if (e.key === 'ArrowLeft') prevPost();
             if (e.key === 'ArrowRight') nextPost();
         });
