@@ -37,3 +37,28 @@ Replace /admin with a proper internal dashboard at /manage. Light-background UI,
 ### 5. Cleanup
 - [x] Update `post_form.html` cancel/back links → `/manage`
 - [x] App loads without errors (smoke test pass)
+
+### 6. Players Page (/manage/players)
+- [x] Add GET `/manage/players` — list all players with search, filter (position, skill, member), sort, pagination
+- [x] Add POST `/manage/players` — create new player
+- [x] Add POST `/manage/players/{player_id}` — update player
+- [x] Add POST `/manage/players/{player_id}/delete` — delete player
+- [x] Stats: total players, avg skill, position pie chart with filter
+- [x] Skill level: 1=Newbie, 2=Beginner, 3=Intermediate, 4=Expert, 5=Pro
+- [x] Member column: dynamically shows "Yes" if player has active membership in member table
+- [x] Table shows: name, nickname, positions, skill, member status, join date, last played
+- [x] Edit modal for player management
+
+### 7. Members Page (/manage/members)
+- [x] Add GET `/manage/members` — list members for selected month/year
+- [x] Month/year navigation with prev/next arrows
+- [x] Add POST `/manage/members` — create new member record
+- [x] Add POST `/manage/members/{member_id}` — update member record
+- [x] Default dates: first/last Saturday of selected month
+- [x] Analytics cards:
+  - Active this month + Total unique (all time)
+  - Paid count + Unpaid count + Total income this month
+  - New this month + Retention rate + Avg members/month
+- [x] Table shows: name, membership count, last member date, start date, end date, price, paid
+- [x] Allow duplicate player records (indexed by player_id + period)
+- [x] Add membership_price column to member table
