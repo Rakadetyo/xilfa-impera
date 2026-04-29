@@ -934,12 +934,17 @@ async def import_whatsapp_members(request: Request):
                 "display_name": name
             })
 
+    # Get all players for dropdown
+    cursor.execute("SELECT id, name FROM player ORDER BY name")
+    all_players = [{"id": p["id"], "name": p["name"]} for p in cursor.fetchall()]
+
     conn.close()
 
     return JSONResponse({
         "preview": preview,
         "start_date": start_date,
-        "end_date": end_date
+        "end_date": end_date,
+        "all_players": all_players
     })
 
 @app.post("/api/import-whatsapp-members/confirm")

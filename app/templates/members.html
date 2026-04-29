@@ -475,12 +475,17 @@
             let foundCount = 0;
             let notFoundCount = 0;
 
+            const playersOptions = data.all_players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
             for (const m of data.preview) {
                 const status = m.found
                     ? (m.existing ? '<span class="text-orange-600">Update</span>' : '<span class="text-green-600">New</span>')
                     : '<span class="text-red-600 font-bold">Not Found</span>';
                 const rowClass = m.found ? '' : 'bg-red-50';
-                html += `<tr class="${rowClass}"><td class="p-2">${m.display_name}</td><td class="p-2">${m.price.toLocaleString()}</td><td class="p-2">${status}</td></tr>`;
+
+                let nameCell = m.found ? m.display_name : `<select class="player-select border border-gray-200 px-2 py-1 text-sm" data-index="${data.preview.indexOf(m)}"><option value="">Select player...</option>${playersOptions}</select>`;
+
+                html += `<tr class="${rowClass}"><td class="p-2">${nameCell}</td><td class="p-2">${m.price.toLocaleString()}</td><td class="p-2">${status}</td></tr>`;
                 if (m.found) foundCount++; else notFoundCount++;
             }
             html += '</tbody></table>';
@@ -503,11 +508,22 @@
         async function confirmWhatsAppImport() {
             if (!whatsappPreviewData) return;
 
+            // Get updated member data with selected player IDs for not found items
+            const updatedMembers = whatsappPreviewData.preview.map((m, index) => {
+                if (!m.found) {
+                    const select = document.querySelector(`.player-select[data-index="${index}"]`);
+                    if (select && select.value) {
+                        return { ...m, found: true, player_id: parseInt(select.value), display_name: select.options[select.selectedIndex].text };
+                    }
+                }
+                return m;
+            });
+
             const res = await fetch('/api/import-whatsapp-members/confirm', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    members: whatsappPreviewData.preview,
+                    members: updatedMembers,
                     start_date: whatsappPreviewData.start_date,
                     end_date: whatsappPreviewData.end_date
                 })
