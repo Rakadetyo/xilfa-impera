@@ -58,18 +58,109 @@ def init_db():
     if 'post_type' not in columns:
         cursor.execute("ALTER TABLE posts ADD COLUMN post_type TEXT DEFAULT 'HIGHLIGHT'")
 
+    # New tables for arena/game/player/member system
+
+    # arena: venues for games
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS arena (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            location_name TEXT NOT NULL,
+            address TEXT,
+            price REAL DEFAULT 0,
+            contact_person TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # game: each session
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            datetime TIMESTAMP NOT NULL,
+            arena_id INTEGER,
+            is_video INTEGER DEFAULT 0,
+            is_photo INTEGER DEFAULT 0,
+            is_referee INTEGER DEFAULT 0,
+            price_per_person REAL DEFAULT 0,
+            price_per_member REAL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (arena_id) REFERENCES arena(id)
+        )
+    """)
+
+    # player: member profiles
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            nickname TEXT,
+            position_1 TEXT,
+            position_2 TEXT,
+            skill_level INTEGER CHECK(skill_level BETWEEN 1 AND 5) DEFAULT 3,
+            is_member INTEGER DEFAULT 0,
+            contact_no TEXT,
+            instagram TEXT,
+            reclub TEXT,
+            join_date DATE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # member: membership status
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS member (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            member_start_date DATE,
+            member_end_date DATE,
+            is_paid INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES player(id)
+        )
+    """)
+
+    # game_attendee: who played which game
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_attendee (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            team_name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id),
+            FOREIGN KEY (player_id) REFERENCES player(id)
+        )
+    """)
+
+    # changelog: audit log
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS changelog (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
 def seed_admin():
-    from passlib.hash import bcrypt
+    import bcrypt
 
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("SELECT id FROM users WHERE username = ?", ("admin",))
     if not cursor.fetchone():
-        password_hash = bcrypt.hash("impera123")
+        password_hash = bcrypt.hashpw(b"impera123", bcrypt.gensalt()).decode()
         cursor.execute(
             "INSERT INTO users (username, password_hash) VALUES (?, ?)",
             ("admin", password_hash)

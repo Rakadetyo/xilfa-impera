@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Players — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 fixed h-full">
+            <div class="p-6">
+                <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
+                <span class="text-sm text-gray-500 block mt-1">/ Manage</span>
+            </div>
+
+            <nav class="mt-6 px-4">
+                <a href="/manage" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Posts
+                </a>
+                <a href="/manage/users" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    Users
+                </a>
+                <a href="/manage/players" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-accent text-black font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Players
+                </a>
+                <a href="/manage/members" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Members
+                </a>
+                <a href="/manage/arena" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Arena
+                </a>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Coming Soon</p>
+                    <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Games
+                    </span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-64 flex-1">
+            <!-- Top Bar -->
+            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-display">Players</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                    <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
+                    <form method="POST" action="/manage/logout">
+                        <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <!-- Messages -->
+                {% if request.query_params.get('error') %}
+                <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 mb-6 rounded-lg">
+                    {{ request.query_params.get('error') }}
+                </div>
+                {% endif %}
+                {% if request.query_params.get('success') %}
+                <div class="bg-green-50 border border-green-200 text-green-600 px-4 py-3 mb-6 rounded-lg">
+                    {{ request.query_params.get('success') }}
+                </div>
+                {% endif %}
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <p class="text-4xl font-display text-accent">{{ stats.total }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">Total Players</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <div class="mb-3">
+                            <p class="text-3xl font-display text-gray-700">{{ stats.avg_skill }}</p>
+                            <p class="text-xs text-gray-500 uppercase tracking-widest">Avg Skill</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <span class="px-2 py-1 bg-gray-100 rounded">Newbie: {{ stats.skill_dist.get(1, 0) }}</span>
+                            <span class="px-2 py-1 bg-gray-100 rounded">Beginner: {{ stats.skill_dist.get(2, 0) }}</span>
+                            <span class="px-2 py-1 bg-yellow-100 rounded">Intermediate: {{ stats.skill_dist.get(3, 0) }}</span>
+                            <span class="px-2 py-1 bg-green-100 rounded">Expert: {{ stats.skill_dist.get(4, 0) }}</span>
+                            <span class="px-2 py-1 bg-green-200 rounded">Pro: {{ stats.skill_dist.get(5, 0) }}</span>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <p class="text-xs text-gray-500 uppercase tracking-widest">Position</p>
+                            <select id="positionFilter" onchange="updatePositionChart()" class="text-xs border border-gray-200 rounded px-2 py-1">
+                                <option value="both">Both</option>
+                                <option value="1">Position 1</option>
+                                <option value="2">Position 2</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-center">
+                            <div class="w-36 h-36">
+                                <canvas id="positionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Player Form -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
+                    <h2 class="text-lg font-bold mb-4">Add New Player</h2>
+                    <form action="/manage/players" method="POST" class="grid grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name *</label>
+                            <input type="text" name="name" required placeholder="Full name" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nickname</label>
+                            <input type="text" name="nickname" placeholder="Alias" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Position 1</label>
+                            <select name="position_1" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">-</option>
+                                <option value="PG">PG</option>
+                                <option value="SG">SG</option>
+                                <option value="SF">SF</option>
+                                <option value="PF">PF</option>
+                                <option value="C">C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Position 2</label>
+                            <select name="position_2" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">-</option>
+                                <option value="PG">PG</option>
+                                <option value="SG">SG</option>
+                                <option value="SF">SF</option>
+                                <option value="PF">PF</option>
+                                <option value="C">C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Skill</label>
+                            <select name="skill_level" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="1">Newbie</option>
+                                <option value="2">Beginner</option>
+                                <option value="3" selected>Intermediate</option>
+                                <option value="4">Expert</option>
+                                <option value="5">Pro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contact</label>
+                            <input type="text" name="contact_no" placeholder="Phone/WA" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Instagram</label>
+                            <input type="text" name="instagram" placeholder="@username" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reclub</label>
+                            <input type="text" name="reclub" placeholder="Reclub ID" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div class="col-span-4 flex items-center gap-4">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="is_member" class="w-4 h-4 text-accent">
+                                <span class="text-sm">Member</span>
+                            </label>
+                            <button type="submit" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light transition-colors">
+                                Add Player
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Search & Filter -->
+                <form method="GET" class="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+                    <input type="hidden" name="sort" value="{{ filters.sort }}">
+                    <input type="hidden" name="order" value="{{ filters.order }}">
+                    <input type="hidden" name="page" value="1">
+                    <div class="flex flex-wrap gap-4 items-end">
+                        <div class="flex-1 min-w-[200px]">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Search</label>
+                            <input type="text" name="search" value="{{ filters.search }}" placeholder="Name or nickname..." class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Position</label>
+                            <select name="position" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">All</option>
+                                <option value="PG" {% if filters.position == 'PG' %}selected{% endif %}>PG</option>
+                                <option value="SG" {% if filters.position == 'SG' %}selected{% endif %}>SG</option>
+                                <option value="SF" {% if filters.position == 'SF' %}selected{% endif %}>SF</option>
+                                <option value="PF" {% if filters.position == 'PF' %}selected{% endif %}>PF</option>
+                                <option value="C" {% if filters.position == 'C' %}selected{% endif %}>C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Skill</label>
+                            <select name="skill" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">All</option>
+                                <option value="1" {% if filters.skill == '1' %}selected{% endif %}>Newbie</option>
+                                <option value="2" {% if filters.skill == '2' %}selected{% endif %}>Beginner</option>
+                                <option value="3" {% if filters.skill == '3' %}selected{% endif %}>Intermediate</option>
+                                <option value="4" {% if filters.skill == '4' %}selected{% endif %}>Expert</option>
+                                <option value="5" {% if filters.skill == '5' %}selected{% endif %}>Pro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Member</label>
+                            <select name="member" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">All</option>
+                                <option value="1" {% if filters.member == '1' %}selected{% endif %}>Yes</option>
+                                <option value="0" {% if filters.member == '0' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Show</label>
+                            <select name="per_page" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent" onchange="this.form.submit()">
+                                <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
+                                <option value="20" {% if pagination.per_page == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+                                <option value="100" {% if pagination.per_page == 100 %}selected{% endif %}>All</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="bg-accent text-black font-bold px-4 py-2 hover:bg-accent-light">Filter</button>
+                        <a href="/manage/players" class="px-4 py-2 text-gray-500 hover:text-gray-700">Clear</a>
+                    </div>
+                </form>
+
+                <!-- Players Table -->
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                {% set s = filters.search if filters.search else '' %}
+                                {% set p = filters.position if filters.position else '' %}
+                                {% set sk = filters.skill if filters.skill else '' %}
+                                {% set m = filters.member if filters.member else '' %}
+                                {% set so = filters.sort if filters.sort else 'name' %}
+                                {% set o = filters.order if filters.order else 'asc' %}
+                                {% set base_url = '/manage/players?search=' ~ s ~ '&position=' ~ p ~ '&skill=' ~ sk ~ '&member=' ~ m ~ '&sort=' ~ so ~ '&order=' ~ o ~ '&page=' %}
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                    <a href="{{ base_url ~ (pagination.page) ~ '&sort=name&order=desc' if so == 'name' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=name&order=asc' }}" class="hover:text-accent {% if so == 'name' %}text-accent{% endif %}">
+                                        Name {% if so == 'name' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                    <a href="{{ base_url ~ (pagination.page) ~ '&sort=nickname&order=desc' if so == 'nickname' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=nickname&order=asc' }}" class="hover:text-accent {% if so == 'nickname' %}text-accent{% endif %}">
+                                        Nickname {% if so == 'nickname' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Positions</th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                    <a href="{{ base_url ~ (pagination.page) ~ '&sort=skill_level&order=desc' if so == 'skill_level' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=skill_level&order=asc' }}" class="hover:text-accent {% if so == 'skill_level' %}text-accent{% endif %}">
+                                        Skill {% if so == 'skill_level' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Member</th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                    <a href="{{ base_url ~ (pagination.page) ~ '&sort=join_date&order=desc' if so == 'join_date' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=join_date&order=asc' }}" class="hover:text-accent {% if so == 'join_date' %}text-accent{% endif %}">
+                                        Join Date {% if so == 'join_date' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                    <a href="{{ base_url ~ (pagination.page) ~ '&sort=last_played&order=desc' if so == 'last_played' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=last_played&order=asc' }}" class="hover:text-accent {% if so == 'last_played' %}text-accent{% endif %}">
+                                        Last Played {% if so == 'last_played' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
+                                    </a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for p in players %}
+                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="openPlayerModal({{ p.id }}, '{{ p.name }}', '{{ p.nickname or '' }}', '{{ p.position_1 or '' }}', '{{ p.position_2 or '' }}', {{ p.skill_level }}, {{ p.is_member }}, '{{ p.contact_no or '' }}', '{{ p.instagram or '' }}', '{{ p.reclub or '' }}', '{{ p.join_date or '' }}')">
+                                <td class="p-4 font-bold">{{ p.name }}</td>
+                                <td class="p-4 text-gray-600">{{ p.nickname or '-' }}</td>
+                                <td class="p-4">
+                                    {% if p.position_1 or p.position_2 %}
+                                    <span class="px-2 py-1 text-xs font-bold bg-gray-100 rounded">{{ p.position_1 or '' }}{% if p.position_1 and p.position_2 %}/{{ p.position_2 }}{% endif %}</span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td class="p-4">
+                                    {% set skill_map = {1: 'Newbie', 2: 'Beginner', 3: 'Intermediate', 4: 'Expert', 5: 'Pro'} %}
+                                    <span class="px-2 py-1 text-xs font-bold rounded {% if p.skill_level >= 4 %}bg-green-100 text-green-700{% elif p.skill_level >= 3 %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ skill_map[p.skill_level] }}
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    {% if p.is_member %}
+                                    <span class="px-2 py-1 text-xs font-bold bg-accent/20 text-accent rounded">Yes</span>
+                                    {% else %}
+                                    <span class="text-gray-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4 text-sm text-gray-600">{{ p.join_date[:10] if p.join_date else '-' }}</td>
+                                <td class="p-4 text-sm text-gray-600">{{ p.last_played[:10] if p.last_played else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    {% if not players %}
+                    <div class="p-12 text-center text-gray-500">
+                        No players yet. Add one above!
+                    </div>
+                    {% endif %}
+
+                    <!-- Pagination -->
+                    {% if pagination.total_pages > 1 %}
+                    <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+                        <span class="text-sm text-gray-500">
+                            Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} - {{ [pagination.page * pagination.per_page, pagination.total] | min }} of {{ pagination.total }}
+                        </span>
+                        <div class="flex gap-2">
+                            {% set page_url = '?search=' ~ filters.search ~ '&position=' ~ filters.position ~ '&skill=' ~ filters.skill ~ '&member=' ~ filters.member ~ '&sort=' ~ filters.sort ~ '&order=' ~ filters.order ~ '&page=' %}
+                            {% if pagination.page > 1 %}
+                            <a href="{{ page_url ~ (pagination.page - 1) }}" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">Prev</a>
+                            {% endif %}
+                            {% for p in range(1, pagination.total_pages + 1) %}
+                                {% if p == 1 or p == pagination.total_pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+                                <a href="{{ page_url ~ p }}" class="px-3 py-1 border rounded {% if p == pagination.page %}bg-accent text-black{% else %}border-gray-300 hover:bg-gray-50{% endif %}">{{ p }}</a>
+                                {% elif p == pagination.page - 2 or p == pagination.page + 2 %}
+                                <span class="px-2">...</span>
+                                {% endif %}
+                            {% endfor %}
+                            {% if pagination.page < pagination.total_pages %}
+                            <a href="{{ page_url ~ (pagination.page + 1) }}" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">Next</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function deletePlayer(playerId, name) {
+            if (!confirm(`Delete player "${name}"? This cannot be undone.`)) return;
+            const res = await fetch(`/manage/players/${playerId}/delete`, { method: 'POST' });
+            if (res.ok) location.reload();
+        }
+
+        // Modal
+        function openPlayerModal(id, name, nickname, pos1, pos2, skill, isMember, contact, instagram, reclub, joinDate) {
+            document.getElementById('modalPlayerId').value = id;
+            document.getElementById('modalName').value = name;
+            document.getElementById('modalNickname').value = nickname;
+            document.getElementById('modalPosition1').value = pos1;
+            document.getElementById('modalPosition2').value = pos2;
+            document.getElementById('modalSkill').value = skill;
+            document.getElementById('modalMember').checked = isMember == 1;
+            document.getElementById('modalContact').value = contact;
+            document.getElementById('modalInstagram').value = instagram;
+            document.getElementById('modalReclub').value = reclub;
+            document.getElementById('modalJoinDate').value = joinDate ? joinDate.substring(0, 10) : '';
+            document.getElementById('playerModal').classList.remove('hidden');
+        }
+
+        function closePlayerModal() {
+            document.getElementById('playerModal').classList.add('hidden');
+        }
+
+        function updatePlayer() {
+            const id = document.getElementById('modalPlayerId').value;
+            const form = document.getElementById('editPlayerForm');
+            form.action = `/manage/players/${id}`;
+            form.submit();
+        }
+
+        function deletePlayerFromModal() {
+            const id = document.getElementById('modalPlayerId').value;
+            const name = document.getElementById('modalName').value;
+            if (confirm(`Delete player "${name}"? This cannot be undone.`)) {
+                fetch(`/manage/players/${id}/delete`, { method: 'POST' })
+                    .then(res => { if (res.ok) location.reload(); });
+            }
+        }
+
+        // Position Pie Chart
+        const positionsAll = {{ stats.positions | tojson }};
+        const positions1 = {{ stats.positions_1 | tojson }};
+        const positions2 = {{ stats.positions_2 | tojson }};
+        let positionChart = null;
+
+        function updatePositionChart() {
+            const filter = document.getElementById('positionFilter').value;
+            let positionData;
+            if (filter === '1') positionData = positions1;
+            else if (filter === '2') positionData = positions2;
+            else positionData = positionsAll;
+
+            const posLabels = Object.keys(positionData);
+            const posValues = Object.values(positionData);
+            const posColors = ['#C9A84C', '#71717A', '#E5C878', '#4B5563', '#9CA3AF'];
+
+            const ctx = document.getElementById('positionChart');
+            if (positionChart) positionChart.destroy();
+
+            if (posLabels.length > 0) {
+                positionChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: posLabels,
+                        datasets: [{
+                            data: posValues,
+                            backgroundColor: posColors
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 12, padding: 8 }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        updatePositionChart();
+    </script>
+
+    <!-- Edit Player Modal -->
+    <div id="playerModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Edit Player</h2>
+                    <button onclick="closePlayerModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="editPlayerForm" method="POST" class="space-y-4">
+                    <input type="hidden" id="modalPlayerId" name="id">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name *</label>
+                            <input type="text" id="modalName" name="name" required class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nickname</label>
+                            <input type="text" id="modalNickname" name="nickname" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Position 1</label>
+                            <select id="modalPosition1" name="position_1" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">-</option>
+                                <option value="PG">PG</option>
+                                <option value="SG">SG</option>
+                                <option value="SF">SF</option>
+                                <option value="PF">PF</option>
+                                <option value="C">C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Position 2</label>
+                            <select id="modalPosition2" name="position_2" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="">-</option>
+                                <option value="PG">PG</option>
+                                <option value="SG">SG</option>
+                                <option value="SF">SF</option>
+                                <option value="PF">PF</option>
+                                <option value="C">C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Join Date</label>
+                            <input type="date" id="modalJoinDate" name="join_date" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Skill</label>
+                            <select id="modalSkill" name="skill_level" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                                <option value="1">Newbie</option>
+                                <option value="2">Beginner</option>
+                                <option value="3">Intermediate</option>
+                                <option value="4">Expert</option>
+                                <option value="5">Pro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contact</label>
+                            <input type="text" id="modalContact" name="contact_no" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Instagram</label>
+                            <input type="text" id="modalInstagram" name="instagram" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reclub</label>
+                            <input type="text" id="modalReclub" name="reclub" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 pt-2">
+                        <input type="checkbox" id="modalMember" name="is_member" class="w-4 h-4 text-accent">
+                        <span class="text-sm">Member</span>
+                    </div>
+                </form>
+            </div>
+            <div class="p-6 border-t border-gray-200 flex justify-between">
+                {% if user.role == 'superadmin' %}
+                <button onclick="deletePlayerFromModal()" class="text-red-600 hover:text-red-700 font-bold">Delete Player</button>
+                {% else %}
+                <div></div>
+                {% endif %}
+                <div class="flex gap-3">
+                    <button onclick="closePlayerModal()" class="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+                    <button onclick="updatePlayer()" class="px-4 py-2 bg-accent text-black font-bold hover:bg-accent-light">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

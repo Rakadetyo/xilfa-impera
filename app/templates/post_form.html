@@ -46,7 +46,7 @@
                 <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
                 <span class="text-sm text-gray-500">/ Admin</span>
             </div>
-            <a href="/admin" class="text-sm text-gray-400 hover:text-accent">← Back to Dashboard</a>
+            <a href="/manage" class="text-sm text-gray-400 hover:text-accent">← Back to Dashboard</a>
         </div>
     </nav>
 
@@ -54,7 +54,7 @@
         <div class="max-w-3xl mx-auto">
             <h1 class="text-4xl font-display mb-8">{{ 'Edit Post' if post else 'New Post' }}</h1>
 
-            <form action="/admin/posts{% if post %}/{{ post.id }}{% endif %}" method="POST" enctype="multipart/form-data" class="space-y-6">
+            <form action="/manage/posts{% if post %}/{{ post.id }}{% endif %}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 <!-- Title -->
                 <div>
                     <label class="block text-sm font-bold mb-2">Title</label>
@@ -158,7 +158,7 @@
                         {{ 'Update Post' if post else 'Create Post' }}
                     </button>
                     <a
-                        href="/admin"
+                        href="/manage"
                         class="px-6 py-4 border-2 border-gray-600 text-gray-400 hover:border-gray-400 hover:text-white transition-colors"
                     >
                         Cancel
@@ -182,7 +182,7 @@
                     const formData = new FormData();
                     formData.append('image', file);
 
-                    fetch(`/admin/posts/${postId}/images`, {
+                    fetch(`/manage/posts/${postId}/images`, {
                         method: 'POST',
                         body: formData
                     })
