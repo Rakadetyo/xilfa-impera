@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
+                    },
+                    borderWidth: {
+                        '3': '3px',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 fixed h-full">
+            <div class="p-6">
+                <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
+                <span class="text-sm text-gray-500 block mt-1">/ Manage</span>
+            </div>
+
+            <nav class="mt-6 px-4">
+                <a href="/manage" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Posts
+                </a>
+                <a href="/manage/users" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    Users
+                </a>
+                <a href="/manage/players" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Players
+                </a>
+                <a href="/manage/members" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Members
+                </a>
+                <a href="/manage/arena" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-accent text-black font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Arena
+                </a>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Coming Soon</p>
+                    <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Games
+                    </span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-64 flex-1">
+            <!-- Top Bar -->
+            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-display">Arena</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                    <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
+                    <form method="POST" action="/manage/logout">
+                        <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-4xl font-display text-accent">{{ stats.arenas_played }}</p>
+                        <p class="text-sm text-gray-500 uppercase tracking-wider">Arena Played</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-4xl font-display text-accent">{{ stats.total }}</p>
+                        <p class="text-sm text-gray-500 uppercase tracking-wider">Total Arenas</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-4xl font-display text-gray-400">{{ stats.total - stats.arenas_played }}</p>
+                        <p class="text-sm text-gray-500 uppercase tracking-wider">Never Played</p>
+                    </div>
+                </div>
+
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-8">
+                    <p class="text-sm text-gray-500 uppercase tracking-wider mb-4">Games per Arena</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {% for a in arena_game_list %}
+                        {% if a.game_count > 0 %}
+                        <div class="flex justify-between items-center bg-gray-50 px-4 py-2 rounded-lg">
+                            <span class="font-bold text-gray-700 truncate">{{ a.location_name }}</span>
+                            <span class="text-xl font-display text-accent">{{ a.game_count }}</span>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Arena Cards -->
+                {% if arenas %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Add New Card -->
+                    <div class="group relative bg-accent text-black rounded-xl overflow-hidden cursor-pointer hover:bg-accent-light transition-colors" onclick="openArenaModal(null)" style="clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));">
+                        <div class="p-8 flex items-center justify-center h-full min-h-[180px]">
+                            <div class="text-6xl font-display transform group-hover:scale-110 transition-transform">+</div>
+                        </div>
+                        <!-- Perforation line -->
+                        <div class="absolute right-3 top-0 bottom-0 w-px border-r-2 border-dashed border-black/20"></div>
+                    </div>
+                    {% for a in arenas %}
+                    <div class="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer" onclick="openArenaModal({{ a.id }}, '{{ a.location_name }}', '{{ a.address or '' }}', {{ a.price }}, '{{ a.contact_person or '' }}')" style="clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));">
+                        <!-- Main section -->
+                        <div class="p-6 pr-16">
+                            <!-- Header -->
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-display tracking-wide">{{ a.location_name }}</h3>
+                            </div>
+
+                            <!-- Address -->
+                            <p class="text-sm text-gray-500 mb-5 pl-13">{{ a.address or '' }}</p>
+
+                            <!-- Price & Game count -->
+                            <div class="flex items-center gap-4">
+                                <div class="inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
+                                    <span class="text-xl font-display text-accent">Rp {{ "{:,.0f}".format(a.price) }}</span>
+                                </div>
+                                <div class="inline-flex items-center gap-1 text-sm text-gray-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="font-display">{{ arena_game_counts[a.id] or 0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stub section -->
+                        <div class="absolute right-0 top-0 bottom-0 w-14 bg-gray-100 border-l-2 border-dashed border-gray-300 flex flex-col items-center justify-center">
+                            <span class="text-xs font-bold text-gray-300 transform rotate-90 whitespace-nowrap">ACCESS</span>
+                        </div>
+
+                        <!-- Perforation line -->
+                        <div class="absolute right-14 top-0 bottom-0 w-px border-r-2 border-dashed border-gray-200"></div>
+
+                        <!-- Contact info at bottom -->
+                        <div class="px-6 pb-4 flex items-center gap-2 text-sm text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            {{ a.contact_person or 'No contact' }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <!-- Empty State -->
+                <div class="group relative bg-accent text-black rounded-2xl overflow-hidden cursor-pointer hover:bg-accent-light transition-all" onclick="openArenaModal(null)" style="clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));">
+                    <div class="p-20 flex items-center justify-center">
+                        <div class="text-9xl font-display transform group-hover:scale-110 transition-transform">+</div>
+                    </div>
+                    <!-- Perforation line -->
+                    <div class="absolute right-4 top-0 bottom-0 w-px border-r-2 border-dashed border-black/20"></div>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="arenaModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Arena</h2>
+
+            <!-- Google Maps Import -->
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Import from Google Maps</label>
+                <div class="flex gap-2">
+                    <input type="text" id="googleMapsUrl" placeholder="Paste Google Maps URL..." class="flex-1 bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-accent">
+                    <button type="button" onclick="parseGoogleMapsUrlInModal()" class="bg-gray-200 text-gray-700 px-3 py-2 text-sm hover:bg-gray-300">Import</button>
+                </div>
+            </div>
+
+            <form id="arenaForm" method="POST" action="/manage/arena" class="space-y-4">
+                <input type="hidden" name="id" id="arenaId">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Location Name *</label>
+                    <input type="text" name="location_name" id="arenaName" required class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Address</label>
+                    <input type="text" name="address" id="arenaAddress" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Price</label>
+                    <input type="number" name="price" id="arenaPrice" value="0" min="0" step="1000" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Contact Person</label>
+                    <input type="text" name="contact_person" id="arenaContact" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                </div>
+                <div class="flex gap-2 justify-between pt-2">
+                    <button type="button" id="deleteBtn" onclick="deleteCurrentArena()" class="px-4 py-2 text-red-600 hover:bg-red-50 hidden">Delete</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeArenaModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
+                        <button type="submit" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openArenaModal(id, name, address, price, contact) {
+            const modal = document.getElementById('arenaModal');
+            const form = document.getElementById('arenaForm');
+            const title = document.getElementById('modalTitle');
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            if (id) {
+                title.textContent = 'Edit Arena';
+                form.action = '/manage/arena/' + id;
+                document.getElementById('arenaId').value = id;
+                document.getElementById('arenaName').value = name;
+                document.getElementById('arenaAddress').value = address;
+                document.getElementById('arenaPrice').value = price;
+                document.getElementById('arenaContact').value = contact;
+                deleteBtn.classList.remove('hidden');
+            } else {
+                title.textContent = 'Add Arena';
+                form.action = '/manage/arena';
+                form.reset();
+                document.getElementById('arenaId').value = '';
+                document.getElementById('arenaPrice').value = 0;
+                deleteBtn.classList.add('hidden');
+            }
+
+            document.getElementById('googleMapsUrl').value = '';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function deleteCurrentArena() {
+            const id = document.getElementById('arenaId').value;
+            const name = document.getElementById('arenaName').value;
+            if (!id) return;
+            if (!confirm(`Delete arena "${name}"?`)) return;
+            fetch(`/manage/arena/${id}/delete`, { method: 'POST' }).then(() => location.reload());
+        }
+
+        async function parseGoogleMapsUrlInModal() {
+            const url = document.getElementById('googleMapsUrl').value.trim();
+            if (!url) return;
+
+            let locationName = '';
+            let address = '';
+
+            try {
+                if (url.includes('share.google/') || url.includes('maps.app.goo.gl')) {
+                    const res = await fetch(`/api/resolve-google-maps?url=${encodeURIComponent(url)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.error) {
+                            alert('Could not resolve URL: ' + data.error);
+                            return;
+                        }
+                        locationName = data.location_name;
+                        address = data.address;
+                    } else {
+                        alert('Failed to resolve short URL');
+                        return;
+                    }
+                } else {
+                    const urlObj = new URL(url);
+                    const path = urlObj.pathname;
+                    if (path.includes('/place/')) {
+                        const placeMatch = path.match(/\/place\/([^/@]+)/);
+                        if (placeMatch) {
+                            locationName = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+                        }
+                    }
+                    const query = urlObj.searchParams;
+                    if (query.has('q')) {
+                        const q = decodeURIComponent(query.get('q'));
+                        if (q.includes(',')) {
+                            address = q;
+                        }
+                    }
+                }
+
+                if (locationName) {
+                    document.getElementById('arenaName').value = locationName.replace(/[-_]/g, ' ').trim();
+                }
+                if (address) {
+                    document.getElementById('arenaAddress').value = address.replace(/[-_]/g, ' ').trim();
+                }
+
+                document.getElementById('googleMapsUrl').value = '';
+                document.getElementById('arenaPrice').focus();
+
+            } catch (e) {
+                alert('Invalid URL. Please paste a valid Google Maps link.');
+            }
+        }
+
+        function closeArenaModal() {
+            const modal = document.getElementById('arenaModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function deleteArena(id, name) {
+            if (!confirm(`Delete arena "${name}"?`)) return;
+            const res = await fetch(`/manage/arena/${id}/delete`, { method: 'POST' });
+            if (res.ok) location.reload();
+        }
+
+        document.getElementById('arenaModal').addEventListener('click', function(e) {
+            if (e.target === this) closeArenaModal();
+        });
+    </script>
+</body>
+</html>
