@@ -185,7 +185,7 @@
                                 <td class="p-4 text-gray-500">{{ m.member_end_date or 'Ongoing' }}</td>
                                 <td class="p-4 text-gray-500">{{ m.membership_price or 0 }}</td>
                                 <td class="p-4">
-                                    <span class="px-2 py-1 text-xs font-bold rounded {% if m.is_paid %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    <span onclick="event.stopPropagation(); togglePaid({{ m.id }}, {{ m.is_paid }})" class="cursor-pointer px-2 py-1 text-xs font-bold rounded hover:opacity-80 {% if m.is_paid %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
                                         {{ 'Yes' if m.is_paid else 'No' }}
                                     </span>
                                 </td>
@@ -236,7 +236,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Price</label>
-                    <input type="number" name="membership_price" id="memberPrice" value="0" min="0" step="1000" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                    <input type="number" name="membership_price" id="memberPrice" placeholder="0" min="0" step="1000" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                 </div>
                 <div>
                     <label class="flex items-center gap-2">
@@ -313,6 +313,16 @@
         document.getElementById('memberModal').addEventListener('click', function(e) {
             if (e.target === this) closeMemberModal();
         });
+
+        async function togglePaid(id, currentPaid) {
+            const newPaid = currentPaid ? 0 : 1;
+            const res = await fetch(`/manage/members/${id}/toggle-paid`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_paid: newPaid })
+            });
+            if (res.ok) location.reload();
+        }
     </script>
 </body>
 </html>
