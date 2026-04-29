@@ -149,6 +149,18 @@ def init_db():
         )
     """)
 
+    # Add role column to users if not exists
+    cursor.execute("PRAGMA table_info(users)")
+    user_columns = [row[1] for row in cursor.fetchall()]
+    if 'role' not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'")
+
+    # Add membership_price to member if not exists
+    cursor.execute("PRAGMA table_info(member)")
+    member_columns = [row[1] for row in cursor.fetchall()]
+    if 'membership_price' not in member_columns:
+        cursor.execute("ALTER TABLE member ADD COLUMN membership_price REAL DEFAULT 0")
+
     conn.commit()
     conn.close()
 
