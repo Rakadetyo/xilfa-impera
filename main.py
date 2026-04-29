@@ -284,8 +284,11 @@ async def list_players(request: Request):
         params.append(int(filter_skill))
 
     if filter_member != "":
-        query += " AND p.is_member = ?"
-        params.append(1 if filter_member == "1" else 0)
+        has_member = 1 if filter_member == "1" else 0
+        if has_member:
+            query += " AND EXISTS (SELECT 1 FROM member m WHERE m.player_id = p.id AND m.member_start_date <= date('now') AND (m.member_end_date IS NULL OR m.member_end_date >= date('now')))"
+        else:
+            query += " AND NOT EXISTS (SELECT 1 FROM member m WHERE m.player_id = p.id AND m.member_start_date <= date('now') AND (m.member_end_date IS NULL OR m.member_end_date >= date('now')))"
 
     # Handle last_played sort (needs subquery)
     if sort_by == "last_played":
