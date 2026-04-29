@@ -75,6 +75,12 @@
                     <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Coming Soon</p>
                     <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Report
+                    </span>
+                    <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
@@ -435,19 +441,24 @@
 
             const posLabels = Object.keys(positionData);
             const posValues = Object.values(positionData);
-            const posColors = ['#C9A84C', '#71717A', '#E5C878', '#4B5563', '#9CA3AF'];
+            const posColors = [
+                '#E63946', '#457B9D', '#2A9D8F', '#E9C46A', '#F4A261',
+                '#9B5DE5', '#00F5D4', '#FEE440', '#FF6B6B', '#4ECDC4',
+                '#845EC2', '#D65DB1', '#FF6F91', '#FF9671', '#FFC75F'
+            ];
 
             const ctx = document.getElementById('positionChart');
             if (positionChart) positionChart.destroy();
 
             if (posLabels.length > 0) {
+                const total = posValues.reduce((a, b) => a + b, 0);
                 positionChart = new Chart(ctx, {
                     type: 'pie',
                     data: {
                         labels: posLabels,
                         datasets: [{
                             data: posValues,
-                            backgroundColor: posColors
+                            backgroundColor: posColors.slice(0, posLabels.length)
                         }]
                     },
                     options: {
@@ -455,9 +466,42 @@
                             legend: {
                                 position: 'bottom',
                                 labels: { boxWidth: 12, padding: 8 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${context.label}: ${value} (${percentage}%)`;
+                                    }
+                                }
                             }
                         }
-                    }
+                    },
+                    plugins: [{
+                        id: 'pieLabels',
+                        beforeDraw: function(chart) {
+                            const ctx = chart.ctx;
+                            const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            chart.data.datasets[0].data.forEach(function(value, i) {
+                                const meta = chart.getDatasetMeta(0);
+                                const arc = meta.data[i];
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                ctx.save();
+                                ctx.fillStyle = '#fff';
+                                ctx.strokeStyle = '#000';
+                                ctx.lineWidth = 2;
+                                ctx.font = 'bold 12px Inter';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                const centerX = arc.x;
+                                const centerY = arc.y;
+                                ctx.fillText(percentage + '%', centerX, centerY);
+                                ctx.strokeText(percentage + '%', centerX, centerY);
+                                ctx.restore();
+                            });
+                        }
+                    }]
                 });
             }
         }

@@ -284,8 +284,11 @@ async def list_players(request: Request):
         params.append(int(filter_skill))
 
     if filter_member != "":
-        query += " AND p.is_member = ?"
-        params.append(1 if filter_member == "1" else 0)
+        has_member = 1 if filter_member == "1" else 0
+        if has_member:
+            query += " AND EXISTS (SELECT 1 FROM member m WHERE m.player_id = p.id AND m.member_start_date <= date('now') AND (m.member_end_date IS NULL OR m.member_end_date >= date('now')))"
+        else:
+            query += " AND NOT EXISTS (SELECT 1 FROM member m WHERE m.player_id = p.id AND m.member_start_date <= date('now') AND (m.member_end_date IS NULL OR m.member_end_date >= date('now')))"
 
     # Handle last_played sort (needs subquery)
     if sort_by == "last_played":
@@ -832,6 +835,227 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
     conn.close()
 
     return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
+
+# --- WhatsApp Import ---
+@app.post("/api/import-whatsapp-members")
+async def import_whatsapp_members(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    chat_text = data.get("chat_text", "")
+    filter_month = data.get("month")
+    filter_year = data.get("year")
+
+    import re
+    from datetime import datetime
+    import calendar
+
+    # Find the member list section
+    lines = chat_text.split('\n')
+    members = []
+
+    # Pattern: number. name price or number. name  price
+    member_pattern = re.compile(r'^\d+[.)\s]+(.+?)\s+(\d+)\s*$')
+
+    for line in lines:
+        line = line.strip()
+        # Remove emoji/特殊characters at start
+        line = re.sub(r'^[​-‏ - ]', '', line)
+        match = member_pattern.match(line)
+        if match:
+            name = match.group(1).strip()
+            # Remove any trailing punctuation
+            name = re.sub(r'[^\w\s]', '', name).strip()
+            price_thousands = int(match.group(2))
+            price = price_thousands * 1000
+            members.append((name, price))
+
+    if not members:
+        return JSONResponse({"error": "No members found in chat text. Make sure the format is: 1. Name 250"}, status_code=400)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get first and last Saturday of the month
+    last_day = calendar.monthrange(filter_year, filter_month)[1]
+
+    first_saturday = None
+    for day in range(1, 8):
+        if datetime(filter_year, filter_month, day).weekday() == 5:
+            first_saturday = day
+            break
+
+    last_saturday = None
+    for day in range(last_day, last_day - 7, -1):
+        if datetime(filter_year, filter_month, day).weekday() == 5:
+            last_saturday = day
+            break
+
+    start_date = f"{filter_year}-{filter_month:02d}-{first_saturday:02d}"
+    end_date = f"{filter_year}-{filter_month:02d}-{last_saturday:02d}"
+
+    # Build preview list
+    preview = []
+    for name, price in members:
+        # Find player by name (case insensitive)
+        cursor.execute("SELECT id, name, nickname FROM player WHERE LOWER(name) = LOWER(?)", (name,))
+        player = cursor.fetchone()
+
+        if not player:
+            # Try nickname
+            cursor.execute("SELECT id, name, nickname FROM player WHERE LOWER(nickname) = LOWER(?)", (name,))
+            player = cursor.fetchone()
+
+        if player:
+            # Check if member already exists for this period
+            cursor.execute("""
+                SELECT id FROM member
+                WHERE player_id = ? AND member_start_date = ? AND member_end_date = ?
+            """, (player["id"], start_date, end_date))
+            existing = cursor.fetchone()
+
+            preview.append({
+                "name": name,
+                "found": True,
+                "player_id": player["id"],
+                "price": price,
+                "existing": existing is not None,
+                "display_name": player["name"]
+            })
+        else:
+            preview.append({
+                "name": name,
+                "found": False,
+                "player_id": None,
+                "price": price,
+                "existing": False,
+                "display_name": name
+            })
+
+    conn.close()
+
+    return JSONResponse({
+        "preview": preview,
+        "start_date": start_date,
+        "end_date": end_date
+    })
+
+@app.post("/api/import-whatsapp-members/confirm")
+async def import_whatsapp_members_confirm(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    members_data = data.get("members", [])
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+
+    if not members_data or not start_date or not end_date:
+        return JSONResponse({"error": "Missing data"}, status_code=400)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    imported = 0
+    for member in members_data:
+        if not member.get("found"):
+            continue
+
+        player_id = member.get("player_id")
+        price = member.get("price")
+
+        # Check if member already exists for this period
+        cursor.execute("""
+            SELECT id FROM member
+            WHERE player_id = ? AND member_start_date = ? AND member_end_date = ?
+        """, (player_id, start_date, end_date))
+        existing = cursor.fetchone()
+
+        if existing:
+            # Update existing
+            cursor.execute("""
+                UPDATE member SET membership_price = ?, is_paid = 0, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (price, existing["id"]))
+        else:
+            # Insert new
+            cursor.execute("""
+                INSERT INTO member (player_id, member_start_date, member_end_date, membership_price, is_paid)
+                VALUES (?, ?, ?, ?, 0)
+            """, (player_id, start_date, end_date, price))
+        imported += 1
+
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"imported": imported})
+
+# --- Generate WhatsApp Chat ---
+@app.get("/api/generate-whatsapp-chat")
+async def generate_whatsapp_chat(request: Request, month: int, year: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    import calendar
+    from datetime import datetime
+
+    # Get first and last Saturday
+    last_day = calendar.monthrange(year, month)[1]
+
+    first_saturday = None
+    for day in range(1, 8):
+        if datetime(year, month, day).weekday() == 5:
+            first_saturday = day
+            break
+
+    last_saturday = None
+    for day in range(last_day, last_day - 7, -1):
+        if datetime(year, month, day).weekday() == 5:
+            last_saturday = day
+            break
+
+    start_date = f"{year}-{month:02d}-{first_saturday:02d}"
+    end_date = f"{year}-{month:02d}-{last_saturday:02d}"
+
+    month_names = ["", "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"]
+    month_name = month_names[month]
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get members active in this month
+    first_of_month = f"{year}-{month:02d}-01"
+    last_of_month = f"{year}-{month:02d}-{last_day}"
+
+    cursor.execute("""
+        SELECT m.id, m.player_id, m.membership_price, m.is_paid, p.name
+        FROM member m
+        JOIN player p ON m.player_id = p.id
+        WHERE m.member_start_date <= ? AND (m.member_end_date IS NULL OR m.member_end_date >= ?)
+        ORDER BY p.name ASC
+    """, (last_of_month, first_of_month))
+
+    members = cursor.fetchall()
+    conn.close()
+
+    # Build simple list: name price
+    lines = []
+    for i, m in enumerate(members, 1):
+        name = m["name"]
+        price_k = int(m["membership_price"] // 1000)
+        is_paid = m["is_paid"]
+        if is_paid:
+            lines.append(f"{i}. {name} 💸")
+        else:
+            lines.append(f"{i}. {name} {price_k}")
+
+    return JSONResponse({
+        "chat_text": "\n".join(lines)
+    })
 
 # --- Arena ---
 @app.get("/api/resolve-google-maps")
