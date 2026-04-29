@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from passlib.hash import bcrypt
+import bcrypt
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -34,10 +34,13 @@ def get_current_user(request: Request):
         return None
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT id, username, role FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
     return user
+
+def is_superadmin(user):
+    return user and user.get("role") == "superadmin"
 
 # --- Public Routes ---
 @app.get("/", response_class=HTMLResponse)
@@ -112,11 +115,11 @@ async def login(request: Request, username: str = Form(...), password: str = For
     user = cursor.fetchone()
     conn.close()
 
-    if not user or not bcrypt.verify(password, user["password_hash"]):
+    if not user or not bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
         return RedirectResponse("/masukgan?error=Invalid credentials", status_code=302)
 
     request.session["user_id"] = user["id"]
-    return RedirectResponse("/admin", status_code=302)
+    return RedirectResponse("/manage", status_code=302)
 
 # --- Register Routes ---
 @app.get("/joinbang", response_class=HTMLResponse)
@@ -137,7 +140,7 @@ async def register(request: Request, username: str = Form(...), password: str = 
         conn.close()
         return RedirectResponse("/joinbang?error=Username already taken", status_code=302)
 
-    password_hash = bcrypt.hash(password)
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     cursor.execute(
         "INSERT INTO users (username, password_hash) VALUES (?, ?)",
         (username, password_hash)
@@ -147,13 +150,85 @@ async def register(request: Request, username: str = Form(...), password: str = 
 
     return RedirectResponse("/masukgan?registered=1", status_code=302)
 
-@app.post("/admin/logout")
+@app.post("/manage/logout")
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=302)
 
+# --- User Management Routes ---
+@app.get("/manage/users", response_class=HTMLResponse)
+async def list_users(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC")
+    users = cursor.fetchall()
+    conn.close()
+
+    return templates.TemplateResponse(request, "users.html", {
+        "request": request,
+        "user": user,
+        "users": users
+    })
+
+@app.post("/manage/users")
+async def create_user(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form("admin")):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    # Only superadmin can create superadmin
+    if role == "superadmin" and not is_superadmin(user):
+        return RedirectResponse("/manage/users?error=Only superadmin can create superadmin users", status_code=302)
+
+    if len(password) < 6:
+        return RedirectResponse("/manage/users?error=Password must be at least 6 characters", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+    if cursor.fetchone():
+        conn.close()
+        return RedirectResponse("/manage/users?error=Username already taken", status_code=302)
+
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    cursor.execute(
+        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        (username, password_hash, role)
+    )
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse("/manage/users?success=User created", status_code=302)
+
+@app.post("/manage/users/{user_id}/delete")
+async def delete_user(request: Request, user_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    # Only superadmin can delete
+    if not is_superadmin(user):
+        return RedirectResponse("/manage/users?error=Only superadmin can delete users", status_code=302)
+
+    # Cannot delete self
+    if user["id"] == user_id:
+        return RedirectResponse("/manage/users?error=Cannot delete yourself", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse("/manage/users?success=User deleted", status_code=302)
+
 # --- Admin Routes ---
-@app.get("/admin", response_class=HTMLResponse)
+@app.get("/manage", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     user = get_current_user(request)
     if not user:
@@ -185,14 +260,14 @@ async def admin_dashboard(request: Request):
         "stats": {"total": total, "drafts": drafts, "published": published}
     })
 
-@app.get("/admin/new", response_class=HTMLResponse)
+@app.get("/manage/new", response_class=HTMLResponse)
 async def new_post_page(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
     return templates.TemplateResponse(request, "post_form.html", {"request": request, "post": None, "user": user})
 
-@app.post("/admin/posts")
+@app.post("/manage/posts")
 async def create_post(request: Request, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
     user = get_current_user(request)
     if not user:
@@ -208,9 +283,9 @@ async def create_post(request: Request, title: str = Form(...), body: str = Form
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/admin/posts/{post_id}", status_code=302)
+    return RedirectResponse(f"/manage/posts/{post_id}", status_code=302)
 
-@app.get("/admin/posts/{post_id}", response_class=HTMLResponse)
+@app.get("/manage/posts/{post_id}", response_class=HTMLResponse)
 async def edit_post_page(request: Request, post_id: int):
     user = get_current_user(request)
     if not user:
@@ -236,7 +311,7 @@ async def edit_post_page(request: Request, post_id: int):
         "user": user
     })
 
-@app.post("/admin/posts/{post_id}")
+@app.post("/manage/posts/{post_id}")
 async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
     user = get_current_user(request)
     if not user:
@@ -251,9 +326,9 @@ async def update_post(request: Request, post_id: int, title: str = Form(...), bo
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/admin/posts/{post_id}", status_code=302)
+    return RedirectResponse(f"/manage/posts/{post_id}", status_code=302)
 
-@app.post("/admin/posts/{post_id}/images")
+@app.post("/manage/posts/{post_id}/images")
 async def upload_image(request: Request, post_id: int, image: UploadFile = File(...)):
     user = get_current_user(request)
     if not user:
@@ -285,7 +360,7 @@ async def upload_image(request: Request, post_id: int, image: UploadFile = File(
 
     return JSONResponse({"filename": filename, "id": cursor.lastrowid})
 
-@app.post("/admin/posts/{post_id}/delete")
+@app.post("/manage/posts/{post_id}/delete")
 async def delete_post(request: Request, post_id: int):
     user = get_current_user(request)
     if not user:
@@ -306,9 +381,9 @@ async def delete_post(request: Request, post_id: int):
     conn.commit()
     conn.close()
 
-    return RedirectResponse("/admin", status_code=302)
+    return RedirectResponse("/manage", status_code=302)
 
-@app.post("/admin/posts/{post_id}/toggle")
+@app.post("/manage/posts/{post_id}/toggle")
 async def toggle_status(request: Request, post_id: int):
     user = get_current_user(request)
     if not user:

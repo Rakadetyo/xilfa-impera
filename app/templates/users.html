@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — Impera</title>
+    <title>Users — Impera</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -38,13 +38,13 @@
             </div>
 
             <nav class="mt-6 px-4">
-                <a href="/manage" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-accent text-black font-bold">
+                <a href="/manage" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
                     Posts
                 </a>
-                <a href="/manage/users" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                <a href="/manage/users" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-accent text-black font-bold">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
@@ -87,10 +87,10 @@
         <main class="ml-64 flex-1">
             <!-- Top Bar -->
             <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-display">Dashboard</h1>
+                <h1 class="text-2xl font-display">Users</h1>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-600">Hi, <strong>{{ user.username }}</strong></span>
-                    <a href="/manage/users" class="text-sm text-accent hover:underline">Manage Users</a>
+                    <span class="text-sm text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                    <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
                     </form>
@@ -98,83 +98,97 @@
             </header>
 
             <div class="p-8">
-                <!-- Stats -->
-                <div class="grid grid-cols-3 gap-4 mb-8">
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                        <p class="text-4xl font-display text-accent">{{ stats.total }}</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Total Posts</p>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                        <p class="text-4xl font-display text-gray-600">{{ stats.drafts }}</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Drafts</p>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                        <p class="text-4xl font-display text-green-600">{{ stats.published }}</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Published</p>
-                    </div>
+                <!-- Messages -->
+                {% if request.query_params.get('error') %}
+                <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 mb-6 rounded-lg">
+                    {{ request.query_params.get('error') }}
+                </div>
+                {% endif %}
+                {% if request.query_params.get('success') %}
+                <div class="bg-green-50 border border-green-200 text-green-600 px-4 py-3 mb-6 rounded-lg">
+                    {{ request.query_params.get('success') }}
+                </div>
+                {% endif %}
+
+                <!-- Create User Form -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
+                    <h2 class="text-lg font-bold mb-4">Create New User</h2>
+                    <form action="/manage/users" method="POST" class="flex gap-4">
+                        <input
+                            type="text"
+                            name="username"
+                            required
+                            placeholder="Username"
+                            class="flex-1 bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent"
+                        >
+                        <input
+                            type="password"
+                            name="password"
+                            required
+                            placeholder="Password (min 6 chars)"
+                            class="flex-1 bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent"
+                        >
+                        <select
+                            name="role"
+                            class="bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent"
+                        >
+                            <option value="admin">admin</option>
+                            {% if user.role == 'superadmin' %}
+                            <option value="superadmin">superadmin</option>
+                            {% endif %}
+                        </select>
+                        <button
+                            type="submit"
+                            class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light transition-colors"
+                        >
+                            Create
+                        </button>
+                    </form>
                 </div>
 
-                <!-- Actions -->
-                <div class="flex gap-4 mb-6">
-                    <a href="/manage/new" class="bg-accent text-black font-bold px-6 py-3 hover:bg-accent-light transition-colors">
-                        + New Post
-                    </a>
-                    <a href="/manage/users" class="border-2 border-gray-300 text-gray-600 font-bold px-6 py-3 hover:bg-gray-50 transition-colors">
-                        Manage Users
-                    </a>
-                    <a href="/" class="border-2 border-gray-300 text-gray-600 font-bold px-6 py-3 hover:bg-gray-50 transition-colors">
-                        View Site
-                    </a>
-                </div>
-
-                <!-- Posts Table -->
+                <!-- Users Table -->
                 <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Title</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Author</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Images</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Date</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Status</th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">ID</th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Username</th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Role</th>
+                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Created</th>
                                 <th class="text-right p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            {% for post in posts %}
+                            {% for u in users %}
                             <tr class="hover:bg-gray-50">
-                                <td class="p-4 font-bold">{{ post.title }}</td>
-                                <td class="p-4 text-gray-500">{{ post.username }}</td>
-                                <td class="p-4 text-gray-500">{{ post.image_count }}</td>
-                                <td class="p-4 text-gray-400 text-sm">{{ post.created_at[:10] }}</td>
+                                <td class="p-4 text-gray-500">{{ u.id }}</td>
+                                <td class="p-4 font-bold">{{ u.username }}</td>
                                 <td class="p-4">
-                                    <span class="px-3 py-1 text-xs font-bold uppercase tracking-widest {% if post.status == 'published' %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">
-                                        {{ post.status }}
+                                    <span class="px-2 py-1 text-xs font-bold rounded {% if u.role == 'superadmin' %}bg-purple-100 text-purple-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ u.role }}
                                     </span>
                                 </td>
+                                <td class="p-4 text-gray-400">{{ u.created_at[:10] }}</td>
                                 <td class="p-4 text-right">
-                                    <div class="flex justify-end gap-2">
-                                        <button
-                                            onclick="toggleStatus({{ post.id }})"
-                                            class="px-3 py-1 text-xs font-bold {% if post.status == 'published' %}text-yellow-600 hover:text-yellow-700{% else %}text-green-600 hover:text-green-700{% endif %}"
-                                        >
-                                            {{ 'Unpublish' if post.status == 'published' else 'Publish' }}
-                                        </button>
-                                        <a href="/manage/posts/{{ post.id }}" class="px-3 py-1 text-xs font-bold text-blue-600 hover:text-blue-700">Edit</a>
-                                        <button
-                                            onclick="deletePost({{ post.id }})"
-                                            class="px-3 py-1 text-xs font-bold text-red-600 hover:text-red-700"
-                                        >Delete</button>
-                                    </div>
+                                    {% if user.role == 'superadmin' and u.id != user.id %}
+                                    <button
+                                        onclick="deleteUser({{ u.id }}, '{{ u.username }}')"
+                                        class="px-3 py-1 text-xs font-bold text-red-600 hover:text-red-700"
+                                    >Delete</button>
+                                    {% elif u.id == user.id %}
+                                    <span class="text-gray-400 text-xs">(you)</span>
+                                    {% else %}
+                                    <span class="text-gray-400 text-xs">-</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
 
-                    {% if not posts %}
+                    {% if not users %}
                     <div class="p-12 text-center text-gray-500">
-                        No posts yet. <a href="/manage/new" class="text-accent hover:underline">Create one!</a>
+                        No users yet.
                     </div>
                     {% endif %}
                 </div>
@@ -183,15 +197,9 @@
     </div>
 
     <script>
-        async function toggleStatus(postId) {
-            if (!confirm('Toggle post status?')) return;
-            const res = await fetch(`/manage/posts/${postId}/toggle`, { method: 'POST' });
-            if (res.ok) location.reload();
-        }
-
-        async function deletePost(postId) {
-            if (!confirm('Delete this post? This cannot be undone.')) return;
-            const res = await fetch(`/manage/posts/${postId}/delete`, { method: 'POST' });
+        async function deleteUser(userId, username) {
+            if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+            const res = await fetch(`/manage/users/${userId}/delete`, { method: 'POST' });
             if (res.ok) location.reload();
         }
     </script>
