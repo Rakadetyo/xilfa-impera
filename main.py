@@ -685,7 +685,7 @@ async def members_page(request: Request):
         WHERE (m.member_start_date <= ?)
           AND (m.member_end_date IS NULL OR m.member_end_date >= ?)
         ORDER BY p.name ASC
-        LIMIT 10
+        LIMIT 15
     """, (last_day.isoformat(), first_day.isoformat()))
 
     members = cursor.fetchall()
@@ -779,8 +779,8 @@ async def members_page(request: Request):
 
     conn.close()
 
-    # Pad to 10 rows if empty
-    while len(members) < 10:
+    # Pad to 15 rows if empty
+    while len(members) < 15:
         members.append(None)
 
     # Generate month/year options
