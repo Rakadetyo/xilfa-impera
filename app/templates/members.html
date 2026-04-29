@@ -74,6 +74,12 @@
                     <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Coming Soon</p>
                     <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Report
+                    </span>
+                    <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
@@ -140,24 +146,62 @@
                 </div>
 
                 <!-- Filter -->
-                <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
-                    <form method="GET" action="/manage/members" class="flex justify-center gap-4 items-center">
+                <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+                    <div class="flex justify-center gap-4 items-center">
                         <a href="/manage/members?month={{ 12 if filter_month == 1 else filter_month - 1 }}&year={{ filter_year if filter_month != 1 else filter_year - 1 }}" class="p-2 hover:bg-gray-100 rounded-lg">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </a>
-                        <span class="text-xl font-display min-w-[180px] text-center">
+                        <button type="button" onclick="openDatePickerModal()" class="text-xl font-display min-w-[180px] text-center hover:text-accent">
                             {% for m, name in months %}
                             {% if m == filter_month %}{{ name }}{% endif %}
                             {% endfor %} {{ filter_year }}
-                        </span>
+                        </button>
                         <a href="/manage/members?month={{ 1 if filter_month == 12 else filter_month + 1 }}&year={{ filter_year if filter_month != 12 else filter_year + 1 }}" class="p-2 hover:bg-gray-100 rounded-lg">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </a>
-                    </form>
+                    </div>
+                </div>
+
+                <!-- Date Picker Modal -->
+                <div id="datePickerModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+                    <div class="bg-white rounded-lg p-6 w-full max-w-sm mx-4">
+                        <h2 class="text-xl font-bold mb-4">Select Month & Year</h2>
+                        <form method="GET" action="/manage/members" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Month</label>
+                                <select name="month" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                                    {% for m, name in months %}
+                                    <option value="{{ m }}" {% if m == filter_month %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Year</label>
+                                <select name="year" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                                    {% for y in years %}
+                                    <option value="{{ y }}" {% if y == filter_year %}selected{% endif %}>{{ y }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="flex gap-2 justify-end pt-2">
+                                <button type="button" onclick="closeDatePickerModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
+                                <button type="submit" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Go</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-lg font-display text-gray-600">
+                        Members List
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="generateWhatsAppChat()" class="bg-gray-200 text-gray-700 px-4 py-2 text-sm font-bold hover:bg-gray-300 rounded-lg">Generate WhatsApp Chat</button>
+                        <button type="button" onclick="openWhatsAppModal()" class="bg-accent text-black px-4 py-2 text-sm font-bold hover:bg-accent-light rounded-lg">Import from WhatsApp</button>
+                    </div>
                 </div>
 
                 <!-- Members Table -->
@@ -183,7 +227,7 @@
                                 <td class="p-4 text-gray-500">{{ m.last_member_date or '-' }}</td>
                                 <td class="p-4 text-gray-500">{{ m.member_start_date or '-' }}</td>
                                 <td class="p-4 text-gray-500">{{ m.member_end_date or 'Ongoing' }}</td>
-                                <td class="p-4 text-gray-500">{{ m.membership_price or 0 }}</td>
+                                <td class="p-4 text-gray-500">{{ (m.membership_price or 0)|int }}</td>
                                 <td class="p-4">
                                     <span onclick="event.stopPropagation(); togglePaid({{ m.id }}, {{ m.is_paid }})" class="cursor-pointer px-2 py-1 text-xs font-bold rounded hover:opacity-80 {% if m.is_paid %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
                                         {{ 'Yes' if m.is_paid else 'No' }}
@@ -249,6 +293,48 @@
                     <button type="submit" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Save</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- WhatsApp Import Modal -->
+    <div id="whatsappModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
+            <h2 class="text-xl font-bold mb-4">Import from WhatsApp Chat</h2>
+            <p class="text-sm text-gray-500 mb-4">Paste the WhatsApp message containing the member list. The system will parse names and prices automatically.</p>
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Chat Text</label>
+                <textarea id="whatsappChat" rows="12" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent font-mono text-sm" placeholder="Paste WhatsApp chat here..."></textarea>
+            </div>
+            <div class="flex gap-2 justify-end">
+                <button type="button" onclick="closeWhatsAppModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
+                <button type="button" onclick="previewWhatsApp()" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Preview Modal -->
+    <div id="whatsappPreviewModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4">Import Preview</h2>
+            <div id="previewContent" class="mb-4"></div>
+            <div class="flex gap-2 justify-end">
+                <button type="button" onclick="closeWhatsAppPreviewModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
+                <button type="button" onclick="confirmWhatsAppImport()" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Confirm Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate WhatsApp Modal -->
+    <div id="generateWhatsappModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
+            <h2 class="text-xl font-bold mb-4">Generate WhatsApp Chat</h2>
+            <div class="mb-4">
+                <textarea id="generatedWhatsappChat" rows="15" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent font-mono text-sm"></textarea>
+            </div>
+            <div class="flex gap-2 justify-end">
+                <button type="button" onclick="closeGenerateWhatsAppModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Close</button>
+                <button type="button" onclick="copyWhatsAppChat()" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Copy to Clipboard</button>
+            </div>
         </div>
     </div>
 
@@ -323,6 +409,152 @@
             });
             if (res.ok) location.reload();
         }
+
+        function openDatePickerModal() {
+            const modal = document.getElementById('datePickerModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDatePickerModal() {
+            const modal = document.getElementById('datePickerModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('datePickerModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeDatePickerModal();
+        });
+
+        function openWhatsAppModal() {
+            const modal = document.getElementById('whatsappModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeWhatsAppModal() {
+            const modal = document.getElementById('whatsappModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('whatsappModal').addEventListener('click', function(e) {
+            if (e.target === this) closeWhatsAppModal();
+        });
+
+        let whatsappPreviewData = null;
+
+        async function previewWhatsApp() {
+            const chatText = document.getElementById('whatsappChat').value;
+            if (!chatText.trim()) {
+                alert('Please paste the WhatsApp chat text');
+                return;
+            }
+
+            const res = await fetch('/api/import-whatsapp-members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_text: chatText,
+                    month: {{ filter_month }},
+                    year: {{ filter_year }}
+                })
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+
+            whatsappPreviewData = data;
+
+            const content = document.getElementById('previewContent');
+            let html = '<table class="w-full text-sm"><thead><tr class="bg-gray-50"><th class="p-2 text-left">Name</th><th class="p-2 text-left">Price</th><th class="p-2 text-left">Status</th></tr></thead><tbody>';
+
+            let foundCount = 0;
+            let notFoundCount = 0;
+
+            for (const m of data.preview) {
+                const status = m.found
+                    ? (m.existing ? '<span class="text-orange-600">Update</span>' : '<span class="text-green-600">New</span>')
+                    : '<span class="text-red-600 font-bold">Not Found</span>';
+                const rowClass = m.found ? '' : 'bg-red-50';
+                html += `<tr class="${rowClass}"><td class="p-2">${m.display_name}</td><td class="p-2">${m.price.toLocaleString()}</td><td class="p-2">${status}</td></tr>`;
+                if (m.found) foundCount++; else notFoundCount++;
+            }
+            html += '</tbody></table>';
+            html += `<p class="mt-4 text-sm">Found: ${foundCount} | Not Found: ${notFoundCount}</p>`;
+            html += `<p class="text-xs text-gray-500">Period: ${data.start_date} to ${data.end_date}</p>`;
+
+            content.innerHTML = html;
+
+            const modal = document.getElementById('whatsappPreviewModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeWhatsAppPreviewModal() {
+            const modal = document.getElementById('whatsappPreviewModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function confirmWhatsAppImport() {
+            if (!whatsappPreviewData) return;
+
+            const res = await fetch('/api/import-whatsapp-members/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    members: whatsappPreviewData.preview,
+                    start_date: whatsappPreviewData.start_date,
+                    end_date: whatsappPreviewData.end_date
+                })
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                closeWhatsAppPreviewModal();
+                closeWhatsAppModal();
+                alert(`Imported ${data.imported} members successfully!`);
+                location.reload();
+            }
+        }
+
+        async function generateWhatsAppChat() {
+            const res = await fetch(`/api/generate-whatsapp-chat?month={{ filter_month }}&year={{ filter_year }}`);
+            const data = await res.json();
+
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+
+            document.getElementById('generatedWhatsappChat').value = data.chat_text;
+            const modal = document.getElementById('generateWhatsappModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeGenerateWhatsAppModal() {
+            const modal = document.getElementById('generateWhatsappModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function copyWhatsAppChat() {
+            const textarea = document.getElementById('generatedWhatsappChat');
+            textarea.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+
+        document.getElementById('generateWhatsappModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeGenerateWhatsAppModal();
+        });
     </script>
 </body>
 </html>
