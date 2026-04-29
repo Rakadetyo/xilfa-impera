@@ -40,7 +40,7 @@ def get_current_user(request: Request):
     return user
 
 def is_superadmin(user):
-    return user and user.get("role") == "superadmin"
+    return user and dict(user).get("role") == "superadmin"
 
 # --- Public Routes ---
 @app.get("/", response_class=HTMLResponse)
