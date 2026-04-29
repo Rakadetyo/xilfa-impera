@@ -678,7 +678,7 @@ async def members_page(request: Request):
     cursor.execute("""
         SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price,
                p.name,
-               (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_start_date < m.member_start_date) as n_members,
+               (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_start_date <= m.member_start_date) as n_members,
                (SELECT m2.member_end_date FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_start_date < m.member_start_date ORDER BY m2.member_start_date DESC LIMIT 1) as last_member_date
         FROM member m
         JOIN player p ON m.player_id = p.id
@@ -708,7 +708,7 @@ async def members_page(request: Request):
     # 2. Paid vs Unpaid + Total Income this month
     cursor.execute("""
         SELECT COUNT(*) as cnt, SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as paid_cnt,
-               SUM(COALESCE(membership_price, 0)) as total_income
+               SUM(CASE WHEN is_paid = 1 THEN COALESCE(membership_price, 0) ELSE 0 END) as total_income
         FROM member
         WHERE member_start_date <= ? AND (member_end_date IS NULL OR member_end_date >= ?)
     """, (last_day.isoformat(), first_day.isoformat()))
@@ -799,8 +799,25 @@ async def members_page(request: Request):
         "years": years
     })
 
+@app.post("/manage/members/{member_id}/toggle-paid")
+async def toggle_member_paid(request: Request, member_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    is_paid = data.get("is_paid", 0)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE member SET is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (is_paid, member_id))
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"success": True})
+
 @app.post("/manage/members")
-async def create_member(request: Request, player_id: int = Form(...), member_start_date: str = Form(...), member_end_date: str = Form(None), membership_price: float = Form(0), is_paid: bool = Form(False), month: int = Form(1), year: int = Form(2024)):
+async def create_member(request: Request, player_id: int = Form(...), member_start_date: str = Form(...), member_end_date: str = Form(None), membership_price: float = Form(None), is_paid: bool = Form(False), month: int = Form(1), year: int = Form(2024)):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -809,7 +826,7 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO member (player_id, member_start_date, member_end_date, membership_price, is_paid) VALUES (?, ?, ?, ?, ?)",
-        (player_id, member_start_date, member_end_date if member_end_date else None, membership_price, 1 if is_paid else 0)
+        (player_id, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
     )
     conn.commit()
     conn.close()
@@ -952,7 +969,7 @@ async def delete_arena(request: Request, arena_id: int):
     return RedirectResponse("/manage/arena", status_code=302)
 
 @app.post("/manage/members/{member_id}")
-async def update_member(request: Request, member_id: int, player_id: int = Form(...), member_start_date: str = Form(...), member_end_date: str = Form(None), membership_price: float = Form(0), is_paid: bool = Form(False), month: int = Form(1), year: int = Form(2024)):
+async def update_member(request: Request, member_id: int, player_id: int = Form(...), member_start_date: str = Form(...), member_end_date: str = Form(None), membership_price: float = Form(None), is_paid: bool = Form(False), month: int = Form(1), year: int = Form(2024)):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -961,7 +978,7 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE member SET player_id = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (player_id, member_start_date, member_end_date if member_end_date else None, membership_price, 1 if is_paid else 0, member_id)
+        (player_id, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, member_id)
     )
     conn.commit()
     conn.close()
