@@ -84,8 +84,8 @@
             </nav>
         </aside>
 
-        <!-- Main Content -->
-        <main class="ml-64 flex-1 p-8">
+        <!-- Main Content (right side) -->
+        <main class="ml-[50%] p-8">
             <header class="mb-6">
                 <h1 class="text-2xl font-bold">Homepage Settings</h1>
                 <p class="text-gray-500 text-sm">Configure your homepage content</p>
@@ -242,16 +242,14 @@
             </form>
         </main>
 
-        <!-- Preview Panel -->
-        <div class="w-1/2 fixed right-0 top-0 h-screen bg-gray-900">
+        <!-- Preview Panel (left side) -->
+        <div class="w-1/2 fixed left-0 top-0 h-screen bg-gray-900">
             <div class="bg-gray-800 px-4 py-2 flex justify-between items-center">
                 <span class="text-white font-bold">Live Preview</span>
                 <a href="/" target="_blank" class="text-gray-400 hover:text-white text-sm">Open in new tab ↗</a>
             </div>
             <iframe id="previewFrame" class="w-full h-[calc(100vh-50px)] bg-white"></iframe>
         </div>
-
-        <div class="mr-[50%]"></div>
 
         <script>
             const defaults = {
@@ -299,7 +297,6 @@
 
             window.addEventListener('load', updatePreview);
         </script>
-        </main>
     </div>
 </body>
 </html>
