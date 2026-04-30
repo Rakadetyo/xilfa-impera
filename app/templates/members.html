@@ -33,8 +33,8 @@
         <!-- Sidebar -->
         <aside class="w-64 bg-white border-r border-gray-200 fixed h-full">
             <div class="p-6">
-                <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
-                <span class="text-sm text-gray-500 block mt-1">/ Manage</span>
+                <span class="text-lg font-display tracking-widest text-accent">IMPERA</span>
+                <span class="text-xs text-gray-500 block mt-1">/ Manage</span>
             </div>
 
             <nav class="mt-6 px-4">
@@ -93,9 +93,9 @@
         <main class="ml-64 flex-1">
             <!-- Top Bar -->
             <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-display">Members</h1>
+                <h1 class="text-lg font-display">Members</h1>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -108,39 +108,39 @@
                 <div class="grid grid-cols-3 gap-4 mb-8">
                     <!-- Card 1: Active + Total Unique -->
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                        <p class="text-3xl font-display text-accent">{{ stats.active_this_month }}</p>
+                        <p class="text-2xl font-display text-accent">{{ stats.active_this_month }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Active This Month</p>
-                        <p class="text-2xl font-display text-gray-600 mt-2">{{ stats.total_unique }}</p>
+                        <p class="text-lg font-display text-gray-600 mt-2">{{ stats.total_unique }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Total Unique (All Time)</p>
                     </div>
                     <!-- Card 2: Paid vs Unpaid + Income -->
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                         <div class="flex gap-4 mb-2">
                             <div>
-                                <p class="text-2xl font-display text-green-600">{{ stats.paid_count }}</p>
+                                <p class="text-lg font-display text-green-600">{{ stats.paid_count }}</p>
                                 <p class="text-xs text-gray-500 uppercase tracking-widest">Paid</p>
                             </div>
                             <div>
-                                <p class="text-2xl font-display text-red-500">{{ stats.unpaid_count }}</p>
+                                <p class="text-lg font-display text-red-500">{{ stats.unpaid_count }}</p>
                                 <p class="text-xs text-gray-500 uppercase tracking-widest">Unpaid</p>
                             </div>
                         </div>
-                        <p class="text-2xl font-display text-gray-600 mt-2">Rp {{ "{:,.0f}".format(stats.total_income) }}</p>
+                        <p class="text-lg font-display text-gray-600 mt-2">Rp {{ "{:,.0f}".format(stats.total_income) }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Total Income This Month</p>
                     </div>
                     <!-- Card 3: New + Retention + Avg -->
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                         <div class="flex gap-4 mb-2">
                             <div>
-                                <p class="text-2xl font-display text-blue-600">{{ stats.new_this_month }}</p>
+                                <p class="text-lg font-display text-blue-600">{{ stats.new_this_month }}</p>
                                 <p class="text-xs text-gray-500 uppercase tracking-widest">New This Month</p>
                             </div>
                             <div>
-                                <p class="text-2xl font-display text-purple-600">{{ stats.retention_rate }}%</p>
+                                <p class="text-lg font-display text-purple-600">{{ stats.retention_rate }}%</p>
                                 <p class="text-xs text-gray-500 uppercase tracking-widest">Retention Rate</p>
                             </div>
                         </div>
-                        <p class="text-2xl font-display text-gray-600 mt-2">{{ stats.avg_per_month }}</p>
+                        <p class="text-lg font-display text-gray-600 mt-2">{{ stats.avg_per_month }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Avg Members/Month</p>
                     </div>
                 </div>
@@ -153,7 +153,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </a>
-                        <button type="button" onclick="openDatePickerModal()" class="text-xl font-display min-w-[180px] text-center hover:text-accent">
+                        <button type="button" onclick="openDatePickerModal()" class="text-lg font-display min-w-[180px] text-center hover:text-accent">
                             {% for m, name in months %}
                             {% if m == filter_month %}{{ name }}{% endif %}
                             {% endfor %} {{ filter_year }}
@@ -169,10 +169,10 @@
                 <!-- Date Picker Modal -->
                 <div id="datePickerModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
                     <div class="bg-white rounded-lg p-6 w-full max-w-sm mx-4">
-                        <h2 class="text-xl font-bold mb-4">Select Month & Year</h2>
+                        <h2 class="text-lg font-bold mb-4">Select Month & Year</h2>
                         <form method="GET" action="/manage/members" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Month</label>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Month</label>
                                 <select name="month" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                                     {% for m, name in months %}
                                     <option value="{{ m }}" {% if m == filter_month %}selected{% endif %}>{{ name }}</option>
@@ -180,7 +180,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Year</label>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Year</label>
                                 <select name="year" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                                     {% for y in years %}
                                     <option value="{{ y }}" {% if y == filter_year %}selected{% endif %}>{{ y }}</option>
@@ -199,8 +199,8 @@
                         Members List
                     </div>
                     <div class="flex gap-2">
-                        <button type="button" onclick="generateWhatsAppChat()" class="bg-gray-200 text-gray-700 px-4 py-2 text-sm font-bold hover:bg-gray-300 rounded-lg">Generate WhatsApp Chat</button>
-                        <button type="button" onclick="openWhatsAppModal()" class="bg-accent text-black px-4 py-2 text-sm font-bold hover:bg-accent-light rounded-lg">Import from WhatsApp</button>
+                        <button type="button" onclick="generateWhatsAppChat()" class="bg-gray-200 text-gray-700 px-4 py-2 text-xs font-bold hover:bg-gray-300 rounded-lg">Generate WhatsApp Chat</button>
+                        <button type="button" onclick="openWhatsAppModal()" class="bg-accent text-black px-4 py-2 text-xs font-bold hover:bg-accent-light rounded-lg">Import from WhatsApp</button>
                     </div>
                 </div>
 
@@ -209,20 +209,20 @@
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Name</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Membership Count</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Last Member</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Start Date</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">End Date</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Price</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Paid</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Name</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Membership Count</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Last Member</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Start Date</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">End Date</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Price</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Paid</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             {% for m in members %}
                             {% if m %}
                             <tr class="hover:bg-gray-50 cursor-pointer" onclick="openMemberModal({{ m.id }}, {{ m.player_id }}, '{{ m.member_start_date or '' }}', '{{ m.member_end_date or '' }}', {{ m.is_paid }}, {{ m.membership_price or 0 }})">
-                                <td class="p-4 font-bold">{{ m.name }}</td>
+                                <td class="p-4 font-bold">{{ m.name }}{% if m.nickname %} <span class="text-gray-400 font-normal">({{ m.nickname }})</span>{% endif %}</td>
                                 <td class="p-4 text-gray-500">{{ m.n_members or 0 }}</td>
                                 <td class="p-4 text-gray-500">{{ m.last_member_date or '-' }}</td>
                                 <td class="p-4 text-gray-500">{{ m.member_start_date or '-' }}</td>
@@ -256,41 +256,44 @@
     <!-- Modal -->
     <div id="memberModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Member</h2>
+            <h2 id="modalTitle" class="text-lg font-bold mb-4">Add Member</h2>
             <form id="memberForm" method="POST" action="/manage/members" class="space-y-4">
                 <input type="hidden" name="id" id="memberId">
                 <input type="hidden" name="month" value="{{ filter_month }}">
                 <input type="hidden" name="year" value="{{ filter_year }}">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Player</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Player</label>
                     <select name="player_id" id="playerSelect" required class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                         <option value="">Select Player</option>
                         {% for p in players %}
-                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        <option value="{{ p.id }}">{{ p.name }}{% if p.nickname %} ({{ p.nickname }}){% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Start Date</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Start Date</label>
                     <input type="date" name="member_start_date" id="memberStartDate" required class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">End Date (optional)</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">End Date (optional)</label>
                     <input type="date" name="member_end_date" id="memberEndDate" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Price</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Price</label>
                     <input type="number" name="membership_price" id="memberPrice" placeholder="0" min="0" step="1000" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                 </div>
                 <div>
                     <label class="flex items-center gap-2">
                         <input type="checkbox" name="is_paid" id="memberPaid" value="1" class="w-4 h-4 text-accent">
-                        <span class="text-sm font-bold text-gray-700">Paid</span>
+                        <span class="text-xs font-bold text-gray-700">Paid</span>
                     </label>
                 </div>
-                <div class="flex gap-2 justify-end pt-2">
-                    <button type="button" onclick="closeMemberModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
-                    <button type="submit" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Save</button>
+                <div class="flex gap-2 justify-between pt-2">
+                    <button type="button" id="deleteMemberBtn" onclick="deleteMember()" class="px-4 py-2 text-red-600 hover:bg-red-50 hidden">Delete</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeMemberModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
+                        <button type="submit" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Save</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -299,10 +302,10 @@
     <!-- WhatsApp Import Modal -->
     <div id="whatsappModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
-            <h2 class="text-xl font-bold mb-4">Import from WhatsApp Chat</h2>
-            <p class="text-sm text-gray-500 mb-4">Paste the WhatsApp message containing the member list. The system will parse names and prices automatically.</p>
+            <h2 class="text-lg font-bold mb-4">Import from WhatsApp Chat</h2>
+            <p class="text-xs text-gray-500 mb-4">Paste the WhatsApp message containing the member list. The system will parse names and prices automatically.</p>
             <div class="mb-4">
-                <label class="block text-sm font-bold text-gray-700 mb-1">Chat Text</label>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Chat Text</label>
                 <textarea id="whatsappChat" rows="12" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent font-mono text-sm" placeholder="Paste WhatsApp chat here..."></textarea>
             </div>
             <div class="flex gap-2 justify-end">
@@ -315,7 +318,7 @@
     <!-- WhatsApp Preview Modal -->
     <div id="whatsappPreviewModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-            <h2 class="text-xl font-bold mb-4">Import Preview</h2>
+            <h2 class="text-lg font-bold mb-4">Import Preview</h2>
             <div id="previewContent" class="mb-4"></div>
             <div class="flex gap-2 justify-end">
                 <button type="button" onclick="closeWhatsAppPreviewModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
@@ -327,7 +330,7 @@
     <!-- Generate WhatsApp Modal -->
     <div id="generateWhatsappModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
-            <h2 class="text-xl font-bold mb-4">Generate WhatsApp Chat</h2>
+            <h2 class="text-lg font-bold mb-4">Generate WhatsApp Chat</h2>
             <div class="mb-4">
                 <textarea id="generatedWhatsappChat" rows="15" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent font-mono text-sm"></textarea>
             </div>
@@ -367,7 +370,9 @@
             const firstSat = getFirstSaturday(filterYear, filterMonth);
             const lastSat = getLastSaturday(filterYear, filterMonth);
 
-            if (id) {
+            const deleteBtn = document.getElementById('deleteMemberBtn');
+            const isSuperadmin = {{ 'true' if user.role == 'superadmin' else 'false' }};
+            if (id && isSuperadmin) {
                 title.textContent = 'Edit Member';
                 form.action = '/manage/members/' + id;
                 document.getElementById('memberId').value = id;
@@ -376,6 +381,7 @@
                 document.getElementById('memberEndDate').value = endDate || lastSat;
                 document.getElementById('memberPrice').value = price || 0;
                 document.getElementById('memberPaid').checked = isPaid;
+                deleteBtn.classList.remove('hidden');
             } else {
                 title.textContent = 'Add Member';
                 form.action = '/manage/members';
@@ -384,10 +390,25 @@
                 // Default to first/last Saturday of selected month
                 document.getElementById('memberStartDate').value = firstSat;
                 document.getElementById('memberEndDate').value = lastSat;
+                deleteBtn.classList.add('hidden');
             }
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+        }
+
+        function deleteMember() {
+            const id = document.getElementById('memberId').value;
+            const playerSelect = document.getElementById('playerSelect');
+            const playerName = playerSelect.options[playerSelect.selectedIndex].text;
+            const month = {{ filter_month }};
+            const year = {{ filter_year }};
+
+            if (!id || !confirm(`Delete member "${playerName}"? This cannot be undone.`)) return;
+
+            const params = new URLSearchParams({ month, year });
+            fetch(`/manage/members/${id}/delete?${params}`, { method: 'POST' })
+                .then(res => { if (res.ok) location.reload(); });
         }
 
         function closeMemberModal() {
@@ -475,7 +496,7 @@
             let foundCount = 0;
             let notFoundCount = 0;
 
-            const playersOptions = data.all_players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            const playersOptions = data.all_players.map(p => `<option value="${p.id}">${p.name}${p.nickname ? ' (' + p.nickname + ')' : ''}</option>`).join('');
 
             for (const m of data.preview) {
                 const status = m.found

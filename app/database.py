@@ -167,6 +167,12 @@ def init_db():
     if 'member_period' not in member_columns:
         cursor.execute("ALTER TABLE member ADD COLUMN member_period TEXT")
 
+    # Add status column to player if not exists
+    cursor.execute("PRAGMA table_info(player)")
+    player_columns = {row[1] for row in cursor.fetchall()}
+    if 'status' not in player_columns:
+        cursor.execute("ALTER TABLE player ADD COLUMN status INTEGER DEFAULT 1")
+
     conn.commit()
     conn.close()
 
