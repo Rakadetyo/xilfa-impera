@@ -239,6 +239,7 @@ async def list_players(request: Request):
     filter_pos = request.query_params.get("position", "")
     filter_skill = request.query_params.get("skill", "")
     filter_member = request.query_params.get("member", "")
+    filter_status = request.query_params.get("status", "")
     sort_by = request.query_params.get("sort", "name")
     sort_order = request.query_params.get("order", "asc")
     page = int(request.query_params.get("page", 1))
@@ -258,7 +259,7 @@ async def list_players(request: Request):
 
     # Build dynamic query
     query = """
-        SELECT p.id, p.name, p.nickname, p.position_1, p.position_2, p.skill_level, p.contact_no, p.instagram, p.reclub, p.join_date, p.created_at,
+        SELECT p.id, p.name, p.nickname, p.position_1, p.position_2, p.skill_level, p.contact_no, p.instagram, p.reclub, p.join_date, p.created_at, p.status,
                (SELECT MAX(g.datetime) FROM game_attendee ga JOIN game g ON ga.game_id = g.id WHERE ga.player_id = p.id) as last_played,
                CASE WHEN EXISTS (
                    SELECT 1 FROM member m
@@ -282,6 +283,10 @@ async def list_players(request: Request):
     if filter_skill:
         query += " AND p.skill_level = ?"
         params.append(int(filter_skill))
+
+    if filter_status:
+        query += " AND p.status = ?"
+        params.append(int(filter_status))
 
     if filter_member != "":
         has_member = 1 if filter_member == "1" else 0
@@ -392,6 +397,7 @@ async def list_players(request: Request):
             "position": filter_pos,
             "skill": filter_skill,
             "member": filter_member,
+            "status": filter_status,
             "sort": sort_by,
             "order": sort_order
         },
@@ -422,7 +428,8 @@ async def create_player(
     is_member: bool = Form(False),
     contact_no: str = Form(""),
     instagram: str = Form(""),
-    reclub: str = Form("")
+    reclub: str = Form(""),
+    status: int = Form(1)
 ):
     user = get_current_user(request)
     if not user:
@@ -430,13 +437,15 @@ async def create_player(
 
     if skill_level < 1 or skill_level > 5:
         skill_level = 3
+    if status not in (-1, 0, 1):
+        status = 1
 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO player (name, nickname, position_1, position_2, skill_level, is_member, contact_no, instagram, reclub, join_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'))
-    """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub))
+        INSERT INTO player (name, nickname, position_1, position_2, skill_level, is_member, contact_no, instagram, reclub, join_date, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
+    """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, status))
     conn.commit()
     conn.close()
 
@@ -456,6 +465,7 @@ async def update_player(
     instagram: str = Form(""),
     reclub: str = Form(""),
     join_date: str = Form(""),
+    status: int = Form(1),
     page: int = Form(1),
     sort: str = Form("name"),
     order: str = Form("asc"),
@@ -470,13 +480,15 @@ async def update_player(
 
     if skill_level < 1 or skill_level > 5:
         skill_level = 3
+    if status not in (-1, 0, 1):
+        status = 1
 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, is_member = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, updated_at = CURRENT_TIMESTAMP
+        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, is_member = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, join_date or None, player_id))
+    """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, join_date or None, status, player_id))
     conn.commit()
     conn.close()
 
