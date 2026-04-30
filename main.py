@@ -282,7 +282,6 @@ async def list_players(request: Request):
     search = request.query_params.get("search", "").strip()
     filter_pos = request.query_params.get("position", "")
     filter_skill = request.query_params.get("skill", "")
-    filter_member = request.query_params.get("member", "")
     filter_status = request.query_params.get("status", "")
     sort_by = request.query_params.get("sort", "name")
     sort_order = request.query_params.get("order", "asc")
@@ -304,13 +303,7 @@ async def list_players(request: Request):
     # Build dynamic query
     query = """
         SELECT p.id, p.name, p.nickname, p.position_1, p.position_2, p.skill_level, p.contact_no, p.instagram, p.reclub, p.join_date, p.created_at, p.status,
-               (SELECT MAX(g.datetime) FROM game_attendee ga JOIN game g ON ga.game_id = g.id WHERE ga.player_id = p.id) as last_played,
-               CASE WHEN EXISTS (
-                   SELECT 1 FROM member m
-                   WHERE m.player_id = p.id
-                   AND m.member_start_date <= date('now')
-                   AND (m.member_end_date IS NULL OR m.member_end_date >= date('now'))
-               ) THEN 1 ELSE 0 END as is_member
+               (SELECT MAX(g.datetime) FROM game_attendee ga JOIN game g ON ga.game_id = g.id WHERE ga.player_id = p.id) as last_played
         FROM player p
         WHERE 1=1
     """
@@ -332,13 +325,6 @@ async def list_players(request: Request):
         query += " AND p.status = ?"
         params.append(int(filter_status))
 
-    if filter_member != "":
-        has_member = 1 if filter_member == "1" else 0
-        if has_member:
-            query += " AND EXISTS (SELECT 1 FROM member m WHERE m.player_id = p.id AND m.member_start_date <= date('now') AND (m.member_end_date IS NULL OR m.member_end_date >= date('now')))"
-        else:
-            query += " AND NOT EXISTS (SELECT 1 FROM member m WHERE m.player_id = p.id AND m.member_start_date <= date('now') AND (m.member_end_date IS NULL OR m.member_end_date >= date('now')))"
-
     # Handle last_played sort (needs subquery)
     if sort_by == "last_played":
         query += f" ORDER BY last_played {sort_order}"
@@ -357,27 +343,6 @@ async def list_players(request: Request):
     if filter_skill:
         count_query += " AND p.skill_level = ?"
         count_params.append(int(filter_skill))
-    if filter_member != "":
-        # For count, check member table
-        count_query = """
-            SELECT COUNT(*) as cnt FROM player p
-            WHERE EXISTS (
-                SELECT 1 FROM member m
-                WHERE m.player_id = p.id
-                AND m.member_start_date <= date('now')
-                AND (m.member_end_date IS NULL OR m.member_end_date >= date('now'))
-            ) = ?
-        """
-        count_params = [1 if filter_member == "1" else 0]
-        if search:
-            count_query += " AND (p.name LIKE ? OR p.nickname LIKE ?)"
-            count_params.extend([f"%{search}%", f"%{search}%"])
-        if filter_pos:
-            count_query += " AND (p.position_1 = ? OR p.position_2 = ?)"
-            count_params.extend([filter_pos, filter_pos])
-        if filter_skill:
-            count_query += " AND p.skill_level = ?"
-            count_params.append(int(filter_skill))
 
     cursor.execute(count_query, count_params)
     total_count = cursor.fetchone()["cnt"]
@@ -440,7 +405,6 @@ async def list_players(request: Request):
             "search": search,
             "position": filter_pos,
             "skill": filter_skill,
-            "member": filter_member,
             "status": filter_status,
             "sort": sort_by,
             "order": sort_order
@@ -469,7 +433,6 @@ async def create_player(
     position_1: str = Form(""),
     position_2: str = Form(""),
     skill_level: int = Form(3),
-    is_member: bool = Form(False),
     contact_no: str = Form(""),
     instagram: str = Form(""),
     reclub: str = Form(""),
@@ -487,35 +450,11 @@ async def create_player(
     conn = get_db()
     cursor = conn.cursor()
 
-    # Check member limit (max 25 per period)
-    import datetime
-    now = datetime.datetime.now()
-    current_period = f"{now.year}-{now.month:02d}"
-    cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
-    member_count = cursor.fetchone()["total"]
-
-    if is_member and member_count >= 25:
-        conn.close()
-        return RedirectResponse(f"/manage/players?error=Member limit reached for {current_period} (max 25)", status_code=302)
-
     # Create player
     cursor.execute("""
-        INSERT INTO player (name, nickname, position_1, position_2, skill_level, is_member, contact_no, instagram, reclub, join_date, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
-    """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, status))
-
-    # If is_member, create member record
-    if is_member:
-        player_id = cursor.lastrowid
-        import calendar
-        last_day = calendar.monthrange(now.year, now.month)[1]
-        member_start = f"{now.year}-{now.month:02d}-01"
-        member_end = f"{now.year}-{now.month:02d}-{last_day}"
-        cursor.execute("""
-            INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
-            VALUES (?, ?, ?, ?, 0, 1)
-        """, (player_id, current_period, member_start, member_end))
-        logger.info(f"[PLAYER] Created player {player_id} with member record for period {current_period}, by={user['username']}")
+        INSERT INTO player (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
+    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, status))
 
     conn.commit()
     conn.close()
@@ -531,7 +470,6 @@ async def update_player(
     position_1: str = Form(""),
     position_2: str = Form(""),
     skill_level: int = Form(3),
-    is_member: bool = Form(False),
     contact_no: str = Form(""),
     instagram: str = Form(""),
     reclub: str = Form(""),
@@ -542,8 +480,7 @@ async def update_player(
     order: str = Form("asc"),
     search: str = Form(""),
     position: str = Form(""),
-    skill: str = Form(""),
-    member: str = Form("")
+    skill: str = Form("")
 ):
     user = get_current_user(request)
     if not user:
@@ -557,44 +494,13 @@ async def update_player(
     conn = get_db()
     cursor = conn.cursor()
 
-    # Check member limit for update (max 25 per period)
-    import datetime
-    import calendar
-    now = datetime.datetime.now()
-    current_period = f"{now.year}-{now.month:02d}"
-
-    if is_member:
-        # Check if player already has member record for current period
-        cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, current_period))
-        existing_member = cursor.fetchone()
-
-        if not existing_member:
-            # No existing member record - check limit
-            cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
-            member_count = cursor.fetchone()["total"]
-
-            if member_count >= 25:
-                conn.close()
-                return RedirectResponse(f"/manage/players?error=Member limit reached for {current_period} (max 25)&page={page}&sort={sort}&order={order}", status_code=302)
-
-            # Create new member record
-            last_day = calendar.monthrange(now.year, now.month)[1]
-            member_start = f"{now.year}-{now.month:02d}-01"
-            member_end = f"{now.year}-{now.month:02d}-{last_day}"
-            cursor.execute("""
-                INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
-                VALUES (?, ?, ?, ?, 0, 1)
-            """, (player_id, current_period, member_start, member_end))
-            logger.info(f"[PLAYER] Added member record for player {player_id}, period {current_period}, by={user['username']}")
-
     cursor.execute("""
-        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, is_member = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, join_date or None, status, player_id))
+    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date or None, status, player_id))
     conn.commit()
     conn.close()
 
-    # Build redirect URL with current filters
     redirect_url = f"/manage/players?success=Player updated&page={page}&sort={sort}&order={order}"
     if search:
         redirect_url += f"&search={search}"
@@ -602,8 +508,6 @@ async def update_player(
         redirect_url += f"&position={position}"
     if skill:
         redirect_url += f"&skill={skill}"
-    if member:
-        redirect_url += f"&member={member}"
 
     return RedirectResponse(redirect_url, status_code=302)
 
@@ -1562,3 +1466,508 @@ async def toggle_status(request: Request, post_id: int):
     conn.close()
 
     return JSONResponse({"status": new_status})
+
+
+# ============================================
+# GAME MANAGEMENT ROUTES
+# ============================================
+
+@app.get("/manage/games")
+async def list_games(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT g.*, a.location_name as arena_name,
+               (SELECT COUNT(*) FROM game_attendee WHERE game_id = g.id) as attendee_count
+        FROM game g
+        LEFT JOIN arena a ON g.arena_id = a.id
+        ORDER BY g.datetime DESC
+    """)
+    games = cursor.fetchall()
+
+    cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
+    arenas = cursor.fetchall()
+
+    conn.close()
+    return templates.TemplateResponse(request, "games/list.html", {
+        "user": user,
+        "games": games,
+        "arenas": arenas
+    })
+
+
+@app.get("/manage/games/new")
+async def new_game(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
+    arenas = cursor.fetchall()
+    conn.close()
+
+    return templates.TemplateResponse(request, "games/new.html", {
+        "user": user,
+        "arenas": arenas
+    })
+
+
+@app.post("/manage/games/new")
+async def create_game(
+    request: Request,
+    datetime: str = Form(...),
+    arena_id: int = Form(None),
+    price_per_person: float = Form(0),
+    price_per_member: float = Form(0),
+    duration_per_game: int = Form(8),
+    session_duration: int = Form(120),
+    max_players: int = Form(25),
+    status: str = Form("open"),
+    notes: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO game (datetime, arena_id, price_per_person, price_per_member,
+                         duration_per_game, session_duration, max_players, status, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (datetime, arena_id, price_per_person, price_per_member,
+          duration_per_game, session_duration, max_players, status, notes))
+
+    game_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}", status_code=302)
+
+
+@app.get("/manage/games/{game_id}")
+async def game_detail(request: Request, game_id: int, tab: str = "general"):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT g.*, a.location_name as arena_name
+        FROM game g
+        LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE g.id = ?
+    """, (game_id,))
+    game = cursor.fetchone()
+
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Get attendees with player info
+    cursor.execute("""
+        SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2, p.skill_level,
+               gt.team_name as team_name_assigned, gt.team_color
+        FROM game_attendee ga
+        JOIN player p ON ga.player_id = p.id
+        LEFT JOIN game_team gt ON ga.team_id = gt.id
+        WHERE ga.game_id = ?
+        ORDER BY p.name
+    """, (game_id,))
+    attendees = cursor.fetchall()
+
+    # Get partners
+    cursor.execute("SELECT * FROM game_partner WHERE game_id = ?", (game_id,))
+    partners = cursor.fetchall()
+
+    # Get teams
+    cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game_id,))
+    teams = cursor.fetchall()
+
+    # Get matches
+    cursor.execute("""
+        SELECT gm.*,
+               th.team_name as home_team, th.team_color as home_color,
+               ta.team_name as away_team, ta.team_color as away_color
+        FROM game_match gm
+        LEFT JOIN game_team th ON gm.team_home_id = th.id
+        LEFT JOIN game_team ta ON gm.team_away_id = ta.id
+        WHERE gm.game_id = ?
+        ORDER BY gm.round_number, gm.match_order
+    """, (game_id,))
+    matches = cursor.fetchall()
+
+    # Get all players for adding attendees
+    cursor.execute("SELECT * FROM player WHERE status = 1 ORDER BY name")
+    all_players = cursor.fetchall()
+
+    conn.close()
+
+    tabs = ["general", "players", "partners", "teams", "schedule", "results"]
+    if tab not in tabs:
+        tab = "general"
+
+    return templates.TemplateResponse(request, "games/detail.html", {
+        "user": user,
+        "game": game,
+        "attendees": attendees,
+        "partners": partners,
+        "teams": teams,
+        "matches": matches,
+        "all_players": all_players,
+        "tab": tab,
+        "tabs": tabs
+    })
+
+
+@app.get("/manage/games/{game_id}/edit")
+async def edit_game(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM game WHERE id = ?", (game_id,))
+    game = cursor.fetchone()
+
+    cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
+    arenas = cursor.fetchall()
+
+    conn.close()
+
+    return templates.TemplateResponse(request, "games/edit.html", {
+        "user": user,
+        "game": game,
+        "arenas": arenas
+    })
+
+
+@app.post("/manage/games/{game_id}/edit")
+async def update_game(
+    request: Request,
+    game_id: int,
+    datetime: str = Form(...),
+    arena_id: int = Form(None),
+    price_per_person: float = Form(0),
+    price_per_member: float = Form(0),
+    duration_per_game: int = Form(8),
+    session_duration: int = Form(120),
+    max_players: int = Form(25),
+    status: str = Form("open"),
+    notes: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE game SET datetime = ?, arena_id = ?, price_per_person = ?,
+                       price_per_member = ?, duration_per_game = ?,
+                       session_duration = ?, max_players = ?, status = ?, notes = ?,
+                       updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (datetime, arena_id, price_per_person, price_per_member,
+          duration_per_game, session_duration, max_players, status, notes, game_id))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}", status_code=302)
+
+
+# --- Partners CRUD ---
+@app.post("/manage/games/{game_id}/partners")
+async def add_partner(
+    request: Request,
+    game_id: int,
+    type: str = Form(...),
+    name: str = Form(""),
+    contact: str = Form(""),
+    fee: float = Form(0),
+    notes: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO game_partner (game_id, type, name, contact, fee, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (game_id, type, name, contact, fee, notes))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=partners", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/partners/{partner_id}/delete")
+async def delete_partner(request: Request, game_id: int, partner_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_partner WHERE id = ? AND game_id = ?", (partner_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=partners", status_code=302)
+
+
+# --- Attendees CRUD ---
+@app.post("/manage/games/{game_id}/attendees")
+async def add_attendee(request: Request, game_id: int, player_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Check if already attending
+    cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND player_id = ?", (game_id, player_id))
+    if cursor.fetchone():
+        conn.close()
+        return JSONResponse({"error": "Player already added"}, status_code=400)
+
+    cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, player_id))
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"success": True})
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/delete")
+async def remove_attendee(request: Request, game_id: int, attendee_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_attendee WHERE id = ? AND game_id = ?", (attendee_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/pay")
+async def toggle_payment(request: Request, game_id: int, attendee_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_paid FROM game_attendee WHERE id = ?", (attendee_id,))
+    row = cursor.fetchone()
+    if row:
+        new_is_paid = 0 if row["is_paid"] else 1
+        cursor.execute("UPDATE game_attendee SET is_paid = ? WHERE id = ?", (new_is_paid, attendee_id))
+        conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/attend")
+async def toggle_attendance(request: Request, game_id: int, attendee_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_attend FROM game_attendee WHERE id = ?", (attendee_id,))
+    row = cursor.fetchone()
+    if row:
+        new_is_attend = 0 if row["is_attend"] else 1
+        cursor.execute("UPDATE game_attendee SET is_attend = ? WHERE id = ?", (new_is_attend, attendee_id))
+        conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+
+
+# --- Teams CRUD ---
+@app.post("/manage/games/{game_id}/teams")
+async def create_team(
+    request: Request,
+    game_id: int,
+    team_name: str = Form(...),
+    team_color: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO game_team (game_id, team_name, team_color) VALUES (?, ?, ?)",
+                  (game_id, team_name, team_color))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/{team_id}/delete")
+async def delete_team(request: Request, game_id: int, team_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    # Clear team_id from attendees first
+    cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE team_id = ?", (team_id,))
+    cursor.execute("DELETE FROM game_team WHERE id = ? AND game_id = ?", (team_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/assign-team")
+async def assign_team(request: Request, game_id: int, attendee_id: int, team_id: int = Form(...)):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+                  (team_id, attendee_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+# --- Schedule / Matches ---
+@app.post("/manage/games/{game_id}/schedule/generate")
+async def generate_schedule(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get teams
+    cursor.execute("SELECT id, team_name FROM game_team WHERE game_id = ?", (game_id,))
+    teams = cursor.fetchall()
+
+    if len(teams) < 2:
+        conn.close()
+        return JSONResponse({"error": "Need at least 2 teams"}, status_code=400)
+
+    # Clear existing matches
+    cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
+
+    # Generate round-robin: each team plays every other team once
+    team_ids = [t["id"] for t in teams]
+    round_number = 1
+    match_order = 1
+
+    for i in range(len(team_ids)):
+        for j in range(i + 1, len(team_ids)):
+            cursor.execute("""
+                INSERT INTO game_match (game_id, round_number, match_order, team_home_id, team_away_id, type)
+                VALUES (?, ?, ?, ?, ?, 'round_robin')
+            """, (game_id, round_number, match_order, team_ids[i], team_ids[j]))
+            match_order += 1
+            # Each round has at most len(teams)/2 matches
+            if match_order > len(teams) // 2:
+                round_number += 1
+                match_order = 1
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/{match_id}")
+async def update_match(
+    request: Request,
+    game_id: int,
+    match_id: int,
+    score_home: int = Form(0),
+    score_away: int = Form(0),
+    notes: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    winner = None
+    if score_home > score_away:
+        cursor.execute("SELECT team_home_id FROM game_match WHERE id = ?", (match_id,))
+        winner = cursor.fetchone()["team_home_id"]
+    elif score_away > score_home:
+        cursor.execute("SELECT team_away_id FROM game_match WHERE id = ?", (match_id,))
+        winner = cursor.fetchone()["team_away_id"]
+
+    cursor.execute("""
+        UPDATE game_match SET score_home = ?, score_away = ?, winner_team_id = ?, notes = ?
+        WHERE id = ? AND game_id = ?
+    """, (score_home, score_away, winner, notes, match_id, game_id))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/{match_id}/delete")
+async def delete_match(request: Request, game_id: int, match_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_match WHERE id = ? AND game_id = ?", (match_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+# --- Delete Game ---
+@app.post("/manage/games/{game_id}/delete")
+async def delete_game(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game WHERE id = ?", (game_id,))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse("/manage/games", status_code=302)

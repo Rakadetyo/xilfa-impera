@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Game — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'body': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+        {% include '_sidebar.html' %}
+
+        <main class="ml-64 flex-1 p-8">
+            <div class="max-w-2xl">
+                <div class="mb-6">
+                    <a href="/manage/games/{{ game.id }}" class="text-gray-500 hover:text-accent">← Back to Game</a>
+                </div>
+
+                <h1 class="text-3xl font-display tracking-wide mb-8">Edit Game</h1>
+
+                <form method="post" class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
+                        <input type="datetime-local" name="datetime" value="{{ game.datetime[:16] }}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Arena</label>
+                        <select name="arena_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                            <option value="">Select arena</option>
+                            {% for arena in arenas %}
+                            <option value="{{ arena.id }}" {% if arena.id == game.arena_id %}selected{% endif %}>{{ arena.location_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price per Person (Rp)</label>
+                            <input type="number" name="price_per_person" value="{{ game.price_per_person }}" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price per Member (Rp)</label>
+                            <input type="number" name="price_per_member" value="{{ game.price_per_member }}" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Duration per Match (min)</label>
+                            <input type="number" name="duration_per_game" value="{{ game.duration_per_game }}" min="1" max="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Session Duration (min)</label>
+                            <input type="number" name="session_duration" value="{{ game.session_duration }}" min="30" max="480" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Max Players</label>
+                            <input type="number" name="max_players" value="{{ game.max_players }}" min="2" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                            <option value="open" {% if game.status == 'open' %}selected{% endif %}>Open</option>
+                            <option value="closed" {% if game.status == 'closed' %}selected{% endif %}>Closed</option>
+                            <option value="cancelled" {% if game.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">{{ game.notes or '' }}</textarea>
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <button type="submit" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
+                            Save Changes
+                        </button>
+                        <a href="/manage/games/{{ game.id }}" class="px-6 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

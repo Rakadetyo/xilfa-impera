@@ -173,6 +173,86 @@ def init_db():
     if 'status' not in player_columns:
         cursor.execute("ALTER TABLE player ADD COLUMN status INTEGER DEFAULT 1")
 
+    # === GAME EXPANSION MIGRATIONS ===
+    # game: add new columns
+    cursor.execute("PRAGMA table_info(game)")
+    game_columns = {row[1] for row in cursor.fetchall()}
+    if 'duration_per_game' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN duration_per_game INTEGER DEFAULT 8")
+    if 'session_duration' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN session_duration INTEGER DEFAULT 120")
+    if 'max_players' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN max_players INTEGER DEFAULT 25")
+    if 'status' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN status TEXT DEFAULT 'open'")
+    if 'notes' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN notes TEXT")
+
+    # game_attendee: add new columns
+    cursor.execute("PRAGMA table_info(game_attendee)")
+    attendee_columns = {row[1] for row in cursor.fetchall()}
+    if 'slot_type' not in attendee_columns:
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN slot_type TEXT DEFAULT 'regular'")
+    if 'is_paid' not in attendee_columns:
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN is_paid INTEGER DEFAULT 0")
+    if 'amount_paid' not in attendee_columns:
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN amount_paid REAL DEFAULT 0")
+    if 'is_attend' not in attendee_columns:
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN is_attend INTEGER DEFAULT 0")
+    if 'team_id' not in attendee_columns:
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN team_id INTEGER")
+
+    # game_partner: referee/videographer/photographer/sponsor tracking
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_partner (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            name TEXT,
+            contact TEXT,
+            fee REAL DEFAULT 0,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE
+        )
+    """)
+
+    # game_team: teams within a game
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_team (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            team_name TEXT NOT NULL,
+            team_color TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE
+        )
+    """)
+
+    # game_match: scheduled matches within a game
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_match (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            round_number INTEGER,
+            match_order INTEGER,
+            team_home_id INTEGER,
+            team_away_id INTEGER,
+            court_label TEXT,
+            scheduled_start TEXT,
+            type TEXT DEFAULT 'round_robin',
+            score_home INTEGER,
+            score_away INTEGER,
+            winner_team_id INTEGER,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_home_id) REFERENCES game_team(id),
+            FOREIGN KEY (team_away_id) REFERENCES game_team(id),
+            FOREIGN KEY (winner_team_id) REFERENCES game_team(id)
+        )
+    """)
+
     # site_settings: key-value config for pages
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS site_settings (
