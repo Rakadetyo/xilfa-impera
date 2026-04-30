@@ -22,6 +22,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-prod")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 templates = Jinja2Templates(directory="app/templates")
 
 from app.database import init_db, seed_admin, get_db
@@ -46,10 +47,49 @@ def get_current_user(request: Request):
 def is_superadmin(user):
     return user and dict(user).get("role") == "superadmin"
 
+def get_setting(page: str, section: str, key: str, default: str = ""):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT value FROM site_settings WHERE page = ? AND section = ? AND key = ?",
+        (page, section, key)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["value"] if row else default
+
+def get_page_settings(page: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT section, key, value FROM site_settings WHERE page = ?",
+        (page,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    settings = {}
+    for row in rows:
+        if row["section"] not in settings:
+            settings[row["section"]] = {}
+        settings[row["section"]][row["key"]] = row["value"]
+    return settings
+
+def set_setting(page: str, section: str, key: str, value: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO site_settings (page, section, key, value) VALUES (?, ?, ?, ?)
+           ON CONFLICT(page, section, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP""",
+        (page, section, key, value)
+    )
+    conn.commit()
+    conn.close()
+
 # --- Public Routes ---
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+    settings = get_page_settings("homepage")
+    return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
 
 @app.get("/blog", response_class=HTMLResponse)
 async def blog(request: Request):
@@ -446,10 +486,37 @@ async def create_player(
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Check member limit (max 25 per period)
+    import datetime
+    now = datetime.datetime.now()
+    current_period = f"{now.year}-{now.month:02d}"
+    cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
+    member_count = cursor.fetchone()["total"]
+
+    if is_member and member_count >= 25:
+        conn.close()
+        return RedirectResponse(f"/manage/players?error=Member limit reached for {current_period} (max 25)", status_code=302)
+
+    # Create player
     cursor.execute("""
         INSERT INTO player (name, nickname, position_1, position_2, skill_level, is_member, contact_no, instagram, reclub, join_date, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
     """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, status))
+
+    # If is_member, create member record
+    if is_member:
+        player_id = cursor.lastrowid
+        import calendar
+        last_day = calendar.monthrange(now.year, now.month)[1]
+        member_start = f"{now.year}-{now.month:02d}-01"
+        member_end = f"{now.year}-{now.month:02d}-{last_day}"
+        cursor.execute("""
+            INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+            VALUES (?, ?, ?, ?, 0, 1)
+        """, (player_id, current_period, member_start, member_end))
+        logger.info(f"[PLAYER] Created player {player_id} with member record for period {current_period}, by={user['username']}")
+
     conn.commit()
     conn.close()
 
@@ -489,6 +556,37 @@ async def update_player(
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Check member limit for update (max 25 per period)
+    import datetime
+    import calendar
+    now = datetime.datetime.now()
+    current_period = f"{now.year}-{now.month:02d}"
+
+    if is_member:
+        # Check if player already has member record for current period
+        cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, current_period))
+        existing_member = cursor.fetchone()
+
+        if not existing_member:
+            # No existing member record - check limit
+            cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
+            member_count = cursor.fetchone()["total"]
+
+            if member_count >= 25:
+                conn.close()
+                return RedirectResponse(f"/manage/players?error=Member limit reached for {current_period} (max 25)&page={page}&sort={sort}&order={order}", status_code=302)
+
+            # Create new member record
+            last_day = calendar.monthrange(now.year, now.month)[1]
+            member_start = f"{now.year}-{now.month:02d}-01"
+            member_end = f"{now.year}-{now.month:02d}-{last_day}"
+            cursor.execute("""
+                INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+                VALUES (?, ?, ?, ?, 0, 1)
+            """, (player_id, current_period, member_start, member_end))
+            logger.info(f"[PLAYER] Added member record for player {player_id}, period {current_period}, by={user['username']}")
+
     cursor.execute("""
         UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, is_member = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -899,6 +997,7 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
 
     conn = get_db()
     cursor = conn.cursor()
+
     # Check if member exists for this period
     cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
     existing = cursor.fetchone()
@@ -913,6 +1012,14 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
             )
             logger.info(f"[MEMBER] UPDATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
         else:
+            # Check member limit (max 25 per period)
+            cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (member_period,))
+            member_count = cursor.fetchone()["total"]
+
+            if member_count >= 25:
+                conn.close()
+                return RedirectResponse(f"/manage/members?error=Member limit reached for {member_period} (max 25)&month={month}&year={year}", status_code=302)
+
             cursor.execute(
                 """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
                    VALUES (?, ?, ?, ?, ?, ?)""",
@@ -1255,6 +1362,93 @@ async def arena_page(request: Request):
         "arena_game_counts": arena_game_counts,
         "arena_game_list": arena_rows
     })
+
+# --- Page Settings ---
+@app.get("/manage/page_settings/homepage", response_class=HTMLResponse)
+async def page_settings(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    settings = get_page_settings("homepage")
+    return templates.TemplateResponse(request, "page_settings.html", {
+        "request": request,
+        "user": user,
+        "settings": settings
+    })
+
+@app.post("/manage/page_settings/homepage")
+async def save_page_settings(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    form = await request.form()
+    username = user["username"]
+
+    try:
+        for key, value in form.items():
+            if key.startswith("hero_"):
+                section = "hero"
+                setting_key = key[5:]
+            elif key.startswith("about_"):
+                section = "about"
+                setting_key = key[6:]
+            elif key.startswith("schedule_"):
+                section = "schedule"
+                setting_key = key[9:]
+            elif key.startswith("social_"):
+                section = "social"
+                setting_key = key[7:]
+            else:
+                continue
+
+            set_setting("homepage", section, setting_key, value)
+
+        logger.info(f"[PAGE_SETTINGS] Saved homepage settings by {username}")
+        return RedirectResponse("/manage/page_settings/homepage?success=Settings saved", status_code=302)
+    except Exception as e:
+        logger.error(f"[PAGE_SETTINGS] Error saving settings by {username}: {str(e)}")
+        return RedirectResponse(f"/manage/page_settings/homepage?error={str(e)}", status_code=302)
+
+@app.get("/preview", response_class=HTMLResponse)
+async def preview_homepage(request: Request):
+    """Preview homepage with settings from query params (before saving)"""
+    from urllib.parse import parse_qs
+
+    qs = parse_qs(request.url.query)
+    settings = {
+        "hero": {},
+        "about": {},
+        "schedule": {},
+        "social": {}
+    }
+
+    for key, values in qs.items():
+        value = values[0] if values else ""
+        if key.startswith("hero_"):
+            settings["hero"][key[5:]] = value
+        elif key.startswith("about_"):
+            settings["about"][key[6:]] = value
+        elif key.startswith("schedule_"):
+            settings["schedule"][key[9:]] = value
+        elif key.startswith("social_"):
+            settings["social"][key[7:]] = value
+
+    # Use defaults for empty values
+    defaults = {
+        "hero": {"youtube_video_id": "rBW1uZnZhbo", "headline": "IMPERA", "tagline": "BSD — Gading Serpong", "subtitle": "", "cta_primary_text": "Play With Us", "cta_primary_link": "#schedule", "cta_secondary_text": "Learn More", "cta_secondary_link": "#about", "logo": "/assets/impera-logo-only-white.png"},
+        "about": {"title": "Built for Those Who Play.", "body": "", "stat_1_label": "Members", "stat_1_value": "90+", "stat_2_label": "Sessions", "stat_2_value": "100+", "stat_3_label": "Home Court", "stat_3_value": "Jetz", "stat_4_label": "Every Week", "stat_4_value": "SAT"},
+        "schedule": {"day": "Saturday", "time": "18:00", "location": "BSD — Gading Serpong Area"},
+        "social": {"instagram": "", "whatsapp": "", "reclub": ""}
+    }
+
+    for section in settings:
+        for key in defaults[section]:
+            if not settings[section].get(key):
+                settings[section][key] = defaults[section][key]
+
+    return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
 
 @app.post("/manage/arena")
 async def create_arena(request: Request, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form("")):

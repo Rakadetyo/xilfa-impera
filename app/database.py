@@ -173,6 +173,54 @@ def init_db():
     if 'status' not in player_columns:
         cursor.execute("ALTER TABLE player ADD COLUMN status INTEGER DEFAULT 1")
 
+    # site_settings: key-value config for pages
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS site_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            page TEXT NOT NULL,
+            section TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(page, section, key)
+        )
+    """)
+
+    # Insert default homepage settings if not exists
+    cursor.execute("SELECT COUNT(*) FROM site_settings WHERE page = 'homepage'")
+    if cursor.fetchone()[0] == 0:
+        defaults = [
+            ('homepage', 'hero', 'youtube_video_id', 'rBW1uZnZhbo'),
+            ('homepage', 'hero', 'headline', 'IMPERA'),
+            ('homepage', 'hero', 'tagline', 'BSD — Gading Serpong'),
+            ('homepage', 'hero', 'subtitle', 'Basketball community. Every Saturday at 18:00. Show up, compete, grow.'),
+            ('homepage', 'hero', 'cta_primary_text', 'Play With Us'),
+            ('homepage', 'hero', 'cta_primary_link', '#schedule'),
+            ('homepage', 'hero', 'cta_secondary_text', 'Learn More'),
+            ('homepage', 'hero', 'cta_secondary_link', '#about'),
+            ('homepage', 'hero', 'logo', '/assets/impera-logo-only-white.png'),
+            ('homepage', 'about', 'title', 'Built for Those Who Play.'),
+            ('homepage', 'about', 'body', 'Impera is a basketball community rooted in BSD-Gading Serpong. We bring together players of all levels who share a love for the game. No politics, no drama — just ball. Whether you\'re seasoned or just starting, you\'re welcome on our court.'),
+            ('homepage', 'about', 'stat_1_label', 'Members'),
+            ('homepage', 'about', 'stat_1_value', '90+'),
+            ('homepage', 'about', 'stat_2_label', 'Sessions'),
+            ('homepage', 'about', 'stat_2_value', '100+'),
+            ('homepage', 'about', 'stat_3_label', 'Home Court'),
+            ('homepage', 'about', 'stat_3_value', 'Jetz'),
+            ('homepage', 'about', 'stat_4_label', 'Every Week'),
+            ('homepage', 'about', 'stat_4_value', 'SAT'),
+            ('homepage', 'schedule', 'day', 'Saturday'),
+            ('homepage', 'schedule', 'time', '18:00'),
+            ('homepage', 'schedule', 'location', 'BSD — Gading Serpong Area'),
+            ('homepage', 'social', 'instagram', 'https://www.instagram.com/imperabasketball/'),
+            ('homepage', 'social', 'whatsapp', ''),
+            ('homepage', 'social', 'reclub', 'https://reclub.co/clubs/@impera'),
+        ]
+        cursor.executemany(
+            "INSERT INTO site_settings (page, section, key, value) VALUES (?, ?, ?, ?)",
+            defaults
+        )
+
     conn.commit()
     conn.close()
 

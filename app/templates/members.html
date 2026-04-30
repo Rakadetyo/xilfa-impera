@@ -75,8 +75,14 @@
                     </svg>
                     Arena
                 </a>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Page Settings</p>
+                    <a href="/manage/page_settings/homepage" class="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 ml-2 text-sm">
+                        Homepage
+                    </a>
+                </div>
 
-                <div class="mt-8 pt-6 border-t border-gray-200">
+                <div class="mt-4 pt-4 border-t border-gray-200">
                     <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Coming Soon</p>
                     <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,8 +211,9 @@
                         Members List
                     </div>
                     <div class="flex gap-2">
+                        <button type="button" onclick="openMemberModal(null, null, '', '', false, 0)" class="bg-accent text-black px-4 py-2 text-xs font-bold hover:bg-accent-light rounded-lg">Add Member</button>
                         <button type="button" onclick="generateWhatsAppChat()" class="bg-gray-200 text-gray-700 px-4 py-2 text-xs font-bold hover:bg-gray-300 rounded-lg">Generate WhatsApp Chat</button>
-                        <button type="button" onclick="openWhatsAppModal()" class="bg-accent text-black px-4 py-2 text-xs font-bold hover:bg-accent-light rounded-lg">Import from WhatsApp</button>
+                        <button type="button" onclick="openWhatsAppModal()" class="bg-gray-200 text-gray-700 px-4 py-2 text-xs font-bold hover:bg-gray-300 rounded-lg">Import from WhatsApp</button>
                     </div>
                 </div>
 
