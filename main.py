@@ -879,7 +879,7 @@ async def toggle_member_paid(request: Request, member_id: int):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE member SET is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (is_paid, member_id))
-    logger.info(f"[MEMBER] TOGGLE_PAID: member_id={member_id}, is_paid={is_paid}, by={user.username}")
+    logger.info(f"[MEMBER] TOGGLE_PAID: member_id={member_id}, is_paid={is_paid}, by={user['username']}")
     conn.commit()
     conn.close()
 
@@ -905,14 +905,14 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
                WHERE player_id = ? AND member_period = ?""",
             (member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, player_id, member_period)
         )
-        logger.info(f"[MEMBER] UPDATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={user.username}")
+        logger.info(f"[MEMBER] UPDATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={user['username']}")
     else:
         cursor.execute(
             """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
                VALUES (?, ?, ?, ?, ?, ?)""",
             (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
         )
-        logger.info(f"[MEMBER] CREATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={user.username}")
+        logger.info(f"[MEMBER] CREATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={user['username']}")
     conn.commit()
     conn.close()
 
@@ -1078,13 +1078,13 @@ async def import_whatsapp_members_confirm(request: Request):
                 UPDATE member SET membership_price = ?, is_paid = 0, member_start_date = ?, member_end_date = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE player_id = ? AND member_period = ?
             """, (price, start_date, end_date, player_id, member_period))
-            logger.info(f"[MEMBER] WHATSAPP UPDATE: player_id={player_id}, period={member_period}, price={price}, by={user.username}")
+            logger.info(f"[MEMBER] WHATSAPP UPDATE: player_id={player_id}, period={member_period}, price={price}, by={user['username']}")
         else:
             cursor.execute("""
                 INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
                 VALUES (?, ?, ?, ?, ?, 0)
             """, (player_id, member_period, start_date, end_date, price))
-            logger.info(f"[MEMBER] WHATSAPP CREATE: player_id={player_id}, period={member_period}, price={price}, by={user.username}")
+            logger.info(f"[MEMBER] WHATSAPP CREATE: player_id={player_id}, period={member_period}, price={price}, by={user['username']}")
         imported += 1
 
     conn.commit()
@@ -1305,7 +1305,7 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
         "UPDATE member SET player_id = ?, member_period = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, member_id)
     )
-    username = user["username"] if isinstance(user, dict) else user.username
+    username = user["username"]
     logger.info(f"[MEMBER] UPDATE: member_id={member_id}, player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
     conn.commit()
     conn.close()
@@ -1324,7 +1324,7 @@ async def delete_member(request: Request, member_id: int, month: int = Form(1), 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM member WHERE id = ?", (member_id,))
-    logger.info(f"[MEMBER] DELETE: member_id={member_id}, by={user.username}")
+    logger.info(f"[MEMBER] DELETE: member_id={member_id}, by={user['username']}")
     conn.commit()
     conn.close()
 
