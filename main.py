@@ -46,10 +46,49 @@ def get_current_user(request: Request):
 def is_superadmin(user):
     return user and dict(user).get("role") == "superadmin"
 
+def get_setting(page: str, section: str, key: str, default: str = ""):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT value FROM site_settings WHERE page = ? AND section = ? AND key = ?",
+        (page, section, key)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["value"] if row else default
+
+def get_page_settings(page: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT section, key, value FROM site_settings WHERE page = ?",
+        (page,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    settings = {}
+    for row in rows:
+        if row["section"] not in settings:
+            settings[row["section"]] = {}
+        settings[row["section"]][row["key"]] = row["value"]
+    return settings
+
+def set_setting(page: str, section: str, key: str, value: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO site_settings (page, section, key, value) VALUES (?, ?, ?, ?)
+           ON CONFLICT(page, section, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP""",
+        (page, section, key, value)
+    )
+    conn.commit()
+    conn.close()
+
 # --- Public Routes ---
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+    settings = get_page_settings("homepage")
+    return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
 
 @app.get("/blog", response_class=HTMLResponse)
 async def blog(request: Request):
@@ -1255,6 +1294,54 @@ async def arena_page(request: Request):
         "arena_game_counts": arena_game_counts,
         "arena_game_list": arena_rows
     })
+
+# --- Page Settings ---
+@app.get("/manage/page_settings", response_class=HTMLResponse)
+async def page_settings(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    settings = get_page_settings("homepage")
+    return templates.TemplateResponse(request, "page_settings.html", {
+        "request": request,
+        "user": user,
+        "settings": settings
+    })
+
+@app.post("/manage/page_settings")
+async def save_page_settings(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    form = await request.form()
+    username = user["username"]
+
+    try:
+        for key, value in form.items():
+            if key.startswith("hero_"):
+                section = "hero"
+                setting_key = key[5:]
+            elif key.startswith("about_"):
+                section = "about"
+                setting_key = key[6:]
+            elif key.startswith("schedule_"):
+                section = "schedule"
+                setting_key = key[9:]
+            elif key.startswith("social_"):
+                section = "social"
+                setting_key = key[7:]
+            else:
+                continue
+
+            set_setting("homepage", section, setting_key, value)
+
+        logger.info(f"[PAGE_SETTINGS] Saved homepage settings by {username}")
+        return RedirectResponse("/manage/page_settings?success=Settings saved", status_code=302)
+    except Exception as e:
+        logger.error(f"[PAGE_SETTINGS] Error saving settings by {username}: {str(e)}")
+        return RedirectResponse(f"/manage/page_settings?error={str(e)}", status_code=302)
 
 @app.post("/manage/arena")
 async def create_arena(request: Request, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form("")):
