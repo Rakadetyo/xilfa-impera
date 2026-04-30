@@ -486,10 +486,37 @@ async def create_player(
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Check member limit (max 25 per period)
+    import datetime
+    now = datetime.datetime.now()
+    current_period = f"{now.year}-{now.month:02d}"
+    cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
+    member_count = cursor.fetchone()["total"]
+
+    if is_member and member_count >= 25:
+        conn.close()
+        return RedirectResponse(f"/manage/players?error=Member limit reached for {current_period} (max 25)", status_code=302)
+
+    # Create player
     cursor.execute("""
         INSERT INTO player (name, nickname, position_1, position_2, skill_level, is_member, contact_no, instagram, reclub, join_date, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
     """, (name, nickname, position_1, position_2, skill_level, 1 if is_member else 0, contact_no, instagram, reclub, status))
+
+    # If is_member, create member record
+    if is_member:
+        player_id = cursor.lastrowid
+        import calendar
+        last_day = calendar.monthrange(now.year, now.month)[1]
+        member_start = f"{now.year}-{now.month:02d}-01"
+        member_end = f"{now.year}-{now.month:02d}-{last_day}"
+        cursor.execute("""
+            INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+            VALUES (?, ?, ?, ?, 0, 1)
+        """, (player_id, current_period, member_start, member_end))
+        logger.info(f"[PLAYER] Created player {player_id} with member record for period {current_period}, by={user['username']}")
+
     conn.commit()
     conn.close()
 
@@ -529,6 +556,37 @@ async def update_player(
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Check member limit for update (max 25 per period)
+    import datetime
+    import calendar
+    now = datetime.datetime.now()
+    current_period = f"{now.year}-{now.month:02d}"
+
+    if is_member:
+        # Check if player already has member record for current period
+        cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, current_period))
+        existing_member = cursor.fetchone()
+
+        if not existing_member:
+            # No existing member record - check limit
+            cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
+            member_count = cursor.fetchone()["total"]
+
+            if member_count >= 25:
+                conn.close()
+                return RedirectResponse(f"/manage/players?error=Member limit reached for {current_period} (max 25)&page={page}&sort={sort}&order={order}", status_code=302)
+
+            # Create new member record
+            last_day = calendar.monthrange(now.year, now.month)[1]
+            member_start = f"{now.year}-{now.month:02d}-01"
+            member_end = f"{now.year}-{now.month:02d}-{last_day}"
+            cursor.execute("""
+                INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+                VALUES (?, ?, ?, ?, 0, 1)
+            """, (player_id, current_period, member_start, member_end))
+            logger.info(f"[PLAYER] Added member record for player {player_id}, period {current_period}, by={user['username']}")
+
     cursor.execute("""
         UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, is_member = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
