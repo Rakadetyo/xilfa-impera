@@ -760,7 +760,7 @@ async def members_page(request: Request):
 
     # Avg member per month (all time)
     cursor.execute("""
-        SELECT DISTINCT member_period FROM member ORDER BY member_period
+        SELECT DISTINCT member_period FROM member WHERE member_period IS NOT NULL ORDER BY member_period
     """)
     all_periods = cursor.fetchall()
     if all_periods:
@@ -836,17 +836,22 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute(
-        """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
-           VALUES (?, ?, ?, ?, ?, ?)
-           ON CONFLICT(player_id, member_period) DO UPDATE SET
-           member_start_date = excluded.member_start_date,
-           member_end_date = excluded.member_end_date,
-           membership_price = excluded.membership_price,
-           is_paid = excluded.is_paid,
-           updated_at = CURRENT_TIMESTAMP""",
-        (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
-    )
+    # Check if member exists for this period
+    cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute(
+            """UPDATE member SET member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE player_id = ? AND member_period = ?""",
+            (member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, player_id, member_period)
+        )
+    else:
+        cursor.execute(
+            """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
+        )
     conn.commit()
     conn.close()
 
@@ -991,16 +996,20 @@ async def import_whatsapp_members_confirm(request: Request):
         player_id = member.get("player_id")
         price = member.get("price")
 
-        cursor.execute("""
-            INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
-            VALUES (?, ?, ?, ?, ?, 0)
-            ON CONFLICT(player_id, member_period) DO UPDATE SET
-            membership_price = excluded.membership_price,
-            is_paid = 0,
-            member_start_date = excluded.member_start_date,
-            member_end_date = excluded.member_end_date,
-            updated_at = CURRENT_TIMESTAMP
-        """, (player_id, member_period, start_date, end_date, price))
+        # Check if exists, then update or insert
+        cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
+        existing = cursor.fetchone()
+
+        if existing:
+            cursor.execute("""
+                UPDATE member SET membership_price = ?, is_paid = 0, member_start_date = ?, member_end_date = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE player_id = ? AND member_period = ?
+            """, (price, start_date, end_date, player_id, member_period))
+        else:
+            cursor.execute("""
+                INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+                VALUES (?, ?, ?, ?, ?, 0)
+            """, (player_id, member_period, start_date, end_date, price))
         imported += 1
 
     conn.commit()
@@ -1225,6 +1234,23 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
     conn.close()
 
     return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
+
+@app.post("/manage/members/{member_id}/delete")
+async def delete_member(request: Request, member_id: int, month: int = Form(1), year: int = Form(2024)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    if not is_superadmin(user):
+        return RedirectResponse(f"/manage/members?error=Only superadmin can delete members&month={month}&year={year}", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM member WHERE id = ?", (member_id,))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/members?success=Member deleted&month={month}&year={year}", status_code=302)
 
 @app.post("/manage/posts/{post_id}/toggle")
 async def toggle_status(request: Request, post_id: int):
