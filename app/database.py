@@ -114,12 +114,14 @@ def init_db():
         CREATE TABLE IF NOT EXISTS member (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player_id INTEGER NOT NULL,
+            member_period TEXT NOT NULL,
             member_start_date DATE,
             member_end_date DATE,
             is_paid INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (player_id) REFERENCES player(id)
+            FOREIGN KEY (player_id) REFERENCES player(id),
+            UNIQUE(player_id, member_period)
         )
     """)
 
@@ -160,6 +162,10 @@ def init_db():
     member_columns = [row[1] for row in cursor.fetchall()]
     if 'membership_price' not in member_columns:
         cursor.execute("ALTER TABLE member ADD COLUMN membership_price REAL DEFAULT 0")
+
+    # Add member_period column if not exists
+    if 'member_period' not in member_columns:
+        cursor.execute("ALTER TABLE member ADD COLUMN member_period TEXT")
 
     conn.commit()
     conn.close()
