@@ -36,34 +36,45 @@
 
         <main class="ml-64 flex-1 flex flex-col">
             <!-- Header -->
-            <div class="px-8 py-6 border-b border-gray-200 bg-white">
+            <div class="px-8 py-3 border-b border-gray-200 bg-white">
                 <div class="flex justify-between items-center">
                     <div>
                         <h1 class="text-3xl font-display tracking-wide">Games</h1>
                         <p class="text-gray-500 mt-1">Manage basketball sessions</p>
                     </div>
-                    <a href="/manage/games/new" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
-                        + New Game
-                    </a>
+                    <div class="flex items-center gap-4">
+                        <!-- View Toggle -->
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button onclick="setView('cards')" id="btn-cards" class="px-4 py-2 rounded-md text-sm font-bold transition-all bg-white shadow-sm text-accent">
+                                Cards
+                            </button>
+                            <button onclick="setView('calendar')" id="btn-calendar" class="px-4 py-2 rounded-md text-sm font-bold transition-all text-gray-400 hover:text-gray-600">
+                                Calendar
+                            </button>
+                        </div>
+                        <a href="/manage/games/new" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
+                            + New Game
+                        </a>
+                    </div>
                 </div>
             </div>
 
             <!-- Card Carousel -->
-            <div class="flex-1 flex flex-col items-center justify-center py-8 overflow-hidden">
+            <div class="flex-1 flex flex-col items-center justify-center pt-2 pb-2 overflow-hidden">
                 {% if games %}
-                <div class="card-carousel w-full max-w-5xl">
+                <div id="card-carousel" class="card-carousel w-full max-w-5xl">
                     <!-- Cards Container -->
-                    <div class="relative h-[420px] flex items-center justify-center">
+                    <div class="relative h-[85vh] flex items-center justify-center">
                         {% for game in games %}
-                        <a href="/manage/games/{{ game.id }}" class="game-card absolute w-72 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden block"
+                        <a href="/manage/games/{{ game.id }}" class="game-card absolute w-80 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden block"
                             style="z-index: {{ 100 - loop.index0 }};">
                             <!-- Top Accent Bar -->
                             <div class="h-2 bg-gradient-to-r from-accent via-accent-light to-accent"></div>
 
-                            <div class="p-5">
+                            <div class="p-8">
                                 <!-- Status Badge -->
-                                <div class="flex justify-start mb-4">
-                                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                                <div class="flex justify-start mb-6">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider
                                         {% if game.status == 'open' %}bg-green-500 text-white shadow-lg shadow-green-500/30
                                         {% elif game.status == 'closed' %}bg-red-500 text-white shadow-lg shadow-red-500/30
                                         {% else %}bg-gray-400 text-white{% endif %}">
@@ -72,9 +83,9 @@
                                 </div>
 
                                 <!-- Date Block -->
-                                <div class="text-center mb-5">
-                                    <div class="text-5xl font-display tracking-wider text-gray-800 leading-none">{{ game.datetime[8:10] }}</div>
-                                    <div class="text-lg font-bold text-accent uppercase tracking-[0.2em] mt-1">
+                                <div class="text-center mb-6">
+                                    <div class="text-7xl font-display tracking-wider text-gray-800 leading-none">{{ game.datetime[8:10] }}</div>
+                                    <div class="text-xl font-bold text-accent uppercase tracking-[0.2em] mt-2">
                                         {% set months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] %}
                                         {{ months[game.datetime[5:7]|int - 1] }}
                                     </div>
@@ -116,10 +127,10 @@
                                 </div>
 
                                 <!-- Price -->
-                                <div class="mt-5 pt-4 border-t border-gray-100">
+                                <div class="mt-6 pt-5 border-t border-gray-100">
                                     <div class="text-center">
-                                        <span class="text-3xl font-display text-accent">Rp{{ "{:,.0f}".format(game.price_per_person) }}</span>
-                                        <span class="text-xs text-gray-400 ml-1">/person</span>
+                                        <span class="text-4xl font-display text-accent">Rp{{ "{:,.0f}".format(game.price_per_person) }}</span>
+                                        <span class="text-sm text-gray-400 ml-1">/person</span>
                                     </div>
                                 </div>
                             </div>
@@ -128,7 +139,7 @@
                     </div>
 
                     <!-- Navigation -->
-                    <div class="flex items-center justify-center gap-6 mt-6">
+                    <div class="flex items-center justify-center gap-6 -mt-4">
                         <button onclick="scrollCards(-1)" class="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:bg-accent hover:text-white transition-all shadow-md">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -148,6 +159,36 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Calendar View -->
+                <div id="calendar-view" class="hidden w-full max-w-4xl mx-auto">
+                    <!-- Calendar Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
+                            ←
+                        </button>
+                        <h2 id="calendar-title" class="text-3xl font-display tracking-wide text-gray-800"></h2>
+                        <button onclick="changeMonth(1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
+                            →
+                        </button>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                        <!-- Calendar Days Header -->
+                        <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Sun</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Mon</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Tue</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Wed</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Thu</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Fri</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Sat</div>
+                        </div>
+                        <!-- Calendar Days -->
+                        <div id="calendar-days" class="grid grid-cols-7" style="min-height: 500px;"></div>
+                    </div>
+                </div>
                 {% else %}
                 <div class="text-center py-12">
                     <p class="text-gray-500">No games yet. Create your first game!</p>
@@ -155,17 +196,13 @@
                 {% endif %}
             </div>
 
-            <!-- Footer -->
-            <footer class="border-t border-gray-200 py-4 text-center text-gray-400 text-sm">
-                Footer
-            </footer>
         </main>
     </div>
 
     <script>
         let currentIndex = 0;
         const totalCards = {{ games|length }};
-        const cardWidth = 288; // w-72 = 288px
+        const cardWidth = 320; // w-80 = 320px
         const gap = 32; // gap between cards
 
         function scrollCards(direction) {
@@ -227,6 +264,127 @@
 
         // Initialize
         updateCards();
+
+        // View Toggle
+        let currentView = 'cards';
+        const gamesData = [
+            {% for game in games %}
+            { id: {{ game.id }}, datetime: "{{ game.datetime }}", name: "{{ game.arena_name or 'No arena' }}", status: "{{ game.status }}" },
+            {% endfor %}
+        ];
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('card-carousel').classList.toggle('hidden', view !== 'cards');
+            document.getElementById('calendar-view').classList.toggle('hidden', view !== 'calendar');
+
+            const btnCards = document.getElementById('btn-cards');
+            const btnCalendar = document.getElementById('btn-calendar');
+
+            if (view === 'cards') {
+                btnCards.classList.add('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCards.classList.remove('text-gray-500');
+                btnCalendar.classList.remove('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCalendar.classList.add('text-gray-500');
+            } else {
+                btnCalendar.classList.add('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCalendar.classList.remove('text-gray-500');
+                btnCards.classList.remove('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCards.classList.add('text-gray-500');
+            }
+        }
+
+        // Calendar
+        let calendarDate = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        function renderCalendar() {
+            try {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+
+            document.getElementById('calendar-title').textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            let html = '';
+
+            // Empty cells before first day
+            for (let j = 0; j < firstDay; j++) {
+                html += '<div class="h-28 border-b border-r border-gray-100 bg-gray-50"></div>';
+            }
+
+            // Days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                html += renderDayCell(day, month, year, today);
+            }
+
+            // Fill remaining cells to complete the grid
+            const totalCells = firstDay + daysInMonth;
+            const remaining = 7 - (totalCells % 7);
+            if (remaining < 7) {
+                for (let j = 0; j < remaining; j++) {
+                    html += '<div class="h-28 border-b border-r border-gray-100 bg-gray-50"></div>';
+                }
+            }
+
+            document.getElementById('calendar-days').innerHTML = html;
+            } catch (e) {
+                console.error('Calendar error:', e);
+                document.getElementById('calendar-days').innerHTML = '<div class="col-span-7 p-8 text-center text-gray-500">Error loading calendar</div>';
+            }
+        }
+
+        function renderDayCell(day, month, year, today) {
+            const gamesOnDay = gamesData.filter(g => {
+                try {
+                    const gameDate = new Date(g.datetime);
+                    return gameDate.getDate() === day && gameDate.getMonth() === month && gameDate.getFullYear() === year;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+            const hasGames = gamesOnDay.length > 0;
+
+            // Format date for URL: YYYY-MM-DD
+            const pad = n => n.toString().padStart(2, '0');
+            const clickDate = `${year}-${pad(month + 1)}-${pad(day)}`;
+
+            let cellClass = 'h-28 border-b border-r border-gray-100 p-2';
+            if (isToday) cellClass += ' bg-accent/10';
+
+            let html = `<div class="${cellClass}">`;
+            html += `<div class="text-sm font-bold ${isToday ? 'text-accent' : hasGames ? 'text-gray-700' : 'text-gray-400'}">${day}</div>`;
+
+            if (hasGames) {
+                gamesOnDay.forEach(game => {
+                    const statusColor = game.status === 'open' ? 'bg-green-500' : game.status === 'closed' ? 'bg-red-500' : 'bg-gray-400';
+                    const time = game.datetime.slice(11, 16);
+                    html += `<a href="/manage/games/${game.id}" class="block mt-1 px-2 py-1 ${statusColor} text-white text-xs rounded truncate hover:opacity-80 font-medium">`;
+                    html += `${time} - ${game.name}`;
+                    html += '</a>';
+                });
+            } else {
+                // Click to add game on empty cell
+                html += `<a href="/manage/games/new?date=${clickDate}" class="block mt-2 text-xs text-gray-300 hover:text-accent text-center opacity-0 hover:opacity-100 transition-opacity">+ Add Game</a>`;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function changeMonth(delta) {
+            calendarDate.setMonth(calendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        // Initialize calendar
+        renderCalendar();
     </script>
 </body>
 </html>
