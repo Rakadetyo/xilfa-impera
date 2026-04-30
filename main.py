@@ -704,7 +704,7 @@ async def members_page(request: Request):
     # Get members for selected period
     cursor.execute("""
         SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price, m.member_period,
-               p.name,
+               p.name, p.nickname,
                (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id) as n_members,
                (SELECT m2.member_period FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_period < m.member_period ORDER BY m2.member_period DESC LIMIT 1) as last_member_period
         FROM member m
@@ -716,7 +716,7 @@ async def members_page(request: Request):
     members = cursor.fetchall()
 
     # Get all players for the dropdown
-    cursor.execute("SELECT id, name FROM player ORDER BY name")
+    cursor.execute("SELECT id, name, nickname FROM player ORDER BY name")
     players = cursor.fetchall()
 
     # Analytics
@@ -957,8 +957,8 @@ async def import_whatsapp_members(request: Request):
             })
 
     # Get all players for dropdown
-    cursor.execute("SELECT id, name FROM player ORDER BY name")
-    all_players = [{"id": p["id"], "name": p["name"]} for p in cursor.fetchall()]
+    cursor.execute("SELECT id, name, nickname FROM player ORDER BY name")
+    all_players = [{"id": p["id"], "name": p["name"], "nickname": p.get("nickname")} for p in cursor.fetchall()]
 
     conn.close()
 
@@ -982,7 +982,16 @@ async def import_whatsapp_members_confirm(request: Request):
     end_date = data.get("end_date")
     member_period = data.get("member_period")
 
-    if not members_data or not start_date or not end_date or not member_period:
+    if not members_data or not start_date or not end_date:
+        return JSONResponse({"error": "Missing data"}, status_code=400)
+
+    # Derive member_period from start_date if not provided (format: YYYY-MM)
+    if not member_period and start_date:
+        parts = start_date.split("-")
+        if len(parts) >= 2:
+            member_period = f"{parts[0]}-{parts[1]}"
+
+    if not member_period:
         return JSONResponse({"error": "Missing data"}, status_code=400)
 
     conn = get_db()
@@ -994,6 +1003,9 @@ async def import_whatsapp_members_confirm(request: Request):
             continue
 
         player_id = member.get("player_id")
+        if not player_id:
+            continue
+
         price = member.get("price")
 
         # Check if exists, then update or insert

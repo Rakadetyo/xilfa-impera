@@ -34,8 +34,8 @@
         <!-- Sidebar -->
         <aside class="w-64 bg-white border-r border-gray-200 fixed h-full">
             <div class="p-6">
-                <span class="text-2xl font-display tracking-widest text-accent">IMPERA</span>
-                <span class="text-sm text-gray-500 block mt-1">/ Manage</span>
+                <span class="text-lg font-display tracking-widest text-accent">IMPERA</span>
+                <span class="text-xs text-gray-500 block mt-1">/ Manage</span>
             </div>
 
             <nav class="mt-6 px-4">
@@ -94,9 +94,9 @@
         <main class="ml-64 flex-1">
             <!-- Top Bar -->
             <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-display">Players</h1>
+                <h1 class="text-lg font-display">Players</h1>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -120,12 +120,12 @@
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-3 gap-4 mb-8">
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                        <p class="text-4xl font-display text-accent">{{ stats.total }}</p>
+                        <p class="text-2xl font-display text-accent">{{ stats.total }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Total Players</p>
                     </div>
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                         <div class="mb-3">
-                            <p class="text-3xl font-display text-gray-700">{{ stats.avg_skill }}</p>
+                            <p class="text-2xl font-display text-gray-700">{{ stats.avg_skill }}</p>
                             <p class="text-xs text-gray-500 uppercase tracking-widest">Avg Skill</p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs">
@@ -287,29 +287,29 @@
                                 {% set so = filters.sort if filters.sort else 'name' %}
                                 {% set o = filters.order if filters.order else 'asc' %}
                                 {% set base_url = '/manage/players?search=' ~ s ~ '&position=' ~ p ~ '&skill=' ~ sk ~ '&member=' ~ m ~ '&sort=' ~ so ~ '&order=' ~ o ~ '&page=' %}
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">
                                     <a href="{{ base_url ~ (pagination.page) ~ '&sort=name&order=desc' if so == 'name' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=name&order=asc' }}" class="hover:text-accent {% if so == 'name' %}text-accent{% endif %}">
                                         Name {% if so == 'name' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
                                     </a>
                                 </th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">
                                     <a href="{{ base_url ~ (pagination.page) ~ '&sort=nickname&order=desc' if so == 'nickname' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=nickname&order=asc' }}" class="hover:text-accent {% if so == 'nickname' %}text-accent{% endif %}">
                                         Nickname {% if so == 'nickname' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
                                     </a>
                                 </th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Positions</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Positions</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">
                                     <a href="{{ base_url ~ (pagination.page) ~ '&sort=skill_level&order=desc' if so == 'skill_level' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=skill_level&order=asc' }}" class="hover:text-accent {% if so == 'skill_level' %}text-accent{% endif %}">
                                         Skill {% if so == 'skill_level' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
                                     </a>
                                 </th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Member</th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Member</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">
                                     <a href="{{ base_url ~ (pagination.page) ~ '&sort=join_date&order=desc' if so == 'join_date' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=join_date&order=asc' }}" class="hover:text-accent {% if so == 'join_date' %}text-accent{% endif %}">
                                         Join Date {% if so == 'join_date' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
                                     </a>
                                 </th>
-                                <th class="text-left p-4 text-sm font-bold uppercase tracking-widest text-gray-500">
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">
                                     <a href="{{ base_url ~ (pagination.page) ~ '&sort=last_played&order=desc' if so == 'last_played' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=last_played&order=asc' }}" class="hover:text-accent {% if so == 'last_played' %}text-accent{% endif %}">
                                         Last Played {% if so == 'last_played' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
                                     </a>
@@ -341,8 +341,8 @@
                                     <span class="text-gray-400">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="p-4 text-sm text-gray-600">{{ p.join_date[:10] if p.join_date else '-' }}</td>
-                                <td class="p-4 text-sm text-gray-600">{{ p.last_played[:10] if p.last_played else '-' }}</td>
+                                <td class="p-4 text-xs text-gray-600">{{ p.join_date[:10] if p.join_date else '-' }}</td>
+                                <td class="p-4 text-xs text-gray-600">{{ p.last_played[:10] if p.last_played else '-' }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -357,7 +357,7 @@
                     <!-- Pagination -->
                     {% if pagination.total_pages > 1 %}
                     <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-                        <span class="text-sm text-gray-500">
+                        <span class="text-xs text-gray-500">
                             Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} - {{ [pagination.page * pagination.per_page, pagination.total] | min }} of {{ pagination.total }}
                         </span>
                         <div class="flex gap-2">
@@ -524,7 +524,7 @@
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">Edit Player</h2>
+                    <h2 class="text-lg font-bold">Edit Player</h2>
                     <button onclick="closePlayerModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
             </div>
