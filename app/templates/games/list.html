@@ -15,64 +15,218 @@
                     },
                     fontFamily: {
                         'display': ['Bangers', 'sans-serif'],
-                        'accent': ['Permanent Marker', 'cursive'],
                         'body': ['Inter', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card-carousel { perspective: 1500px; }
+        .game-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="flex min-h-screen">
         {% include '_sidebar.html' %}
 
-        <main class="ml-64 flex-1 p-8">
-            <div class="flex justify-between items-center mb-8">
-                <div>
-                    <h1 class="text-3xl font-display tracking-wide">Games</h1>
-                    <p class="text-gray-500 mt-1">Manage basketball sessions</p>
+        <main class="ml-64 flex-1 flex flex-col">
+            <!-- Header -->
+            <div class="px-8 py-6 border-b border-gray-200 bg-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-display tracking-wide">Games</h1>
+                        <p class="text-gray-500 mt-1">Manage basketball sessions</p>
+                    </div>
+                    <a href="/manage/games/new" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
+                        + New Game
+                    </a>
                 </div>
-                <a href="/manage/games/new" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
-                    + New Game
-                </a>
             </div>
 
-            {% if games %}
-            <div class="grid gap-4">
-                {% for game in games %}
-                <div class="bg-white rounded-xl p-6 border border-gray-200 hover:border-accent/50 transition shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="text-xl font-semibold">{{ game.datetime[:10] }}</h3>
-                            <p class="text-gray-500">{{ game.datetime[11:16] }} • {{ game.arena_name or 'No arena' }}</p>
-                            <div class="flex gap-4 mt-2 text-sm text-gray-600">
-                                <span>👥 {{ game.attendee_count }}/{{ game.max_players }}</span>
-                                <span>⏱ {{ game.duration_per_game }}min/match</span>
-                                <span>💰 Rp{{ "{:,.0f}".format(game.price_per_person) }}</span>
+            <!-- Card Carousel -->
+            <div class="flex-1 flex flex-col items-center justify-center py-8 overflow-hidden">
+                {% if games %}
+                <div class="card-carousel w-full max-w-5xl">
+                    <!-- Cards Container -->
+                    <div class="relative h-[420px] flex items-center justify-center">
+                        {% for game in games %}
+                        <a href="/manage/games/{{ game.id }}" class="game-card absolute w-72 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden block"
+                            style="z-index: {{ 100 - loop.index0 }};">
+                            <!-- Top Accent Bar -->
+                            <div class="h-2 bg-gradient-to-r from-accent via-accent-light to-accent"></div>
+
+                            <div class="p-5">
+                                <!-- Status Badge -->
+                                <div class="flex justify-start mb-4">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                                        {% if game.status == 'open' %}bg-green-500 text-white shadow-lg shadow-green-500/30
+                                        {% elif game.status == 'closed' %}bg-red-500 text-white shadow-lg shadow-red-500/30
+                                        {% else %}bg-gray-400 text-white{% endif %}">
+                                        {{ game.status }}
+                                    </span>
+                                </div>
+
+                                <!-- Date Block -->
+                                <div class="text-center mb-5">
+                                    <div class="text-5xl font-display tracking-wider text-gray-800 leading-none">{{ game.datetime[8:10] }}</div>
+                                    <div class="text-lg font-bold text-accent uppercase tracking-[0.2em] mt-1">
+                                        {% set months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] %}
+                                        {{ months[game.datetime[5:7]|int - 1] }}
+                                    </div>
+                                    <div class="text-gray-400 text-sm mt-1">{{ game.datetime[:4] }}</div>
+                                </div>
+
+                                <!-- Divider -->
+                                <div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4"></div>
+
+                                <!-- Details -->
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="text-xs">Time</span>
+                                        </div>
+                                        <span class="font-bold text-gray-700">{{ game.datetime[11:16] }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            </svg>
+                                            <span class="text-xs">Arena</span>
+                                        </div>
+                                        <span class="font-bold text-gray-700 truncate max-w-[120px]">{{ game.arena_name or '-' }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            <span class="text-xs">Players</span>
+                                        </div>
+                                        <span class="font-bold text-gray-700">{{ game.attendee_count }}/{{ game.max_players }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Price -->
+                                <div class="mt-5 pt-4 border-t border-gray-100">
+                                    <div class="text-center">
+                                        <span class="text-3xl font-display text-accent">Rp{{ "{:,.0f}".format(game.price_per_person) }}</span>
+                                        <span class="text-xs text-gray-400 ml-1">/person</span>
+                                    </div>
+                                </div>
                             </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex items-center justify-center gap-6 mt-6">
+                        <button onclick="scrollCards(-1)" class="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:bg-accent hover:text-white transition-all shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+
+                        <div class="flex gap-2">
+                            {% for i in range(games|length) %}
+                            <button onclick="goToCard({{ i }})" class="card-dot transition-all rounded-full {% if i == 0 %}bg-accent w-8{% else %}bg-gray-300 hover:bg-gray-400 w-3{% endif %}" style="height: 8px;"></button>
+                            {% endfor %}
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-3 py-1 rounded-full text-sm font-medium
-                                {% if game.status == 'open' %}bg-green-100 text-green-700
-                                {% elif game.status == 'closed' %}bg-red-100 text-red-700
-                                {% else %}bg-gray-100 text-gray-700{% endif %}">
-                                {{ game.status }}
-                            </span>
-                            <a href="/manage/games/{{ game.id }}" class="text-accent hover:underline">View →</a>
-                        </div>
+
+                        <button onclick="scrollCards(1)" class="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:bg-accent hover:text-white transition-all shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
-                {% endfor %}
+                {% else %}
+                <div class="text-center py-12">
+                    <p class="text-gray-500">No games yet. Create your first game!</p>
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="text-center py-12">
-                <p class="text-gray-500">No games yet. Create your first game!</p>
-            </div>
-            {% endif %}
+
+            <!-- Footer -->
+            <footer class="border-t border-gray-200 py-4 text-center text-gray-400 text-sm">
+                Footer
+            </footer>
         </main>
     </div>
+
+    <script>
+        let currentIndex = 0;
+        const totalCards = {{ games|length }};
+        const cardWidth = 288; // w-72 = 288px
+        const gap = 32; // gap between cards
+
+        function scrollCards(direction) {
+            currentIndex = (currentIndex + direction + totalCards) % totalCards;
+            updateCards();
+        }
+
+        function goToCard(index) {
+            currentIndex = index;
+            updateCards();
+        }
+
+        function updateCards() {
+            const cards = document.querySelectorAll('.game-card');
+            const dots = document.querySelectorAll('.card-dot');
+            const containerWidth = cards[0].offsetWidth;
+            const offset = (containerWidth - cardWidth) / 2;
+
+            cards.forEach((card, i) => {
+                const diff = (i - currentIndex + totalCards) % totalCards;
+                let translateX = 0;
+                let scale = 1;
+                let opacity = 1;
+                let zIndex = 100 - Math.abs(diff);
+
+                if (diff === 0) {
+                    translateX = 0;
+                    scale = 1;
+                    opacity = 1;
+                } else if (diff === 1) {
+                    translateX = cardWidth * 0.85;
+                    scale = 0.85;
+                    opacity = 0.6;
+                } else if (diff === totalCards - 1) {
+                    translateX = -cardWidth * 0.85;
+                    scale = 0.85;
+                    opacity = 0.6;
+                } else {
+                    translateX = diff > 0 ? cardWidth * 1.8 : -cardWidth * 1.8;
+                    scale = 0.7;
+                    opacity = 0;
+                }
+
+                card.style.transform = `translateX(${translateX}px) scale(${scale})`;
+                card.style.opacity = opacity;
+                card.style.zIndex = zIndex;
+            });
+
+            dots.forEach((dot, i) => {
+                if (i === currentIndex) {
+                    dot.classList.add('bg-accent', 'w-8');
+                    dot.classList.remove('bg-gray-300', 'w-3');
+                } else {
+                    dot.classList.remove('bg-accent', 'w-8');
+                    dot.classList.add('bg-gray-300', 'w-3');
+                }
+            });
+        }
+
+        // Initialize
+        updateCards();
+    </script>
 </body>
 </html>
