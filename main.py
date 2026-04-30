@@ -997,6 +997,7 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
 
     conn = get_db()
     cursor = conn.cursor()
+
     # Check if member exists for this period
     cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
     existing = cursor.fetchone()
@@ -1011,6 +1012,14 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
             )
             logger.info(f"[MEMBER] UPDATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
         else:
+            # Check member limit (max 25 per period)
+            cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (member_period,))
+            member_count = cursor.fetchone()["total"]
+
+            if member_count >= 25:
+                conn.close()
+                return RedirectResponse(f"/manage/members?error=Member limit reached for {member_period} (max 25)&month={month}&year={year}", status_code=302)
+
             cursor.execute(
                 """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
                    VALUES (?, ?, ?, ?, ?, ?)""",
