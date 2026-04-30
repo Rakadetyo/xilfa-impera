@@ -876,14 +876,18 @@ async def toggle_member_paid(request: Request, member_id: int):
     data = await request.json()
     is_paid = data.get("is_paid", 0)
 
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE member SET is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (is_paid, member_id))
-    logger.info(f"[MEMBER] TOGGLE_PAID: member_id={member_id}, is_paid={is_paid}, by={user['username']}")
-    conn.commit()
-    conn.close()
-
-    return JSONResponse({"success": True})
+    username = user["username"]
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE member SET is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (is_paid, member_id))
+        logger.info(f"[MEMBER] TOGGLE_PAID: member_id={member_id}, is_paid={is_paid}, by={username}")
+        conn.commit()
+        conn.close()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        logger.error(f"[MEMBER] TOGGLE_PAID ERROR: member_id={member_id}, by={username}, error={str(e)}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 @app.post("/manage/members")
 async def create_member(request: Request, player_id: int = Form(...), member_start_date: str = Form(...), member_end_date: str = Form(None), membership_price: float = Form(None), is_paid: bool = Form(False), month: int = Form(1), year: int = Form(2024)):
@@ -899,24 +903,29 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
     cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
     existing = cursor.fetchone()
 
-    if existing:
-        cursor.execute(
-            """UPDATE member SET member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP
-               WHERE player_id = ? AND member_period = ?""",
-            (member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, player_id, member_period)
-        )
-        logger.info(f"[MEMBER] UPDATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={user['username']}")
-    else:
-        cursor.execute(
-            """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
-        )
-        logger.info(f"[MEMBER] CREATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={user['username']}")
-    conn.commit()
-    conn.close()
-
-    return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
+    username = user["username"]
+    try:
+        if existing:
+            cursor.execute(
+                """UPDATE member SET member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP
+                   WHERE player_id = ? AND member_period = ?""",
+                (member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, player_id, member_period)
+            )
+            logger.info(f"[MEMBER] UPDATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
+        else:
+            cursor.execute(
+                """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
+            )
+            logger.info(f"[MEMBER] CREATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
+        conn.commit()
+        conn.close()
+        return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
+    except Exception as e:
+        logger.error(f"[MEMBER] CREATE/UPDATE ERROR: player_id={player_id}, period={member_period}, by={username}, error={str(e)}")
+        conn.close()
+        return RedirectResponse(f"/manage/members?error=Operation failed: {str(e)}&month={month}&year={year}", status_code=302)
 
 # --- WhatsApp Import ---
 @app.post("/api/import-whatsapp-members")
@@ -1055,42 +1064,46 @@ async def import_whatsapp_members_confirm(request: Request):
     if not member_period:
         return JSONResponse({"error": "Missing data"}, status_code=400)
 
-    conn = get_db()
-    cursor = conn.cursor()
+    username = user["username"]
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
 
-    imported = 0
-    for member in members_data:
-        if not member.get("found"):
-            continue
+        imported = 0
+        for member in members_data:
+            if not member.get("found"):
+                continue
 
-        player_id = member.get("player_id")
-        if not player_id:
-            continue
+            player_id = member.get("player_id")
+            if not player_id:
+                continue
 
-        price = member.get("price")
+            price = member.get("price")
 
-        # Check if exists, then update or insert
-        cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
-        existing = cursor.fetchone()
+            # Check if exists, then update or insert
+            cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
+            existing = cursor.fetchone()
 
-        if existing:
-            cursor.execute("""
-                UPDATE member SET membership_price = ?, is_paid = 0, member_start_date = ?, member_end_date = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE player_id = ? AND member_period = ?
-            """, (price, start_date, end_date, player_id, member_period))
-            logger.info(f"[MEMBER] WHATSAPP UPDATE: player_id={player_id}, period={member_period}, price={price}, by={user['username']}")
-        else:
-            cursor.execute("""
-                INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
-                VALUES (?, ?, ?, ?, ?, 0)
-            """, (player_id, member_period, start_date, end_date, price))
-            logger.info(f"[MEMBER] WHATSAPP CREATE: player_id={player_id}, period={member_period}, price={price}, by={user['username']}")
-        imported += 1
+            if existing:
+                cursor.execute("""
+                    UPDATE member SET membership_price = ?, is_paid = 0, member_start_date = ?, member_end_date = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE player_id = ? AND member_period = ?
+                """, (price, start_date, end_date, player_id, member_period))
+                logger.info(f"[MEMBER] WHATSAPP UPDATE: player_id={player_id}, period={member_period}, price={price}, by={username}")
+            else:
+                cursor.execute("""
+                    INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+                    VALUES (?, ?, ?, ?, ?, 0)
+                """, (player_id, member_period, start_date, end_date, price))
+                logger.info(f"[MEMBER] WHATSAPP CREATE: player_id={player_id}, period={member_period}, price={price}, by={username}")
+            imported += 1
 
-    conn.commit()
-    conn.close()
-
-    return JSONResponse({"imported": imported})
+        conn.commit()
+        conn.close()
+        return JSONResponse({"imported": imported})
+    except Exception as e:
+        logger.error(f"[MEMBER] WHATSAPP IMPORT ERROR: period={member_period}, by={username}, error={str(e)}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # --- Generate WhatsApp Chat ---
 @app.get("/api/generate-whatsapp-chat")
@@ -1298,19 +1311,22 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
         return RedirectResponse("/masukgan", status_code=302)
 
     member_period = f"{year}-{month:02d}"
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE member SET player_id = ?, member_period = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, member_id)
-    )
     username = user["username"]
-    logger.info(f"[MEMBER] UPDATE: member_id={member_id}, player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
-    conn.commit()
-    conn.close()
 
-    return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE member SET player_id = ?, member_period = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, member_id)
+        )
+        logger.info(f"[MEMBER] UPDATE: member_id={member_id}, player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
+        conn.commit()
+        conn.close()
+        return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
+    except Exception as e:
+        logger.error(f"[MEMBER] UPDATE ERROR: member_id={member_id}, by={username}, error={str(e)}")
+        return RedirectResponse(f"/manage/members?error=Update failed: {str(e)}&month={month}&year={year}", status_code=302)
 
 @app.post("/manage/members/{member_id}/delete")
 async def delete_member(request: Request, member_id: int, month: int = Form(1), year: int = Form(2024)):
@@ -1321,14 +1337,18 @@ async def delete_member(request: Request, member_id: int, month: int = Form(1), 
     if not is_superadmin(user):
         return RedirectResponse(f"/manage/members?error=Only superadmin can delete members&month={month}&year={year}", status_code=302)
 
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM member WHERE id = ?", (member_id,))
-    logger.info(f"[MEMBER] DELETE: member_id={member_id}, by={user['username']}")
-    conn.commit()
-    conn.close()
-
-    return RedirectResponse(f"/manage/members?success=Member deleted&month={month}&year={year}", status_code=302)
+    username = user["username"]
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM member WHERE id = ?", (member_id,))
+        logger.info(f"[MEMBER] DELETE: member_id={member_id}, by={username}")
+        conn.commit()
+        conn.close()
+        return RedirectResponse(f"/manage/members?success=Member deleted&month={month}&year={year}", status_code=302)
+    except Exception as e:
+        logger.error(f"[MEMBER] DELETE ERROR: member_id={member_id}, by={username}, error={str(e)}")
+        return RedirectResponse(f"/manage/members?error=Delete failed: {str(e)}&month={month}&year={year}", status_code=302)
 
 @app.post("/manage/posts/{post_id}/toggle")
 async def toggle_status(request: Request, post_id: int):
