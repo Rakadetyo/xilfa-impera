@@ -696,29 +696,22 @@ async def members_page(request: Request):
         filter_month = now.month
         filter_year = now.year
 
-    # Calculate first and last day of selected month
-    first_day = datetime.date(filter_year, filter_month, 1)
-    if filter_month == 12:
-        last_day = datetime.date(filter_year, 12, 31)
-    else:
-        last_day = datetime.date(filter_year, filter_month + 1, 1) - datetime.timedelta(days=1)
-
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get members active in selected month with n_members and last_member_date
+    member_period = f"{filter_year}-{filter_month:02d}"
+
+    # Get members for selected period
     cursor.execute("""
-        SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price,
+        SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price, m.member_period,
                p.name,
-               (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_start_date <= m.member_start_date) as n_members,
-               (SELECT m2.member_end_date FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_start_date < m.member_start_date ORDER BY m2.member_start_date DESC LIMIT 1) as last_member_date
+               (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id) as n_members,
+               (SELECT m2.member_period FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_period < m.member_period ORDER BY m2.member_period DESC LIMIT 1) as last_member_period
         FROM member m
         JOIN player p ON m.player_id = p.id
-        WHERE (m.member_start_date <= ?)
-          AND (m.member_end_date IS NULL OR m.member_end_date >= ?)
+        WHERE m.member_period = ?
         ORDER BY p.name ASC
-        LIMIT 15
-    """, (last_day.isoformat(), first_day.isoformat()))
+    """, (member_period,))
 
     members = cursor.fetchall()
 
@@ -727,51 +720,37 @@ async def members_page(request: Request):
     players = cursor.fetchall()
 
     # Analytics
-    # 1. Total active members this month + total unique all time
-    cursor.execute("""
-        SELECT COUNT(DISTINCT player_id) as cnt FROM member
-        WHERE member_start_date <= ? AND (member_end_date IS NULL OR member_end_date >= ?)
-    """, (last_day.isoformat(), first_day.isoformat()))
+    # 1. Total members this period + total unique all time
+    cursor.execute("SELECT COUNT(*) as cnt FROM member WHERE member_period = ?", (member_period,))
     active_this_month = cursor.fetchone()["cnt"]
 
     cursor.execute("SELECT COUNT(DISTINCT player_id) as cnt FROM member")
     total_unique = cursor.fetchone()["cnt"]
 
-    # 2. Paid vs Unpaid + Total Income this month
+    # 2. Paid vs Unpaid + Total Income this period
     cursor.execute("""
         SELECT COUNT(*) as cnt, SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as paid_cnt,
                SUM(CASE WHEN is_paid = 1 THEN COALESCE(membership_price, 0) ELSE 0 END) as total_income
         FROM member
-        WHERE member_start_date <= ? AND (member_end_date IS NULL OR member_end_date >= ?)
-    """, (last_day.isoformat(), first_day.isoformat()))
+        WHERE member_period = ?
+    """, (member_period,))
     paid_stats = cursor.fetchone()
     paid_count = paid_stats["paid_cnt"] or 0
     unpaid_count = (paid_stats["cnt"] or 0) - paid_count
     total_income = paid_stats["total_income"] or 0
 
-    # 3. New members this month
-    cursor.execute("""
-        SELECT COUNT(*) as cnt FROM member
-        WHERE member_start_date >= ? AND member_start_date <= ?
-    """, (first_day.isoformat(), last_day.isoformat()))
-    new_this_month = cursor.fetchone()["cnt"]
+    # 3. New members this period (count of members with this period)
+    new_this_month = active_this_month
 
-    # Retention Rate (members who were also active in previous month)
+    # Retention Rate (members who were also active in previous period)
     prev_month = filter_month - 1
     prev_year = filter_year
     if prev_month == 0:
         prev_month = 12
         prev_year -= 1
-    prev_first = datetime.date(prev_year, prev_month, 1)
-    if prev_month == 12:
-        prev_last = datetime.date(prev_year, 12, 31)
-    else:
-        prev_last = datetime.date(prev_year, prev_month + 1, 1) - datetime.timedelta(days=1)
+    prev_period = f"{prev_year}-{prev_month:02d}"
 
-    cursor.execute("""
-        SELECT COUNT(DISTINCT player_id) as cnt FROM member
-        WHERE member_start_date <= ? AND (member_end_date IS NULL OR member_end_date >= ?)
-    """, (prev_last.isoformat(), prev_first.isoformat()))
+    cursor.execute("SELECT COUNT(*) as cnt FROM member WHERE member_period = ?", (prev_period,))
     prev_active = cursor.fetchone()["cnt"]
 
     if prev_active > 0:
@@ -781,15 +760,14 @@ async def members_page(request: Request):
 
     # Avg member per month (all time)
     cursor.execute("""
-        SELECT member_start_date FROM member ORDER BY member_start_date
+        SELECT DISTINCT member_period FROM member ORDER BY member_period
     """)
-    all_members = cursor.fetchall()
-    if all_members:
-        # Get min and max months
-        min_date = all_members[0]["member_start_date"][:7]  # YYYY-MM
-        max_date = all_members[-1]["member_start_date"][:7]
-        min_parts = min_date.split("-")
-        max_parts = max_date.split("-")
+    all_periods = cursor.fetchall()
+    if all_periods:
+        min_period = all_periods[0]["member_period"]
+        max_period = all_periods[-1]["member_period"]
+        min_parts = min_period.split("-")
+        max_parts = max_period.split("-")
         months_span = (int(max_parts[0]) - int(min_parts[0])) * 12 + (int(max_parts[1]) - int(min_parts[1])) + 1
         if months_span > 0:
             avg_per_month = round(total_unique / months_span, 1)
@@ -854,11 +832,20 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
+    member_period = f"{year}-{month:02d}"
+
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO member (player_id, member_start_date, member_end_date, membership_price, is_paid) VALUES (?, ?, ?, ?, ?)",
-        (player_id, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
+        """INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(player_id, member_period) DO UPDATE SET
+           member_start_date = excluded.member_start_date,
+           member_end_date = excluded.member_end_date,
+           membership_price = excluded.membership_price,
+           is_paid = excluded.is_paid,
+           updated_at = CURRENT_TIMESTAMP""",
+        (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0)
     )
     conn.commit()
     conn.close()
@@ -924,6 +911,7 @@ async def import_whatsapp_members(request: Request):
 
     start_date = f"{filter_year}-{filter_month:02d}-{first_saturday:02d}"
     end_date = f"{filter_year}-{filter_month:02d}-{last_saturday:02d}"
+    member_period = f"{filter_year}-{filter_month:02d}"
 
     # Build preview list
     preview = []
@@ -973,6 +961,7 @@ async def import_whatsapp_members(request: Request):
         "preview": preview,
         "start_date": start_date,
         "end_date": end_date,
+        "member_period": member_period,
         "all_players": all_players
     })
 
@@ -986,8 +975,9 @@ async def import_whatsapp_members_confirm(request: Request):
     members_data = data.get("members", [])
     start_date = data.get("start_date")
     end_date = data.get("end_date")
+    member_period = data.get("member_period")
 
-    if not members_data or not start_date or not end_date:
+    if not members_data or not start_date or not end_date or not member_period:
         return JSONResponse({"error": "Missing data"}, status_code=400)
 
     conn = get_db()
@@ -1001,25 +991,16 @@ async def import_whatsapp_members_confirm(request: Request):
         player_id = member.get("player_id")
         price = member.get("price")
 
-        # Check if member already exists for this period
         cursor.execute("""
-            SELECT id FROM member
-            WHERE player_id = ? AND member_start_date = ? AND member_end_date = ?
-        """, (player_id, start_date, end_date))
-        existing = cursor.fetchone()
-
-        if existing:
-            # Update existing
-            cursor.execute("""
-                UPDATE member SET membership_price = ?, is_paid = 0, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (price, existing["id"]))
-        else:
-            # Insert new
-            cursor.execute("""
-                INSERT INTO member (player_id, member_start_date, member_end_date, membership_price, is_paid)
-                VALUES (?, ?, ?, ?, 0)
-            """, (player_id, start_date, end_date, price))
+            INSERT INTO member (player_id, member_period, member_start_date, member_end_date, membership_price, is_paid)
+            VALUES (?, ?, ?, ?, ?, 0)
+            ON CONFLICT(player_id, member_period) DO UPDATE SET
+            membership_price = excluded.membership_price,
+            is_paid = 0,
+            member_start_date = excluded.member_start_date,
+            member_end_date = excluded.member_end_date,
+            updated_at = CURRENT_TIMESTAMP
+        """, (player_id, member_period, start_date, end_date, price))
         imported += 1
 
     conn.commit()
@@ -1232,11 +1213,13 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
+    member_period = f"{year}-{month:02d}"
+
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE member SET player_id = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (player_id, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, member_id)
+        "UPDATE member SET player_id = ?, member_period = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (player_id, member_period, member_start_date, member_end_date if member_end_date else None, membership_price if membership_price is not None else 0, 1 if is_paid else 0, member_id)
     )
     conn.commit()
     conn.close()
