@@ -546,6 +546,48 @@ async def admin_dashboard(request: Request):
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Get stats
+    cursor.execute("SELECT COUNT(*) as total FROM player")
+    total_players = cursor.fetchone()["total"]
+
+    cursor.execute("SELECT COUNT(*) as total FROM player WHERE status = 1")
+    active_players = cursor.fetchone()["total"]
+
+    import datetime
+    now = datetime.datetime.now()
+    current_period = f"{now.year}-{now.month:02d}"
+    cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
+    members_this_month = cursor.fetchone()["total"]
+
+    cursor.execute("SELECT COUNT(*) as total FROM arena")
+    total_arenas = cursor.fetchone()["total"]
+
+    cursor.execute("SELECT COUNT(*) as total FROM game WHERE datetime >= date('now', '-30 days')")
+    recent_games = cursor.fetchone()["total"]
+
+    conn.close()
+
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "request": request,
+        "user": user,
+        "stats": {
+            "total_players": total_players,
+            "active_players": active_players,
+            "members_this_month": members_this_month,
+            "total_arenas": total_arenas,
+            "recent_games": recent_games
+        }
+    })
+
+@app.get("/manage/posts", response_class=HTMLResponse)
+async def admin_dashboard(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
     cursor.execute("""
         SELECT p.id, p.title, p.status, p.created_at, u.username,
                (SELECT COUNT(*) FROM post_images WHERE post_id = p.id) as image_count
