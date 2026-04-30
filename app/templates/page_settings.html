@@ -107,7 +107,7 @@
                 <!-- Hero Section -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h2 class="text-lg font-bold mb-4 border-b pb-2">Hero Section</h2>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">YouTube Video ID</label>
                             <input type="text" name="hero_youtube_video_id" value="{{ settings.hero.youtube_video_id or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
@@ -124,7 +124,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
                             <input type="text" name="hero_tagline" value="{{ settings.hero.tagline or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
-                        <div class="col-span-2">
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
                             <textarea name="hero_subtitle" rows="2" class="w-full border rounded px-3 py-2" oninput="updatePreview()">{{ settings.hero.subtitle or '' }}</textarea>
                         </div>
@@ -159,7 +159,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Body Text</label>
                             <textarea name="about_body" rows="4" class="w-full border rounded px-3 py-2" oninput="updatePreview()">{{ settings.about.body or '' }}</textarea>
                         </div>
-                        <div class="grid grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 1 Label</label>
                                 <input type="text" name="about_stat_1_label" value="{{ settings.about.stat_1_label or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
@@ -199,7 +199,7 @@
                 <!-- Schedule Section -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h2 class="text-lg font-bold mb-4 border-b pb-2">Schedule Section</h2>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Day</label>
                             <input type="text" name="schedule_day" value="{{ settings.schedule.day or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
@@ -218,7 +218,7 @@
                 <!-- Social Section -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h2 class="text-lg font-bold mb-4 border-b pb-2">Social Links</h2>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Instagram URL</label>
                             <input type="url" name="social_instagram" value="{{ settings.social.instagram or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
