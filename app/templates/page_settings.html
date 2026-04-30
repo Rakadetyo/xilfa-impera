@@ -17,6 +17,9 @@
             }
         }
     </script>
+    <style>
+        .preview-frame { height: calc(100vh - 200px); }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div class="flex min-h-screen">
@@ -29,57 +32,41 @@
 
             <nav class="mt-6 px-4">
                 <a href="/manage" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     Dashboard
                 </a>
                 <a href="/manage/posts" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     Posts
                 </a>
                 <a href="/manage/players" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     Players
                 </a>
                 <a href="/manage/members" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Members
                 </a>
                 <a href="/manage/arena" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     Arenas
                 </a>
                 <a href="/manage/page_settings" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-accent text-black font-bold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     Page Settings
                 </a>
                 {% if user.role == 'superadmin' %}
                 <a href="/manage/users" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     Users
                 </a>
                 {% endif %}
             </nav>
         </aside>
 
+        <!-- Main Content -->
         <main class="ml-64 flex-1 p-8">
-            <header class="mb-8">
+            <header class="mb-6">
                 <h1 class="text-2xl font-bold">Homepage Settings</h1>
                 <p class="text-gray-500 text-sm">Configure your homepage content</p>
             </header>
@@ -96,47 +83,46 @@
             </div>
             {% endif %}
 
-            <form method="POST" class="space-y-8">
+            <form method="POST" class="space-y-6">
                 <!-- Hero Section -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h2 class="text-lg font-bold mb-4 border-b pb-2">Hero Section</h2>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">YouTube Video ID</label>
-                            <input type="text" name="hero_youtube_video_id" value="{{ settings.hero.youtube_video_id or '' }}" class="w-full border rounded px-3 py-2">
-                            <p class="text-xs text-gray-500">e.g., rBW1uZnZhbo</p>
+                            <input type="text" name="hero_youtube_video_id" value="{{ settings.hero.youtube_video_id or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
-                            <input type="text" name="hero_logo" value="{{ settings.hero.logo or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_logo" value="{{ settings.hero.logo or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Headline</label>
-                            <input type="text" name="hero_headline" value="{{ settings.hero.headline or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_headline" value="{{ settings.hero.headline or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
-                            <input type="text" name="hero_tagline" value="{{ settings.hero.tagline or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_tagline" value="{{ settings.hero.tagline or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
-                            <textarea name="hero_subtitle" rows="2" class="w-full border rounded px-3 py-2">{{ settings.hero.subtitle or '' }}</textarea>
+                            <textarea name="hero_subtitle" rows="2" class="w-full border rounded px-3 py-2" oninput="updatePreview()">{{ settings.hero.subtitle or '' }}</textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">CTA Primary Text</label>
-                            <input type="text" name="hero_cta_primary_text" value="{{ settings.hero.cta_primary_text or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_cta_primary_text" value="{{ settings.hero.cta_primary_text or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">CTA Primary Link</label>
-                            <input type="text" name="hero_cta_primary_link" value="{{ settings.hero.cta_primary_link or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_cta_primary_link" value="{{ settings.hero.cta_primary_link or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">CTA Secondary Text</label>
-                            <input type="text" name="hero_cta_secondary_text" value="{{ settings.hero.cta_secondary_text or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_cta_secondary_text" value="{{ settings.hero.cta_secondary_text or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">CTA Secondary Link</label>
-                            <input type="text" name="hero_cta_secondary_link" value="{{ settings.hero.cta_secondary_link or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="hero_cta_secondary_link" value="{{ settings.hero.cta_secondary_link or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                     </div>
                 </div>
@@ -147,44 +133,44 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                            <input type="text" name="about_title" value="{{ settings.about.title or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="about_title" value="{{ settings.about.title or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Body Text</label>
-                            <textarea name="about_body" rows="4" class="w-full border rounded px-3 py-2">{{ settings.about.body or '' }}</textarea>
+                            <textarea name="about_body" rows="4" class="w-full border rounded px-3 py-2" oninput="updatePreview()">{{ settings.about.body or '' }}</textarea>
                         </div>
                         <div class="grid grid-cols-4 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 1 Label</label>
-                                <input type="text" name="about_stat_1_label" value="{{ settings.about.stat_1_label or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_1_label" value="{{ settings.about.stat_1_label or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 1 Value</label>
-                                <input type="text" name="about_stat_1_value" value="{{ settings.about.stat_1_value or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_1_value" value="{{ settings.about.stat_1_value or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 2 Label</label>
-                                <input type="text" name="about_stat_2_label" value="{{ settings.about.stat_2_label or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_2_label" value="{{ settings.about.stat_2_label or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 2 Value</label>
-                                <input type="text" name="about_stat_2_value" value="{{ settings.about.stat_2_value or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_2_value" value="{{ settings.about.stat_2_value or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 3 Label</label>
-                                <input type="text" name="about_stat_3_label" value="{{ settings.about.stat_3_label or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_3_label" value="{{ settings.about.stat_3_label or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 3 Value</label>
-                                <input type="text" name="about_stat_3_value" value="{{ settings.about.stat_3_value or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_3_value" value="{{ settings.about.stat_3_value or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 4 Label</label>
-                                <input type="text" name="about_stat_4_label" value="{{ settings.about.stat_4_label or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_4_label" value="{{ settings.about.stat_4_label or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stat 4 Value</label>
-                                <input type="text" name="about_stat_4_value" value="{{ settings.about.stat_4_value or '' }}" class="w-full border rounded px-3 py-2">
+                                <input type="text" name="about_stat_4_value" value="{{ settings.about.stat_4_value or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                             </div>
                         </div>
                     </div>
@@ -196,15 +182,15 @@
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Day</label>
-                            <input type="text" name="schedule_day" value="{{ settings.schedule.day or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="schedule_day" value="{{ settings.schedule.day or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                            <input type="text" name="schedule_time" value="{{ settings.schedule.time or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="schedule_time" value="{{ settings.schedule.time or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                            <input type="text" name="schedule_location" value="{{ settings.schedule.location or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="text" name="schedule_location" value="{{ settings.schedule.location or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                     </div>
                 </div>
@@ -215,64 +201,86 @@
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Instagram URL</label>
-                            <input type="url" name="social_instagram" value="{{ settings.social.instagram or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="url" name="social_instagram" value="{{ settings.social.instagram or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp URL</label>
-                            <input type="url" name="social_whatsapp" value="{{ settings.social.whatsapp or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="url" name="social_whatsapp" value="{{ settings.social.whatsapp or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Reclub URL</label>
-                            <input type="url" name="social_reclub" value="{{ settings.social.reclub or '' }}" class="w-full border rounded px-3 py-2">
+                            <input type="url" name="social_reclub" value="{{ settings.social.reclub or '' }}" class="w-full border rounded px-3 py-2" oninput="updatePreview()">
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="openPreview()" class="bg-gray-600 text-white font-bold px-6 py-3 rounded hover:bg-gray-700">
-                        Preview
-                    </button>
+                <div class="flex justify-end">
                     <button type="submit" class="bg-accent text-black font-bold px-6 py-3 rounded hover:bg-accent-light">
                         Save Settings
                     </button>
                 </div>
             </form>
+        </main>
 
-            <!-- Preview Modal -->
-            <div id="previewModal" class="fixed inset-0 bg-black/80 hidden z-50">
-                <div class="h-screen flex flex-col">
-                    <div class="bg-gray-800 px-4 py-2 flex justify-between items-center">
-                        <span class="text-white font-bold">Preview</span>
-                        <button onclick="closePreview()" class="text-white hover:text-red-500 font-bold px-3">&times;</button>
-                    </div>
-                    <iframe id="previewFrame" class="flex-1 w-full bg-white"></iframe>
-                </div>
+        <!-- Preview Panel -->
+        <div class="w-1/2 fixed right-0 top-0 h-screen bg-gray-900">
+            <div class="bg-gray-800 px-4 py-2 flex justify-between items-center">
+                <span class="text-white font-bold">Live Preview</span>
+                <a href="/" target="_blank" class="text-gray-400 hover:text-white text-sm">Open in new tab ↗</a>
             </div>
+            <iframe id="previewFrame" class="w-full h-[calc(100vh-50px)] bg-white"></iframe>
+        </div>
 
-            <script>
-                function openPreview() {
-                    const form = document.querySelector('form');
-                    const formData = new FormData(form);
-                    const params = new URLSearchParams();
+        <div class="mr-[50%]"></div>
 
-                    for (const [key, value] of formData.entries()) {
-                        if (value) {
-                            params.append(key, value);
+        <script>
+            const defaults = {
+                hero: { youtube_video_id: 'rBW1uZnZhbo', headline: 'IMPERA', tagline: 'BSD — Gading Serpong', subtitle: 'Basketball community. Every Saturday at 18:00. Show up, compete, grow.', cta_primary_text: 'Play With Us', cta_primary_link: '#schedule', cta_secondary_text: 'Learn More', cta_secondary_link: '#about', logo: '/static/img/impera-logo-only-white.png' },
+                about: { title: 'Built for Those Who Play.', body: 'Impera is a basketball community rooted in BSD-Gading Serpong. We bring together players of all levels who share a love for the game.', stat_1_label: 'Members', stat_1_value: '90+', stat_2_label: 'Sessions', stat_2_value: '100+', stat_3_label: 'Home Court', stat_3_value: 'Jetz', stat_4_label: 'Every Week', stat_4_value: 'SAT' },
+                schedule: { day: 'Saturday', time: '18:00', location: 'BSD — Gading Serpong Area' },
+                social: { instagram: 'https://www.instagram.com/imperabasketball/', whatsapp: '', reclub: 'https://reclub.co/clubs/@impera' }
+            };
+
+            function getSettings() {
+                const form = document.querySelector('form');
+                const formData = new FormData(form);
+                const settings = { hero: {}, about: {}, schedule: {}, social: {} };
+
+                for (const [key, value] of formData.entries()) {
+                    if (key.startsWith('hero_')) settings.hero[key.slice(5)] = value;
+                    else if (key.startsWith('about_')) settings.about[key.slice(6)] = value;
+                    else if (key.startsWith('schedule_')) settings.schedule[key.slice(9)] = value;
+                    else if (key.startsWith('social_')) settings.social[key.slice(7)] = value;
+                }
+
+                // Fill defaults for empty
+                for (const section in defaults) {
+                    for (const key in defaults[section]) {
+                        if (!settings[section][key]) {
+                            settings[section][key] = defaults[section][key];
                         }
                     }
-
-                    const modal = document.getElementById('previewModal');
-                    const iframe = document.getElementById('previewFrame');
-                    iframe.src = '/preview?' + params.toString();
-                    modal.classList.remove('hidden');
                 }
 
-                function closePreview() {
-                    const modal = document.getElementById('previewModal');
-                    modal.classList.add('hidden');
+                return settings;
+            }
+
+            function updatePreview() {
+                const settings = getSettings();
+                const params = new URLSearchParams();
+
+                for (const section in settings) {
+                    for (const key in settings[section]) {
+                        params.append(section + '_' + key, settings[section][key]);
+                    }
                 }
-            </script>
-        </main>
+
+                document.getElementById('previewFrame').src = '/preview?' + params.toString();
+            }
+
+            // Initialize preview on load
+            window.addEventListener('load', updatePreview);
+        </script>
     </div>
 </body>
 </html>
