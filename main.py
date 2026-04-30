@@ -22,6 +22,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-prod")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 templates = Jinja2Templates(directory="app/templates")
 
 from app.database import init_db, seed_admin, get_db
@@ -1369,7 +1370,7 @@ async def preview_homepage(request: Request):
 
     # Use defaults for empty values
     defaults = {
-        "hero": {"youtube_video_id": "rBW1uZnZhbo", "headline": "IMPERA", "tagline": "BSD — Gading Serpong", "subtitle": "", "cta_primary_text": "Play With Us", "cta_primary_link": "#schedule", "cta_secondary_text": "Learn More", "cta_secondary_link": "#about", "logo": "/static/img/impera-logo-only-white.png"},
+        "hero": {"youtube_video_id": "rBW1uZnZhbo", "headline": "IMPERA", "tagline": "BSD — Gading Serpong", "subtitle": "", "cta_primary_text": "Play With Us", "cta_primary_link": "#schedule", "cta_secondary_text": "Learn More", "cta_secondary_link": "#about", "logo": "/assets/impera-logo-only-white.png"},
         "about": {"title": "Built for Those Who Play.", "body": "", "stat_1_label": "Members", "stat_1_value": "90+", "stat_2_label": "Sessions", "stat_2_value": "100+", "stat_3_label": "Home Court", "stat_3_value": "Jetz", "stat_4_label": "Every Week", "stat_4_value": "SAT"},
         "schedule": {"day": "Saturday", "time": "18:00", "location": "BSD — Gading Serpong Area"},
         "social": {"instagram": "", "whatsapp": "", "reclub": ""}

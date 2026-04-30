@@ -198,7 +198,7 @@ def init_db():
             ('homepage', 'hero', 'cta_primary_link', '#schedule'),
             ('homepage', 'hero', 'cta_secondary_text', 'Learn More'),
             ('homepage', 'hero', 'cta_secondary_link', '#about'),
-            ('homepage', 'hero', 'logo', '/static/img/impera-logo-only-white.png'),
+            ('homepage', 'hero', 'logo', '/assets/impera-logo-only-white.png'),
             ('homepage', 'about', 'title', 'Built for Those Who Play.'),
             ('homepage', 'about', 'body', 'Impera is a basketball community rooted in BSD-Gading Serpong. We bring together players of all levels who share a love for the game. No politics, no drama — just ball. Whether you\'re seasoned or just starting, you\'re welcome on our court.'),
             ('homepage', 'about', 'stat_1_label', 'Members'),
