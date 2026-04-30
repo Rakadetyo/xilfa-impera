@@ -1297,7 +1297,7 @@ async def arena_page(request: Request):
     })
 
 # --- Page Settings ---
-@app.get("/manage/page_settings", response_class=HTMLResponse)
+@app.get("/manage/page_settings/homepage", response_class=HTMLResponse)
 async def page_settings(request: Request):
     user = get_current_user(request)
     if not user:
@@ -1310,7 +1310,7 @@ async def page_settings(request: Request):
         "settings": settings
     })
 
-@app.post("/manage/page_settings")
+@app.post("/manage/page_settings/homepage")
 async def save_page_settings(request: Request):
     user = get_current_user(request)
     if not user:
@@ -1339,10 +1339,10 @@ async def save_page_settings(request: Request):
             set_setting("homepage", section, setting_key, value)
 
         logger.info(f"[PAGE_SETTINGS] Saved homepage settings by {username}")
-        return RedirectResponse("/manage/page_settings?success=Settings saved", status_code=302)
+        return RedirectResponse("/manage/page_settings/homepage?success=Settings saved", status_code=302)
     except Exception as e:
         logger.error(f"[PAGE_SETTINGS] Error saving settings by {username}: {str(e)}")
-        return RedirectResponse(f"/manage/page_settings?error={str(e)}", status_code=302)
+        return RedirectResponse(f"/manage/page_settings/homepage?error={str(e)}", status_code=302)
 
 @app.get("/preview", response_class=HTMLResponse)
 async def preview_homepage(request: Request):
