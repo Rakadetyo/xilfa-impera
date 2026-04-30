@@ -455,7 +455,14 @@ async def update_player(
     contact_no: str = Form(""),
     instagram: str = Form(""),
     reclub: str = Form(""),
-    join_date: str = Form("")
+    join_date: str = Form(""),
+    page: int = Form(1),
+    sort: str = Form("name"),
+    order: str = Form("asc"),
+    search: str = Form(""),
+    position: str = Form(""),
+    skill: str = Form(""),
+    member: str = Form("")
 ):
     user = get_current_user(request)
     if not user:
@@ -473,10 +480,21 @@ async def update_player(
     conn.commit()
     conn.close()
 
-    return RedirectResponse("/manage/players?success=Player updated", status_code=302)
+    # Build redirect URL with current filters
+    redirect_url = f"/manage/players?success=Player updated&page={page}&sort={sort}&order={order}"
+    if search:
+        redirect_url += f"&search={search}"
+    if position:
+        redirect_url += f"&position={position}"
+    if skill:
+        redirect_url += f"&skill={skill}"
+    if member:
+        redirect_url += f"&member={member}"
+
+    return RedirectResponse(redirect_url, status_code=302)
 
 @app.post("/manage/players/{player_id}/delete")
-async def delete_player(request: Request, player_id: int):
+async def delete_player(request: Request, player_id: int, page: int = Form(1), sort: str = Form("name"), order: str = Form("asc"), search: str = Form(""), position: str = Form(""), skill: str = Form(""), member: str = Form("")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -490,7 +508,18 @@ async def delete_player(request: Request, player_id: int):
     conn.commit()
     conn.close()
 
-    return RedirectResponse("/manage/players?success=Player deleted", status_code=302)
+    # Build redirect URL with current filters
+    redirect_url = f"/manage/players?success=Player deleted&page={page}&sort={sort}&order={order}"
+    if search:
+        redirect_url += f"&search={search}"
+    if position:
+        redirect_url += f"&position={position}"
+    if skill:
+        redirect_url += f"&skill={skill}"
+    if member:
+        redirect_url += f"&member={member}"
+
+    return RedirectResponse(redirect_url, status_code=302)
 
 # --- Admin Routes ---
 @app.get("/manage", response_class=HTMLResponse)

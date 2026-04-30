@@ -420,8 +420,19 @@
         function deletePlayerFromModal() {
             const id = document.getElementById('modalPlayerId').value;
             const name = document.getElementById('modalName').value;
+            const page = {{ pagination.page }};
+            const sort = "{{ filters.sort }}";
+            const order = "{{ filters.order }}";
+            const search = "{{ filters.search }}";
+            const position = "{{ filters.position }}";
+            const skill = "{{ filters.skill }}";
+            const member = "{{ filters.member }}";
+
             if (confirm(`Delete player "${name}"? This cannot be undone.`)) {
-                fetch(`/manage/players/${id}/delete`, { method: 'POST' })
+                const params = new URLSearchParams({
+                    page, sort, order, search, position, skill, member
+                });
+                fetch(`/manage/players/${id}/delete?${params}`, { method: 'POST' })
                     .then(res => { if (res.ok) location.reload(); });
             }
         }
@@ -520,6 +531,13 @@
             <div class="p-6">
                 <form id="editPlayerForm" method="POST" class="space-y-4">
                     <input type="hidden" id="modalPlayerId" name="id">
+                    <input type="hidden" name="page" value="{{ pagination.page }}">
+                    <input type="hidden" name="sort" value="{{ filters.sort }}">
+                    <input type="hidden" name="order" value="{{ filters.order }}">
+                    <input type="hidden" name="search" value="{{ filters.search }}">
+                    <input type="hidden" name="position" value="{{ filters.position }}">
+                    <input type="hidden" name="skill" value="{{ filters.skill }}">
+                    <input type="hidden" name="member" value="{{ filters.member }}">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name *</label>
