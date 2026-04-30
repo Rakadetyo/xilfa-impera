@@ -229,7 +229,7 @@
                 </div>
 
                 <div class="flex justify-end gap-3">
-                    <button type="button" onclick="previewSettings()" class="bg-gray-600 text-white font-bold px-6 py-3 rounded hover:bg-gray-700">
+                    <button type="button" onclick="openPreview()" class="bg-gray-600 text-white font-bold px-6 py-3 rounded hover:bg-gray-700">
                         Preview
                     </button>
                     <button type="submit" class="bg-accent text-black font-bold px-6 py-3 rounded hover:bg-accent-light">
@@ -238,8 +238,19 @@
                 </div>
             </form>
 
+            <!-- Preview Modal -->
+            <div id="previewModal" class="fixed inset-0 bg-black/80 hidden z-50">
+                <div class="h-screen flex flex-col">
+                    <div class="bg-gray-800 px-4 py-2 flex justify-between items-center">
+                        <span class="text-white font-bold">Preview</span>
+                        <button onclick="closePreview()" class="text-white hover:text-red-500 font-bold px-3">&times;</button>
+                    </div>
+                    <iframe id="previewFrame" class="flex-1 w-full bg-white"></iframe>
+                </div>
+            </div>
+
             <script>
-                function previewSettings() {
+                function openPreview() {
                     const form = document.querySelector('form');
                     const formData = new FormData(form);
                     const params = new URLSearchParams();
@@ -250,7 +261,15 @@
                         }
                     }
 
-                    window.open('/preview?' + params.toString(), '_blank');
+                    const modal = document.getElementById('previewModal');
+                    const iframe = document.getElementById('previewFrame');
+                    iframe.src = '/preview?' + params.toString();
+                    modal.classList.remove('hidden');
+                }
+
+                function closePreview() {
+                    const modal = document.getElementById('previewModal');
+                    modal.classList.add('hidden');
                 }
             </script>
         </main>
