@@ -228,12 +228,31 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end">
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="previewSettings()" class="bg-gray-600 text-white font-bold px-6 py-3 rounded hover:bg-gray-700">
+                        Preview
+                    </button>
                     <button type="submit" class="bg-accent text-black font-bold px-6 py-3 rounded hover:bg-accent-light">
                         Save Settings
                     </button>
                 </div>
             </form>
+
+            <script>
+                function previewSettings() {
+                    const form = document.querySelector('form');
+                    const formData = new FormData(form);
+                    const params = new URLSearchParams();
+
+                    for (const [key, value] of formData.entries()) {
+                        if (value) {
+                            params.append(key, value);
+                        }
+                    }
+
+                    window.open('/preview?' + params.toString(), '_blank');
+                }
+            </script>
         </main>
     </div>
 </body>

@@ -1343,6 +1343,45 @@ async def save_page_settings(request: Request):
         logger.error(f"[PAGE_SETTINGS] Error saving settings by {username}: {str(e)}")
         return RedirectResponse(f"/manage/page_settings?error={str(e)}", status_code=302)
 
+@app.get("/preview", response_class=HTMLResponse)
+async def preview_homepage(request: Request):
+    """Preview homepage with settings from query params (before saving)"""
+    from urllib.parse import parse_qs
+
+    qs = parse_qs(request.url.query)
+    settings = {
+        "hero": {},
+        "about": {},
+        "schedule": {},
+        "social": {}
+    }
+
+    for key, values in qs.items():
+        value = values[0] if values else ""
+        if key.startswith("hero_"):
+            settings["hero"][key[5:]] = value
+        elif key.startswith("about_"):
+            settings["about"][key[6:]] = value
+        elif key.startswith("schedule_"):
+            settings["schedule"][key[9:]] = value
+        elif key.startswith("social_"):
+            settings["social"][key[7:]] = value
+
+    # Use defaults for empty values
+    defaults = {
+        "hero": {"youtube_video_id": "rBW1uZnZhbo", "headline": "IMPERA", "tagline": "BSD — Gading Serpong", "subtitle": "", "cta_primary_text": "Play With Us", "cta_primary_link": "#schedule", "cta_secondary_text": "Learn More", "cta_secondary_link": "#about", "logo": "/static/img/impera-logo-only-white.png"},
+        "about": {"title": "Built for Those Who Play.", "body": "", "stat_1_label": "Members", "stat_1_value": "90+", "stat_2_label": "Sessions", "stat_2_value": "100+", "stat_3_label": "Home Court", "stat_3_value": "Jetz", "stat_4_label": "Every Week", "stat_4_value": "SAT"},
+        "schedule": {"day": "Saturday", "time": "18:00", "location": "BSD — Gading Serpong Area"},
+        "social": {"instagram": "", "whatsapp": "", "reclub": ""}
+    }
+
+    for section in settings:
+        for key in defaults[section]:
+            if not settings[section].get(key):
+                settings[section][key] = defaults[section][key]
+
+    return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
+
 @app.post("/manage/arena")
 async def create_arena(request: Request, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form("")):
     user = get_current_user(request)
