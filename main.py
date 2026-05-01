@@ -1595,6 +1595,31 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
     """, (game_id,))
     attendees = cursor.fetchall()
 
+    # Auto-populate with current members if no attendees
+    if not attendees:
+        cursor.execute("""
+            INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
+            SELECT ?, p.id, 0, 0
+            FROM player p
+            JOIN member m ON p.id = m.player_id
+            WHERE p.status = 1
+            AND m.member_start_date <= date('now')
+            AND m.member_end_date >= date('now')
+        """, (game_id,))
+        conn.commit()
+
+        # Refetch attendees after auto-populate
+        cursor.execute("""
+            SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2, p.skill_level,
+                   gt.team_name as team_name_assigned, gt.team_color
+            FROM game_attendee ga
+            JOIN player p ON ga.player_id = p.id
+            LEFT JOIN game_team gt ON ga.team_id = gt.id
+            WHERE ga.game_id = ?
+            ORDER BY p.name
+        """, (game_id,))
+        attendees = cursor.fetchall()
+
     # Get partners
     cursor.execute("SELECT * FROM game_partner WHERE game_id = ?", (game_id,))
     partners = cursor.fetchall()
@@ -1616,8 +1641,15 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
     """, (game_id,))
     matches = cursor.fetchall()
 
-    # Get all players for adding attendees
-    cursor.execute("SELECT * FROM player WHERE status = 1 ORDER BY name")
+    # Get all players for adding attendees - current members first
+    cursor.execute("""
+        SELECT p.*,
+               CASE WHEN m.id IS NOT NULL AND m.member_start_date <= date('now') AND m.member_end_date >= date('now') THEN 1 ELSE 0 END as is_current_member
+        FROM player p
+        LEFT JOIN member m ON p.id = m.player_id
+        WHERE p.status = 1
+        ORDER BY is_current_member DESC, p.name
+    """)
     all_players = cursor.fetchall()
 
     # Get arenas for dropdown
@@ -1785,6 +1817,29 @@ async def add_attendee(request: Request, game_id: int, player_id: int):
     conn.close()
 
     return JSONResponse({"success": True})
+
+
+@app.post("/manage/games/{game_id}/attendees/bulk")
+async def add_attendees_bulk(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    form = await request.form()
+    player_ids = form.getlist("player_ids")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    for player_id in player_ids:
+        cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND player_id = ?", (game_id, int(player_id)))
+        if not cursor.fetchone():
+            cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, int(player_id)))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/attendees/{attendee_id}/delete")

@@ -45,7 +45,15 @@
                     </form>
                 </div>
                 {% if tab == 'general' %}
-                <p class="text-gray-500">Manage game details, pricing, partners, and services for this session.</p>
+                <p class="text-gray-500">Manage game details, pricing, partners, and services for this session. Set the date, time, arena, and pricing. Add partners such as referees, videographers, or sponsors. Enable video recording, photo capture, or request a referee for the session.</p>
+                {% elif tab == 'players' %}
+                <p class="text-gray-500">Add players, track attendance, payments, and manage team assignments. Register players who will attend this game, mark their payment status, and track whether they showed up. Once players are added, you can assign them to teams in the Teams tab.</p>
+                {% elif tab == 'teams' %}
+                <p class="text-gray-500">Create teams and assign players to each team. Organize players into teams for the game. Each team can have a name and color. Once teams are created, generate a schedule in the Schedule tab to determine match pairings.</p>
+                {% elif tab == 'schedule' %}
+                <p class="text-gray-500">Generate match schedule and track scores. Automatically create a round-robin schedule where each team plays every other team. Enter scores after each match to track results. The system will determine winners based on the scores entered.</p>
+                {% elif tab == 'results' %}
+                <p class="text-gray-500">View match results and winners. See the final standings and scores for all matches in this game. Review which team won each match and how many points each team scored throughout the session.</p>
                 {% endif %}
             </div>
 
@@ -199,18 +207,28 @@
 
             {% elif tab == 'players' %}
             <div class="space-y-6">
-                <!-- Add Player Form -->
+                <!-- Bulk Add Player Form -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-4">Add Player</h3>
-                    <form method="post" action="/manage/games/{{ game.id }}/attendees" class="flex gap-4">
-                        <select name="player_id" required class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                    <h3 class="font-medium mb-4">Add Players</h3>
+                    <div class="flex gap-4">
+                        <select id="player-select" onchange="addToBulkList()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
                             <option value="">Select player...</option>
                             {% for p in all_players %}
                             <option value="{{ p.id }}">{{ p.name }}{% if p.nickname %} ({{ p.nickname }}){% endif %}</option>
                             {% endfor %}
                         </select>
-                        <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
-                    </form>
+                        <button type="button" onclick="submitBulkAdd()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add Selected</button>
+                    </div>
+
+                    <!-- Bulk List -->
+                    <div id="bulk-list" class="mt-4 flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Player Count -->
+                <div class="text-right">
+                    <span id="player-count" class="text-lg font-medium {% if attendees|length >= game.max_players %}text-red-600{% else %}text-gray-700{% endif %}">
+                        {{ attendees|length }} / {{ game.max_players }} Players
+                    </span>
                 </div>
 
                 <!-- Attendee List -->
@@ -228,48 +246,66 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            {% for a in attendees %}
-                            <tr>
+                            {% set max_players = game.max_players or 25 %}
+                            {% for i in range(max_players) %}
+                            {% set a = attendees[i] if i < attendees|length else none %}
+                            <tr class="{% if not a %}bg-gray-50{% endif %}">
                                 <td class="px-6 py-4">
+                                    {% if a %}
                                     <div class="font-medium">{{ a.name }}</div>
                                     <div class="text-sm text-gray-500">{{ a.nickname or '-' }}</div>
+                                    {% else %}
+                                    <span class="text-gray-400">-</span>
+                                    {% endif %}
                                 </td>
-                                <td class="px-6 py-4 text-sm">{{ a.position_1 or '-' }}</td>
+                                <td class="px-6 py-4 text-sm">{% if a %}{{ a.position_1 or '-' }}{% else %}-{% endif %}</td>
                                 <td class="px-6 py-4">
+                                    {% if a %}
                                     <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">★{{ a.skill_level }}</span>
+                                    {% else %}
+                                    <span class="text-gray-400">-</span>
+                                    {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
-                                    {% if a.team_name_assigned %}
+                                    {% if a and a.team_name_assigned %}
                                     <span class="px-2 py-1 rounded text-sm text-white" style="background-color: {{ a.team_color or '#6B7280' }}">{{ a.team_name_assigned }}</span>
                                     {% else %}
                                     <span class="text-gray-400">-</span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
+                                    {% if a %}
                                     <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/pay">
                                         <button type="submit" class="px-2 py-1 rounded text-sm font-medium
                                             {% if a.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
                                             {{ 'Paid' if a.is_paid else 'Unpaid' }}
                                         </button>
                                     </form>
+                                    {% else %}
+                                    <span class="text-gray-400">-</span>
+                                    {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
+                                    {% if a %}
                                     <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/attend">
                                         <button type="submit" class="px-2 py-1 rounded text-sm font-medium
                                             {% if a.is_attend %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
                                             {{ 'Yes' if a.is_attend else 'No' }}
                                         </button>
                                     </form>
+                                    {% else %}
+                                    <span class="text-gray-400">-</span>
+                                    {% endif %}
                                 </td>
                                 <td class="px-6 py-4 text-right">
+                                    {% if a %}
                                     <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
                                         <button type="submit" class="text-red-600 hover:text-red-800 text-sm">Remove</button>
                                     </form>
+                                    {% else %}
+                                    <span class="text-gray-400">-</span>
+                                    {% endif %}
                                 </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">No players added yet</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -392,5 +428,89 @@
             {% endif %}
         </main>
     </div>
+
+    <script>
+        const allPlayers = [
+            {% for p in all_players %}
+            { id: {{ p.id }}, name: "{{ p.name }}{% if p.nickname %} ({{ p.nickname }}){% endif %}" },
+            {% endfor %}
+        ];
+        const existingAttendees = [
+            {% for a in attendees %}
+            {{ a.player_id }},
+            {% endfor %}
+        ];
+        const maxPlayers = {{ game.max_players or 25 }};
+
+        let bulkList = [];
+
+        function addToBulkList() {
+            const select = document.getElementById('player-select');
+            const playerId = parseInt(select.value);
+            if (!playerId) return;
+
+            const currentCount = existingAttendees.length + bulkList.length;
+            if (currentCount >= maxPlayers) {
+                alert('Maximum players reached (' + maxPlayers + '). Remove a player first or increase max players in General tab.');
+                select.value = '';
+                return;
+            }
+
+            if (existingAttendees.includes(playerId)) {
+                alert('Player already in the game');
+                return;
+            }
+
+            if (bulkList.find(p => p.id === playerId)) {
+                alert('Player already in selection');
+                return;
+            }
+
+            const player = allPlayers.find(p => p.id === playerId);
+            if (player) {
+                bulkList.push(player);
+                renderBulkList();
+            }
+            select.value = '';
+        }
+
+        function removeFromBulkList(playerId) {
+            bulkList = bulkList.filter(p => p.id !== playerId);
+            renderBulkList();
+        }
+
+        function renderBulkList() {
+            const container = document.getElementById('bulk-list');
+            container.innerHTML = bulkList.map(p => `
+                <div class="flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">
+                    <span>${p.name}</span>
+                    <button type="button" onclick="removeFromBulkList(${p.id})" class="hover:text-red-600">&times;</button>
+                    <input type="hidden" name="player_ids" value="${p.id}">
+                </div>
+            `).join('');
+        }
+
+        function submitBulkAdd() {
+            if (bulkList.length === 0) {
+                alert('Please select at least one player');
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/manage/games/{{ game.id }}/attendees/bulk';
+
+            bulkList.forEach(p => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'player_ids';
+                input.value = p.id;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
 </body>
 </html>
