@@ -1486,7 +1486,7 @@ async def list_games(request: Request):
                (SELECT COUNT(*) FROM game_attendee WHERE game_id = g.id) as attendee_count
         FROM game g
         LEFT JOIN arena a ON g.arena_id = a.id
-        ORDER BY g.datetime DESC
+        ORDER BY g.datetime ASC
     """)
     games = cursor.fetchall()
 

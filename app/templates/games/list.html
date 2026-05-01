@@ -201,7 +201,6 @@
     </div>
 
     <script>
-        let currentIndex = 0;
         const totalCards = {{ games|length }};
         const cardWidth = 320; // w-80 = 320px
         const gap = 32; // gap between cards
@@ -248,14 +247,22 @@
                 } else if (diff === 1) {
                     translateX = cardWidth * 0.85;
                     scale = 0.85;
-                    opacity = 0.6;
+                    opacity = 0.7;
+                } else if (diff === 2) {
+                    translateX = cardWidth * 1.6;
+                    scale = 0.7;
+                    opacity = 0.4;
                 } else if (diff === totalCards - 1) {
                     translateX = -cardWidth * 0.85;
                     scale = 0.85;
-                    opacity = 0.6;
-                } else {
-                    translateX = diff > 0 ? cardWidth * 1.8 : -cardWidth * 1.8;
+                    opacity = 0.7;
+                } else if (diff === totalCards - 2) {
+                    translateX = -cardWidth * 1.6;
                     scale = 0.7;
+                    opacity = 0.4;
+                } else {
+                    translateX = diff > 0 ? cardWidth * 2.2 : -cardWidth * 2.2;
+                    scale = 0.5;
                     opacity = 0;
                 }
 
@@ -275,9 +282,6 @@
             });
         }
 
-        // Initialize
-        updateCards();
-
         // View Toggle
         let currentView = 'cards';
         const gamesData = [
@@ -285,6 +289,22 @@
             { id: {{ game.id }}, datetime: "{{ game.datetime }}", name: "{{ game.arena_name or 'No arena' }}", status: "{{ game.status }}" },
             {% endfor %}
         ];
+
+        // Find closest upcoming game from today
+        let currentIndex = 0;
+        const now = new Date();
+        let closestDiff = Infinity;
+        gamesData.forEach((game, index) => {
+            const gameDate = new Date(game.datetime);
+            const diff = gameDate - now;
+            if (diff >= 0 && diff < closestDiff) {
+                closestDiff = diff;
+                currentIndex = index;
+            }
+        });
+
+        // Initialize
+        updateCards();
 
         function setView(view) {
             currentView = view;
