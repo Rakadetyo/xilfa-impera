@@ -74,7 +74,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
-                    Arena
+                    Arenas
+                </a>
+                <a href="/manage/games" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Games
                 </a>
                 <div class="mt-4 pt-4 border-t border-gray-200">
                     <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Page Settings</p>
@@ -90,13 +97,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                         Report
-                    </span>
-                    <span class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Games
                     </span>
                 </div>
             </nav>
@@ -222,10 +222,6 @@
                             <input type="text" name="reclub" placeholder="Reclub ID" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                         </div>
                         <div class="col-span-4 flex items-center gap-4">
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" name="is_member" class="w-4 h-4 text-accent">
-                                <span class="text-sm">Member</span>
-                            </label>
                             <select name="status" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                                 <option value="1">Active</option>
                                 <option value="0">Inactive</option>
@@ -268,14 +264,6 @@
                                 <option value="3" {% if filters.skill == '3' %}selected{% endif %}>Intermediate</option>
                                 <option value="4" {% if filters.skill == '4' %}selected{% endif %}>Expert</option>
                                 <option value="5" {% if filters.skill == '5' %}selected{% endif %}>Pro</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Member</label>
-                            <select name="member" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
-                                <option value="">All</option>
-                                <option value="1" {% if filters.member == '1' %}selected{% endif %}>Yes</option>
-                                <option value="0" {% if filters.member == '0' %}selected{% endif %}>No</option>
                             </select>
                         </div>
                         <div>
@@ -329,7 +317,6 @@
                                         Skill {% if so == 'skill_level' %}{{ '↓' if o == 'desc' else '↑' }}{% endif %}
                                     </a>
                                 </th>
-                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Member</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Status</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">
                                     <a href="{{ base_url ~ (pagination.page) ~ '&sort=join_date&order=desc' if so == 'join_date' and o == 'asc' else base_url ~ (pagination.page) ~ '&sort=join_date&order=asc' }}" class="hover:text-accent {% if so == 'join_date' %}text-accent{% endif %}">
@@ -345,7 +332,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             {% for p in players %}
-                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="openPlayerModal({{ p.id }}, '{{ p.name }}', '{{ p.nickname or '' }}', '{{ p.position_1 or '' }}', '{{ p.position_2 or '' }}', {{ p.skill_level }}, {{ p.is_member }}, '{{ p.contact_no or '' }}', '{{ p.instagram or '' }}', '{{ p.reclub or '' }}', '{{ p.join_date or '' }}', {{ p.status if p.status is not none else 1 }})">
+                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="openPlayerModal({{ p.id }}, '{{ p.name }}', '{{ p.nickname or '' }}', '{{ p.position_1 or '' }}', '{{ p.position_2 or '' }}', {{ p.skill_level }}, '{{ p.contact_no or '' }}', '{{ p.instagram or '' }}', '{{ p.reclub or '' }}', '{{ p.join_date or '' }}', {{ p.status if p.status is not none else 1 }})">
                                 <td class="p-4 font-bold">{{ p.name }}</td>
                                 <td class="p-4 text-gray-600">{{ p.nickname or '-' }}</td>
                                 <td class="p-4">
@@ -360,13 +347,6 @@
                                     <span class="px-2 py-1 text-xs font-bold rounded {% if p.skill_level >= 4 %}bg-green-100 text-green-700{% elif p.skill_level >= 3 %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600{% endif %}">
                                         {{ skill_map[p.skill_level] }}
                                     </span>
-                                </td>
-                                <td class="p-4">
-                                    {% if p.is_member %}
-                                    <span class="px-2 py-1 text-xs font-bold bg-accent/20 text-accent rounded">Yes</span>
-                                    {% else %}
-                                    <span class="text-gray-400">-</span>
-                                    {% endif %}
                                 </td>
                                 <td class="p-4">
                                     {% set status_map = {1: 'Active', 0: 'Inactive', -1: 'Blacklisted'} %}
@@ -425,14 +405,13 @@
         }
 
         // Modal
-        function openPlayerModal(id, name, nickname, pos1, pos2, skill, isMember, contact, instagram, reclub, joinDate, status = 1) {
+        function openPlayerModal(id, name, nickname, pos1, pos2, skill, contact, instagram, reclub, joinDate, status = 1) {
             document.getElementById('modalPlayerId').value = id;
             document.getElementById('modalName').value = name;
             document.getElementById('modalNickname').value = nickname;
             document.getElementById('modalPosition1').value = pos1;
             document.getElementById('modalPosition2').value = pos2;
             document.getElementById('modalSkill').value = skill;
-            document.getElementById('modalMember').checked = isMember == 1;
             document.getElementById('modalContact').value = contact;
             document.getElementById('modalInstagram').value = instagram;
             document.getElementById('modalReclub').value = reclub;
@@ -634,10 +613,6 @@
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reclub</label>
                             <input type="text" id="modalReclub" name="reclub" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                         </div>
-                    </div>
-                    <div class="flex items-center gap-2 pt-2">
-                        <input type="checkbox" id="modalMember" name="is_member" class="w-4 h-4 text-accent">
-                        <span class="text-sm">Member</span>
                     </div>
                     <div class="pt-2">
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>

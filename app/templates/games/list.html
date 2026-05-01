@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'body': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card-carousel { perspective: 1500px; }
+        .game-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+        {% include '_sidebar.html' %}
+
+        <main class="ml-64 flex-1 flex flex-col">
+            <!-- Header -->
+            <div class="px-8 py-3 border-b border-gray-200 bg-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-display tracking-wide">Games</h1>
+                        <p class="text-gray-500 mt-1">Manage basketball sessions</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- View Toggle -->
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button onclick="setView('cards')" id="btn-cards" class="px-4 py-2 rounded-md text-sm font-bold transition-all bg-white shadow-sm text-accent">
+                                Cards
+                            </button>
+                            <button onclick="setView('calendar')" id="btn-calendar" class="px-4 py-2 rounded-md text-sm font-bold transition-all text-gray-400 hover:text-gray-600">
+                                Calendar
+                            </button>
+                        </div>
+                        <a href="/manage/games/new" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
+                            + New Game
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Carousel -->
+            <div class="flex-1 flex flex-col items-center justify-center pt-2 pb-2 overflow-hidden">
+                {% if games %}
+                <div id="card-carousel" class="card-carousel w-full max-w-5xl">
+                    <!-- Cards Container -->
+                    <div class="relative h-[85vh] flex items-center justify-center">
+                        {% for game in games %}
+                        <div class="game-card absolute w-80 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden cursor-pointer"
+                            style="z-index: {{ 100 - loop.index0 }};"
+                            onclick="handleCardClick({{ loop.index0 }})">
+                            <!-- Top Accent Bar -->
+                            <div class="h-2 bg-gradient-to-r from-accent via-accent-light to-accent"></div>
+
+                            <div class="p-8">
+                                <!-- Status Badge -->
+                                <div class="flex justify-start mb-6">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider
+                                        {% if game.status == 'open' %}bg-green-500 text-white shadow-lg shadow-green-500/30
+                                        {% elif game.status == 'closed' %}bg-red-500 text-white shadow-lg shadow-red-500/30
+                                        {% else %}bg-gray-400 text-white{% endif %}">
+                                        {{ game.status }}
+                                    </span>
+                                </div>
+
+                                <!-- Date Block -->
+                                <div class="text-center mb-6">
+                                    <div class="text-7xl font-display tracking-wider text-gray-800 leading-none">{{ game.datetime[8:10] }}</div>
+                                    <div class="text-xl font-bold text-accent uppercase tracking-[0.2em] mt-2">
+                                        {% set months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] %}
+                                        {{ months[game.datetime[5:7]|int - 1] }}
+                                    </div>
+                                    <div class="text-gray-400 text-sm mt-1">{{ game.datetime[:4] }}</div>
+                                </div>
+
+                                <!-- Divider -->
+                                <div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4"></div>
+
+                                <!-- Details -->
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="text-xs">Time</span>
+                                        </div>
+                                        <span class="font-bold text-gray-700">{{ game.datetime[11:16] }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            </svg>
+                                            <span class="text-xs">Arena</span>
+                                        </div>
+                                        <span class="font-bold text-gray-700 truncate max-w-[120px]">{{ game.arena_name or '-' }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            <span class="text-xs">Players</span>
+                                        </div>
+                                        <span class="font-bold text-gray-700">{{ game.attendee_count }}/{{ game.max_players }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Price -->
+                                <div class="mt-6 pt-5 border-t border-gray-100">
+                                    <div class="text-center">
+                                        <span class="text-4xl font-display text-accent">Rp{{ "{:,.0f}".format(game.price_per_person) }}</span>
+                                        <span class="text-sm text-gray-400 ml-1">/person</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex items-center justify-center gap-6 -mt-4">
+                        <button onclick="scrollCards(-1)" class="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:bg-accent hover:text-white transition-all shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+
+                        <div class="flex gap-2">
+                            {% for i in range(games|length) %}
+                            <button onclick="goToCard({{ i }})" class="card-dot transition-all rounded-full {% if i == 0 %}bg-accent w-8{% else %}bg-gray-300 hover:bg-gray-400 w-3{% endif %}" style="height: 8px;"></button>
+                            {% endfor %}
+                        </div>
+
+                        <button onclick="scrollCards(1)" class="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:bg-accent hover:text-white transition-all shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Calendar View -->
+                <div id="calendar-view" class="hidden w-full max-w-4xl mx-auto">
+                    <!-- Calendar Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
+                            ←
+                        </button>
+                        <h2 id="calendar-title" class="text-3xl font-display tracking-wide text-gray-800"></h2>
+                        <button onclick="changeMonth(1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
+                            →
+                        </button>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                        <!-- Calendar Days Header -->
+                        <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Sun</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Mon</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Tue</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Wed</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Thu</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Fri</div>
+                            <div class="py-3 text-center text-sm font-bold text-gray-500">Sat</div>
+                        </div>
+                        <!-- Calendar Days -->
+                        <div id="calendar-days" class="grid grid-cols-7" style="min-height: 500px;"></div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <p class="text-gray-500">No games yet. Create your first game!</p>
+                </div>
+                {% endif %}
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const totalCards = {{ games|length }};
+        const cardWidth = 320; // w-80 = 320px
+        const gap = 32; // gap between cards
+
+        function scrollCards(direction) {
+            currentIndex = (currentIndex + direction + totalCards) % totalCards;
+            updateCards();
+        }
+
+        function goToCard(index) {
+            currentIndex = index;
+            updateCards();
+        }
+
+        function handleCardClick(clickedIndex) {
+            if (clickedIndex === currentIndex) {
+                // Center card - navigate to detail
+                const gameId = gamesData[clickedIndex].id;
+                window.location.href = '/manage/games/' + gameId;
+            } else {
+                // Non-center card - scroll to center
+                currentIndex = clickedIndex;
+                updateCards();
+            }
+        }
+
+        function updateCards() {
+            const cards = document.querySelectorAll('.game-card');
+            const dots = document.querySelectorAll('.card-dot');
+            const containerWidth = cards[0].offsetWidth;
+            const offset = (containerWidth - cardWidth) / 2;
+
+            cards.forEach((card, i) => {
+                const diff = (i - currentIndex + totalCards) % totalCards;
+                let translateX = 0;
+                let scale = 1;
+                let opacity = 1;
+                let zIndex = 100 - Math.abs(diff);
+
+                if (diff === 0) {
+                    translateX = 0;
+                    scale = 1;
+                    opacity = 1;
+                } else if (diff === 1) {
+                    translateX = cardWidth * 0.85;
+                    scale = 0.85;
+                    opacity = 0.7;
+                } else if (diff === 2) {
+                    translateX = cardWidth * 1.6;
+                    scale = 0.7;
+                    opacity = 0.4;
+                } else if (diff === totalCards - 1) {
+                    translateX = -cardWidth * 0.85;
+                    scale = 0.85;
+                    opacity = 0.7;
+                } else if (diff === totalCards - 2) {
+                    translateX = -cardWidth * 1.6;
+                    scale = 0.7;
+                    opacity = 0.4;
+                } else {
+                    translateX = diff > 0 ? cardWidth * 2.2 : -cardWidth * 2.2;
+                    scale = 0.5;
+                    opacity = 0;
+                }
+
+                card.style.transform = `translateX(${translateX}px) scale(${scale})`;
+                card.style.opacity = opacity;
+                card.style.zIndex = zIndex;
+            });
+
+            dots.forEach((dot, i) => {
+                if (i === currentIndex) {
+                    dot.classList.add('bg-accent', 'w-8');
+                    dot.classList.remove('bg-gray-300', 'w-3');
+                } else {
+                    dot.classList.remove('bg-accent', 'w-8');
+                    dot.classList.add('bg-gray-300', 'w-3');
+                }
+            });
+        }
+
+        // View Toggle
+        let currentView = 'cards';
+        const gamesData = [
+            {% for game in games %}
+            { id: {{ game.id }}, datetime: "{{ game.datetime }}", name: "{{ game.arena_name or 'No arena' }}", status: "{{ game.status }}" },
+            {% endfor %}
+        ];
+
+        // Find closest upcoming game from today
+        let currentIndex = 0;
+        const now = new Date();
+        let closestDiff = Infinity;
+        gamesData.forEach((game, index) => {
+            const gameDate = new Date(game.datetime);
+            const diff = gameDate - now;
+            if (diff >= 0 && diff < closestDiff) {
+                closestDiff = diff;
+                currentIndex = index;
+            }
+        });
+
+        // Initialize
+        updateCards();
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('card-carousel').classList.toggle('hidden', view !== 'cards');
+            document.getElementById('calendar-view').classList.toggle('hidden', view !== 'calendar');
+
+            const btnCards = document.getElementById('btn-cards');
+            const btnCalendar = document.getElementById('btn-calendar');
+
+            if (view === 'cards') {
+                btnCards.classList.add('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCards.classList.remove('text-gray-500');
+                btnCalendar.classList.remove('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCalendar.classList.add('text-gray-500');
+            } else {
+                btnCalendar.classList.add('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCalendar.classList.remove('text-gray-500');
+                btnCards.classList.remove('bg-white', 'shadow-sm', 'text-gray-800');
+                btnCards.classList.add('text-gray-500');
+            }
+        }
+
+        // Calendar
+        let calendarDate = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        function renderCalendar() {
+            try {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+
+            document.getElementById('calendar-title').textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            let html = '';
+
+            // Empty cells before first day
+            for (let j = 0; j < firstDay; j++) {
+                html += '<div class="h-28 border-b border-r border-gray-100 bg-gray-50"></div>';
+            }
+
+            // Days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                html += renderDayCell(day, month, year, today);
+            }
+
+            // Fill remaining cells to complete the grid
+            const totalCells = firstDay + daysInMonth;
+            const remaining = 7 - (totalCells % 7);
+            if (remaining < 7) {
+                for (let j = 0; j < remaining; j++) {
+                    html += '<div class="h-28 border-b border-r border-gray-100 bg-gray-50"></div>';
+                }
+            }
+
+            document.getElementById('calendar-days').innerHTML = html;
+            } catch (e) {
+                console.error('Calendar error:', e);
+                document.getElementById('calendar-days').innerHTML = '<div class="col-span-7 p-8 text-center text-gray-500">Error loading calendar</div>';
+            }
+        }
+
+        function renderDayCell(day, month, year, today) {
+            const gamesOnDay = gamesData.filter(g => {
+                try {
+                    const gameDate = new Date(g.datetime);
+                    return gameDate.getDate() === day && gameDate.getMonth() === month && gameDate.getFullYear() === year;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+            const hasGames = gamesOnDay.length > 0;
+
+            // Format date for URL: YYYY-MM-DD
+            const pad = n => n.toString().padStart(2, '0');
+            const clickDate = `${year}-${pad(month + 1)}-${pad(day)}`;
+
+            let cellClass = 'h-28 border-b border-r border-gray-100 p-2';
+            if (isToday) cellClass += ' bg-accent/10';
+
+            let html = `<div class="${cellClass}">`;
+            html += `<div class="text-sm font-bold ${isToday ? 'text-accent' : hasGames ? 'text-gray-700' : 'text-gray-400'}">${day}</div>`;
+
+            if (hasGames) {
+                gamesOnDay.forEach(game => {
+                    const statusColor = game.status === 'open' ? 'bg-green-500' : game.status === 'closed' ? 'bg-red-500' : 'bg-gray-400';
+                    const time = game.datetime.slice(11, 16);
+                    html += `<a href="/manage/games/${game.id}" class="block mt-1 px-2 py-1 ${statusColor} text-white text-xs rounded truncate hover:opacity-80 font-medium">`;
+                    html += `${time} - ${game.name}`;
+                    html += '</a>';
+                });
+            } else {
+                // Click to add game on empty cell
+                html += `<a href="/manage/games/new?date=${clickDate}" class="block mt-2 text-xs text-gray-300 hover:text-accent text-center opacity-0 hover:opacity-100 transition-opacity">+ Add Game</a>`;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function changeMonth(delta) {
+            calendarDate.setMonth(calendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        // Initialize calendar
+        renderCalendar();
+    </script>
+</body>
+</html>
