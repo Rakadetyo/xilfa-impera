@@ -187,6 +187,12 @@ def init_db():
         cursor.execute("ALTER TABLE game ADD COLUMN status TEXT DEFAULT 'open'")
     if 'notes' not in game_columns:
         cursor.execute("ALTER TABLE game ADD COLUMN notes TEXT")
+    if 'num_teams' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN num_teams INTEGER DEFAULT 3")
+    if 'players_per_team' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN players_per_team INTEGER DEFAULT 5")
+    if 'skill_weight' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN skill_weight REAL DEFAULT 0.6")
 
     # game_attendee: add new columns
     cursor.execute("PRAGMA table_info(game_attendee)")
@@ -201,6 +207,28 @@ def init_db():
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN is_attend INTEGER DEFAULT 0")
     if 'team_id' not in attendee_columns:
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN team_id INTEGER")
+
+    # game_player_group: groups of players that always stay on the same team
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_player_group (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_player_group_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            UNIQUE(group_id, player_id),
+            FOREIGN KEY (group_id) REFERENCES game_player_group(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES player(id)
+        )
+    """)
 
     # game_partner: referee/videographer/photographer/sponsor tracking
     cursor.execute("""

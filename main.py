@@ -1490,6 +1490,134 @@ async def toggle_status(request: Request, post_id: int):
 
 
 # ============================================
+# TEAM GENERATION ALGORITHM
+# ============================================
+
+def compute_player_values(attendees, skill_weight=0.6):
+    """
+    Returns {attendee_id: value_score (0-100)} relative to attending pool.
+    skill_weight 0.0-1.0; remainder = position scarcity weight.
+    """
+    if not attendees:
+        return {}
+    position_weight = 1.0 - skill_weight
+    skills = [a.get("skill_level") or 3 for a in attendees]
+    min_s, max_s = min(skills), max(skills)
+    skill_range = (max_s - min_s) or 1
+    pos_counts = {}
+    for a in attendees:
+        pos = a.get("position_1") or "?"
+        pos_counts[pos] = pos_counts.get(pos, 0) + 1
+    total = len(attendees)
+    result = {}
+    for a in attendees:
+        skill_pct = ((a.get("skill_level") or 3) - min_s) / skill_range
+        pos = a.get("position_1") or "?"
+        # "?" players counted in pool (hurts real position scarcity) but get 0 scarcity themselves
+        pos_scarcity = (1.0 - (pos_counts[pos] / total)) if pos != "?" else 0.0
+        result[a["id"]] = round((skill_pct * skill_weight + pos_scarcity * position_weight) * 100, 1)
+    return result
+
+
+def generate_balanced_teams(attendees, groups, num_teams, players_per_team, value_scores=None):
+    """
+    attendees: list of dicts with keys id, player_id, skill_level, position_1
+    groups: list of dicts with keys id, name, member_attendee_ids (list of attendee ids)
+    value_scores: {attendee_id: score} from compute_player_values — used to sort solos
+    Returns: list of lists — team_assignments[team_idx] = [attendee_id, ...]
+    """
+    attendee_by_id = {a["id"]: a for a in attendees}
+    attendee_skill = {a["id"]: (a.get("skill_level") or 3) for a in attendees}
+
+    # Build set of attendee ids already in a group
+    grouped_ids = set()
+    for g in groups:
+        for aid in g["member_attendee_ids"]:
+            if aid in attendee_by_id:
+                grouped_ids.add(aid)
+
+    solo_attendees = [a for a in attendees if a["id"] not in grouped_ids]
+    if value_scores:
+        solo_attendees.sort(key=lambda a: -value_scores.get(a["id"], 0))
+    else:
+        solo_attendees.sort(key=lambda a: -(a.get("skill_level") or 3))
+
+    # Assign groups to teams: strongest group assigned first, to team with lowest skill sum
+    groups_sorted = sorted(
+        groups,
+        key=lambda g: sum(attendee_skill.get(aid, 3) for aid in g["member_attendee_ids"]),
+        reverse=True
+    )
+
+    team_assignments = [[] for _ in range(num_teams)]
+    team_group_counts = [0] * num_teams
+    team_skill_sums = [0.0] * num_teams
+
+    for group in groups_sorted:
+        min_count = min(team_group_counts)
+        eligible = [i for i, c in enumerate(team_group_counts) if c == min_count]
+        target = min(eligible, key=lambda i: team_skill_sums[i])
+        for aid in group["member_attendee_ids"]:
+            if aid in attendee_by_id and len(team_assignments[target]) < players_per_team:
+                team_assignments[target].append(aid)
+                team_skill_sums[target] += attendee_skill.get(aid, 3)
+        team_group_counts[target] += 1
+
+    # Identify group vs no-group teams
+    has_group = [team_group_counts[i] > 0 for i in range(num_teams)]
+    no_group_teams = [i for i in range(num_teams) if not has_group[i]]
+    # Highest skill group picks last-est within group teams
+    group_teams = sorted(
+        [i for i in range(num_teams) if has_group[i]],
+        key=lambda i: team_skill_sums[i],
+        reverse=True
+    )
+
+    solo_idx = 0
+    round_num = 0
+    max_rounds = (len(solo_attendees) + 1) * (num_teams + 1)
+
+    while solo_idx < len(solo_attendees) and round_num < max_rounds:
+        no_group_round = list(no_group_teams) if round_num % 2 == 0 else list(reversed(no_group_teams))
+        round_order = no_group_round + group_teams
+        picks_this_round = 0
+
+        for team_idx in round_order:
+            if solo_idx >= len(solo_attendees):
+                break
+            if len(team_assignments[team_idx]) >= players_per_team:
+                continue
+
+            # Group team skips until all open no-group teams have caught up
+            if has_group[team_idx]:
+                no_group_open = [i for i in no_group_teams if len(team_assignments[i]) < players_per_team]
+                if no_group_open:
+                    my_count = len(team_assignments[team_idx])
+                    if min(len(team_assignments[i]) for i in no_group_open) < my_count:
+                        continue
+
+            team_assignments[team_idx].append(solo_attendees[solo_idx]["id"])
+            team_skill_sums[team_idx] += attendee_skill.get(solo_attendees[solo_idx]["id"], 3)
+            solo_idx += 1
+            picks_this_round += 1
+
+        if picks_this_round == 0:
+            # Stuck: force-assign to any open team
+            for team_idx in range(num_teams):
+                if solo_idx >= len(solo_attendees):
+                    break
+                if len(team_assignments[team_idx]) < players_per_team:
+                    team_assignments[team_idx].append(solo_attendees[solo_idx]["id"])
+                    solo_idx += 1
+            if picks_this_round == 0:
+                break
+
+        round_num += 1
+
+    return team_assignments
+
+
+# ============================================
 # GAME MANAGEMENT ROUTES
 # ============================================
 
@@ -1575,7 +1703,7 @@ async def create_game(
 
 
 @app.get("/manage/games/{game_id}")
-async def game_detail(request: Request, game_id: int, tab: str = "general"):
+async def game_detail(request: Request, game_id: int, tab: str = "general", error: str = None):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -1684,7 +1812,47 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
     cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
     arenas = cursor.fetchall()
 
+    # Get player groups with members (always fetched for teams tab)
+    cursor.execute("SELECT * FROM game_player_group WHERE game_id = ? ORDER BY id", (game_id,))
+    groups_raw = cursor.fetchall()
+    groups = []
+    grouped_player_ids = set()
+    for g in groups_raw:
+        cursor.execute("""
+            SELECT gpm.player_id, p.name, p.skill_level, p.position_1, p.position_2
+            FROM game_player_group_members gpm
+            JOIN player p ON gpm.player_id = p.id
+            WHERE gpm.group_id = ?
+        """, (g["id"],))
+        members = [dict(m) for m in cursor.fetchall()]
+        groups.append({"id": g["id"], "name": g["name"], "members": members})
+        for m in members:
+            grouped_player_ids.add(m["player_id"])
+
     conn.close()
+
+    # Compute per-player value scores relative to attending pool
+    attendees_list = [dict(a) for a in attendees]
+    skill_weight = float(game_dict.get("skill_weight") or 0.6)
+    player_values = compute_player_values(attendees_list, skill_weight)
+
+    # Compute balance scores if teams exist
+    balance = None
+    if teams:
+        team_value_sums = []
+        for team in teams:
+            total_value = sum(
+                player_values.get(a["id"], 0) for a in attendees_list if a.get("team_id") == team["id"]
+            )
+            team_value_sums.append(round(total_value, 1))
+        if team_value_sums:
+            skill_spread = max(team_value_sums) - min(team_value_sums)
+            balance_score = max(0, round(100 - skill_spread, 1))
+            balance = {
+                "skill_spread": round(skill_spread, 1),
+                "score": balance_score,
+                "group_warning": skill_spread > 10 and bool(groups),
+            }
 
     tabs = ["general", "players", "teams", "schedule", "results"]
     if tab not in tabs:
@@ -1700,7 +1868,12 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
         "all_players": all_players,
         "arenas": arenas,
         "tab": tab,
-        "tabs": tabs
+        "tabs": tabs,
+        "groups": groups,
+        "grouped_player_ids": grouped_player_ids,
+        "balance": balance,
+        "player_values": player_values,
+        "error": error,
     })
 
 
@@ -1975,6 +2148,209 @@ async def assign_team(request: Request, game_id: int, attendee_id: int, team_id:
     conn.commit()
     conn.close()
 
+    if "application/json" in request.headers.get("Accept", "") or request.headers.get("X-Requested-With") == "fetch":
+        return JSONResponse({"ok": True})
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+# --- Player Groups ---
+@app.post("/manage/games/{game_id}/groups")
+async def create_group(request: Request, game_id: int, name: str = Form(...)):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO game_player_group (game_id, name) VALUES (?, ?)", (game_id, name))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/groups/{group_id}/delete")
+async def delete_group(request: Request, game_id: int, group_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_player_group WHERE id = ? AND game_id = ?", (group_id, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/groups/{group_id}/members")
+async def add_group_member(request: Request, game_id: int, group_id: int, player_id: int = Form(...)):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get game's players_per_team setting
+    cursor.execute("SELECT players_per_team FROM game WHERE id = ?", (game_id,))
+    game = cursor.fetchone()
+    players_per_team = game["players_per_team"] if game else 5
+
+    # Verify group belongs to this game
+    cursor.execute("SELECT id FROM game_player_group WHERE id = ? AND game_id = ?", (group_id, game_id))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    # Check current group size
+    cursor.execute("SELECT COUNT(*) as cnt FROM game_player_group_members WHERE group_id = ?", (group_id,))
+    current_count = cursor.fetchone()["cnt"]
+
+    if current_count >= players_per_team:
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=teams&error=Group cannot exceed {players_per_team} players", status_code=302)
+
+    cursor.execute(
+        "INSERT OR IGNORE INTO game_player_group_members (group_id, player_id) VALUES (?, ?)",
+        (group_id, player_id)
+    )
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/groups/{group_id}/members/{player_id}/delete")
+async def remove_group_member(request: Request, game_id: int, group_id: int, player_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM game_player_group_members WHERE group_id = ? AND player_id = ?",
+        (group_id, player_id)
+    )
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+# --- Team Generation ---
+@app.post("/manage/games/{game_id}/teams/skill-weight")
+async def update_skill_weight(
+    request: Request,
+    game_id: int,
+    skill_weight_pct: int = Form(60),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    skill_weight = max(0.0, min(1.0, skill_weight_pct / 100))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Save skill_weight only
+    cursor.execute("UPDATE game SET skill_weight = ? WHERE id = ?", (skill_weight, game_id))
+    conn.commit()
+    conn.close()
+
+    # Redirect back to teams tab without regenerating
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/generate")
+async def generate_teams_route(
+    request: Request,
+    game_id: int,
+    num_teams: int = Form(3),
+    players_per_team: int = Form(5),
+    skill_weight_pct: int = Form(60),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    skill_weight = max(0.0, min(1.0, skill_weight_pct / 100))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Persist config
+    cursor.execute(
+        "UPDATE game SET num_teams = ?, players_per_team = ?, skill_weight = ? WHERE id = ?",
+        (num_teams, players_per_team, skill_weight, game_id)
+    )
+
+    # Clear existing
+    cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE game_id = ?", (game_id,))
+    cursor.execute("DELETE FROM game_team WHERE game_id = ?", (game_id,))
+
+    # Fetch attending players
+    cursor.execute("""
+        SELECT ga.id, ga.player_id, p.name, p.skill_level, p.position_1, p.position_2
+        FROM game_attendee ga
+        JOIN player p ON ga.player_id = p.id
+        WHERE ga.game_id = ?
+        ORDER BY p.name
+    """, (game_id,))
+    attendees = [dict(a) for a in cursor.fetchall()]
+
+    # Fetch groups with member attendee ids
+    cursor.execute("SELECT * FROM game_player_group WHERE game_id = ?", (game_id,))
+    groups_raw = cursor.fetchall()
+    groups = []
+    for g in groups_raw:
+        cursor.execute("""
+            SELECT ga.id as attendee_id
+            FROM game_player_group_members gpm
+            JOIN game_attendee ga ON gpm.player_id = ga.player_id AND ga.game_id = ?
+            WHERE gpm.group_id = ?
+        """, (game_id, g["id"]))
+        groups.append({
+            "id": g["id"],
+            "name": g["name"],
+            "member_attendee_ids": [r["attendee_id"] for r in cursor.fetchall()]
+        })
+
+    # Compute value scores then run algo
+    value_scores = compute_player_values(attendees, skill_weight)
+    team_assignments = generate_balanced_teams(attendees, groups, num_teams, players_per_team, value_scores)
+
+    # Create teams
+    _TEAM_NAMES = ["Team A", "Team B", "Team C", "Team D", "Team E", "Team F", "Team G", "Team H"]
+    _TEAM_COLORS = ["#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6", "#1ABC9C", "#E67E22", "#E91E63"]
+    team_ids = []
+    for i in range(num_teams):
+        cursor.execute(
+            "INSERT INTO game_team (game_id, team_name, team_color) VALUES (?, ?, ?)",
+            (game_id, _TEAM_NAMES[i % len(_TEAM_NAMES)], _TEAM_COLORS[i % len(_TEAM_COLORS)])
+        )
+        team_ids.append(cursor.lastrowid)
+
+    # Assign attendees to teams
+    for team_idx, attendee_ids in enumerate(team_assignments):
+        team_id = team_ids[team_idx]
+        for aid in attendee_ids:
+            cursor.execute(
+                "UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+                (team_id, aid, game_id)
+            )
+
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/clear")
+async def clear_teams(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE game_id = ?", (game_id,))
+    cursor.execute("DELETE FROM game_team WHERE game_id = ?", (game_id,))
+    conn.commit()
+    conn.close()
     return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
 
 
