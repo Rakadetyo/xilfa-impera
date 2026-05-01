@@ -759,7 +759,8 @@ async def members_page(request: Request):
     conn = get_db()
     cursor = conn.cursor()
 
-    member_period = f"{filter_year}-{filter_month:02d}"
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    member_period = f"{months[filter_month - 1]} {filter_year}"
 
     # Get members for selected period
     cursor.execute("""
@@ -808,7 +809,8 @@ async def members_page(request: Request):
     if prev_month == 0:
         prev_month = 12
         prev_year -= 1
-    prev_period = f"{prev_year}-{prev_month:02d}"
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    prev_period = f"{months[prev_month - 1]} {prev_year}"
 
     cursor.execute("SELECT COUNT(*) as cnt FROM member WHERE member_period = ?", (prev_period,))
     prev_active = cursor.fetchone()["cnt"]
@@ -824,11 +826,22 @@ async def members_page(request: Request):
     """)
     all_periods = cursor.fetchall()
     if all_periods:
+        def parse_period(p):
+            # Handle "Month Year" format
+            months_map = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                         'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
+            if '-' in p:
+                parts = p.split('-')
+                return int(parts[0]), int(parts[1])
+            else:
+                parts = p.split()
+                return int(parts[1]), months_map.get(parts[0], 1)
+
         min_period = all_periods[0]["member_period"]
         max_period = all_periods[-1]["member_period"]
-        min_parts = min_period.split("-")
-        max_parts = max_period.split("-")
-        months_span = (int(max_parts[0]) - int(min_parts[0])) * 12 + (int(max_parts[1]) - int(min_parts[1])) + 1
+        min_year, min_month = parse_period(min_period)
+        max_year, max_month = parse_period(max_period)
+        months_span = (max_year - min_year) * 12 + (max_month - min_month) + 1
         if months_span > 0:
             avg_per_month = round(total_unique / months_span, 1)
         else:
@@ -897,7 +910,9 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
-    member_period = f"{year}-{month:02d}"
+    # Generate member_period in "Month Year" format
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    member_period = f"{months[month - 1]} {year}"
 
     conn = get_db()
     cursor = conn.cursor()
@@ -997,7 +1012,8 @@ async def import_whatsapp_members(request: Request):
 
     start_date = f"{filter_year}-{filter_month:02d}-{first_saturday:02d}"
     end_date = f"{filter_year}-{filter_month:02d}-{last_saturday:02d}"
-    member_period = f"{filter_year}-{filter_month:02d}"
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    member_period = f"{months[filter_month - 1]} {filter_year}"
 
     # Build preview list
     preview = []
@@ -1066,11 +1082,16 @@ async def import_whatsapp_members_confirm(request: Request):
     if not members_data or not start_date or not end_date:
         return JSONResponse({"error": "Missing data"}, status_code=400)
 
-    # Derive member_period from start_date if not provided (format: YYYY-MM)
+    # Derive member_period from start_date if not provided (format: "Month Year")
     if not member_period and start_date:
         parts = start_date.split("-")
         if len(parts) >= 2:
-            member_period = f"{parts[0]}-{parts[1]}"
+            months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+            try:
+                month_idx = int(parts[1]) - 1
+                member_period = f"{months[month_idx]} {parts[0]}"
+            except:
+                member_period = ""
 
     if not member_period:
         return JSONResponse({"error": "Missing data"}, status_code=400)
@@ -1597,15 +1618,22 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
 
     # Auto-populate with current members if no attendees
     if not attendees:
+        # Get current month period (e.g., "May 2026")
+        from datetime import datetime
+        now = datetime.now()
+        months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+        current_period = f"{months[now.month - 1]} {now.year}"
+
+        # Only insert players not already in game
         cursor.execute("""
             INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
             SELECT ?, p.id, 0, 0
             FROM player p
             JOIN member m ON p.id = m.player_id
             WHERE p.status = 1
-            AND m.member_start_date <= date('now')
-            AND m.member_end_date >= date('now')
-        """, (game_id,))
+            AND m.member_period = ?
+            AND p.id NOT IN (SELECT player_id FROM game_attendee WHERE game_id = ?)
+        """, (game_id, current_period, game_id))
         conn.commit()
 
         # Refetch attendees after auto-populate

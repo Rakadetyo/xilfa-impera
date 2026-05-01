@@ -223,6 +223,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Name</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Period</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Membership Count</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Last Member</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Start Date</th>
@@ -236,6 +237,7 @@
                             {% if m %}
                             <tr class="hover:bg-gray-50 cursor-pointer" onclick="openMemberModal({{ m.id }}, {{ m.player_id }}, '{{ m.member_start_date or '' }}', '{{ m.member_end_date or '' }}', {{ m.is_paid }}, {{ m.membership_price or 0 }})">
                                 <td class="p-4 font-bold">{{ m.name }}{% if m.nickname %} <span class="text-gray-400 font-normal">({{ m.nickname }})</span>{% endif %}</td>
+                                <td class="p-4 text-gray-500">{{ m.member_period or '-' }}</td>
                                 <td class="p-4 text-gray-500">{{ m.n_members or 0 }}</td>
                                 <td class="p-4 text-gray-500">{{ m.last_member_date or '-' }}</td>
                                 <td class="p-4 text-gray-500">{{ m.member_start_date or '-' }}</td>
