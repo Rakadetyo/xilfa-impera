@@ -66,8 +66,9 @@
                     <!-- Cards Container -->
                     <div class="relative h-[85vh] flex items-center justify-center">
                         {% for game in games %}
-                        <a href="/manage/games/{{ game.id }}" class="game-card absolute w-80 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden block"
-                            style="z-index: {{ 100 - loop.index0 }};">
+                        <div class="game-card absolute w-80 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden cursor-pointer"
+                            style="z-index: {{ 100 - loop.index0 }};"
+                            onclick="handleCardClick({{ loop.index0 }})">
                             <!-- Top Accent Bar -->
                             <div class="h-2 bg-gradient-to-r from-accent via-accent-light to-accent"></div>
 
@@ -134,7 +135,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </a>
+                        </div>
                         {% endfor %}
                     </div>
 
@@ -213,6 +214,18 @@
         function goToCard(index) {
             currentIndex = index;
             updateCards();
+        }
+
+        function handleCardClick(clickedIndex) {
+            if (clickedIndex === currentIndex) {
+                // Center card - navigate to detail
+                const gameId = gamesData[clickedIndex].id;
+                window.location.href = '/manage/games/' + gameId;
+            } else {
+                // Non-center card - scroll to center
+                currentIndex = clickedIndex;
+                updateCards();
+            }
         }
 
         function updateCards() {
