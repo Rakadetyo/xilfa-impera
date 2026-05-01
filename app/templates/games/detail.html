@@ -79,7 +79,9 @@
                         </button>
                     </form>
                 </div>
-                {% if tab == 'general' %}
+                {% if tab == 'overview' %}
+                <p class="text-gray-500">Overview of this game session. View key information, statistics, and quick actions.</p>
+                {% elif tab == 'general' %}
                 <p class="text-gray-500">Manage game details, pricing, partners, and services for this session. Set the date, time, arena, and pricing. Add partners such as referees, videographers, or sponsors. Enable video recording, photo capture, or request a referee for the session.</p>
                 {% elif tab == 'players' %}
                 <p class="text-gray-500">Add players, track attendance, payments, and manage team assignments. Register players who will attend this game, mark their payment status, and track whether they showed up. Once players are added, you can assign them to teams in the Teams tab.</p>
@@ -106,7 +108,11 @@
             </div>
 
             <!-- Tab Content -->
-            {% if tab == 'general' %}
+            {% if tab == 'overview' %}
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+                <p class="text-yellow-800 font-medium">Feature on development</p>
+            </div>
+            {% elif tab == 'general' %}
             <form method="post" action="/manage/games/{{ game.id }}/edit" class="space-y-6">
                 <!-- Event Details -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
@@ -582,75 +588,13 @@
             </div>
 
             {% elif tab == 'schedule' %}
-            <div class="space-y-6">
-                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm flex justify-between items-center">
-                    <div>
-                        <h3 class="font-medium">Generate Round-Robin Schedule</h3>
-                        <p class="text-sm text-gray-500">Each team plays every other team once</p>
-                    </div>
-                    <form method="post" action="/manage/games/{{ game_id }}/schedule/generate">
-                        <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Generate</button>
-                    </form>
-                </div>
-
-                <div class="space-y-4">
-                    {% for m in matches %}
-                    <div class="bg-white rounded-xl p-4 border border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-4">
-                                <span class="text-gray-500">Round {{ m.round_number }}</span>
-                                <span class="font-medium" style="color: {{ m.home_color or '#6B7280' }}">{{ m.home_team }}</span>
-                                <span class="text-gray-400">vs</span>
-                                <span class="font-medium" style="color: {{ m.away_color or '#6B7280' }}">{{ m.away_team }}</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}" class="flex items-center gap-2">
-                                    <input type="number" name="score_home" value="{{ m.score_home or 0 }}" min="0" class="w-16 px-2 py-1 border rounded text-center">
-                                    <span>-</span>
-                                    <input type="number" name="score_away" value="{{ m.score_away or 0 }}" min="0" class="w-16 px-2 py-1 border rounded text-center">
-                                    <button type="submit" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">Save</button>
-                                </form>
-                                <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/delete">
-                                    <button type="submit" class="text-red-600 text-sm">×</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <p class="text-gray-500 text-center py-8">No matches scheduled</p>
-                    {% endfor %}
-                </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+                <p class="text-yellow-800 font-medium">Feature on development</p>
             </div>
 
             {% elif tab == 'results' %}
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                <h3 class="font-medium mb-4">Match Results</h3>
-                <table class="w-full">
-                    <thead class="border-b">
-                        <tr>
-                            <th class="text-left py-2">Match</th>
-                            <th class="text-left py-2">Score</th>
-                            <th class="text-left py-2">Winner</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in matches %}
-                        <tr class="border-b">
-                            <td class="py-3">{{ m.home_team }} vs {{ m.away_team }}</td>
-                            <td class="py-3">{{ m.score_home or 0 }} - {{ m.score_away or 0 }}</td>
-                            <td class="py-3">
-                                {% if m.winner_team_id %}
-                                    {% for t in teams %}
-                                        {% if t.id == m.winner_team_id %}{{ t.team_name }}{% endif %}
-                                    {% endfor %}
-                                {% else %}-{% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="3" class="py-8 text-center text-gray-500">No results yet</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+                <p class="text-yellow-800 font-medium">Feature on development</p>
             </div>
             {% endif %}
         </main>

@@ -1854,9 +1854,9 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
                 "group_warning": skill_spread > 10 and bool(groups),
             }
 
-    tabs = ["general", "players", "teams", "schedule", "results"]
+    tabs = ["overview", "general", "players", "teams", "schedule", "results"]
     if tab not in tabs:
-        tab = "general"
+        tab = "overview"
 
     return templates.TemplateResponse(request, "games/detail.html", {
         "user": user,
