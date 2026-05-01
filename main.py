@@ -1574,6 +1574,15 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
         conn.close()
         raise HTTPException(status_code=404, detail="Game not found")
 
+    # Format title
+    from datetime import datetime
+    game_dict = dict(game)
+    dt_str = game_dict["datetime"].replace("T", " ")
+    if len(dt_str) == 16:
+        dt_str += ":00"
+    dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    game_dict["title"] = dt.strftime("%a, %d %b %Y") + " @ " + (game_dict["arena_name"] or "No arena")
+
     # Get attendees with player info
     cursor.execute("""
         SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2, p.skill_level,
@@ -1611,20 +1620,25 @@ async def game_detail(request: Request, game_id: int, tab: str = "general"):
     cursor.execute("SELECT * FROM player WHERE status = 1 ORDER BY name")
     all_players = cursor.fetchall()
 
+    # Get arenas for dropdown
+    cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
+    arenas = cursor.fetchall()
+
     conn.close()
 
-    tabs = ["general", "players", "partners", "teams", "schedule", "results"]
+    tabs = ["general", "players", "teams", "schedule", "results"]
     if tab not in tabs:
         tab = "general"
 
     return templates.TemplateResponse(request, "games/detail.html", {
         "user": user,
-        "game": game,
+        "game": game_dict,
         "attendees": attendees,
         "partners": partners,
         "teams": teams,
         "matches": matches,
         "all_players": all_players,
+        "arenas": arenas,
         "tab": tab,
         "tabs": tabs
     })
@@ -1666,7 +1680,15 @@ async def update_game(
     session_duration: int = Form(120),
     max_players: int = Form(25),
     status: str = Form("open"),
-    notes: str = Form("")
+    notes: str = Form(""),
+    is_video: bool = Form(False),
+    is_photo: bool = Form(False),
+    is_referee: bool = Form(False),
+    add_partner: str = Form(None),
+    partner_type: str = Form(None),
+    partner_name: str = Form(None),
+    partner_contact: str = Form(None),
+    partner_fee: float = Form(0)
 ):
     user = get_current_user(request)
     if not user:
@@ -1679,10 +1701,20 @@ async def update_game(
         UPDATE game SET datetime = ?, arena_id = ?, price_per_person = ?,
                        price_per_member = ?, duration_per_game = ?,
                        session_duration = ?, max_players = ?, status = ?, notes = ?,
+                       is_video = ?, is_photo = ?, is_referee = ?,
                        updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
     """, (datetime, arena_id, price_per_person, price_per_member,
-          duration_per_game, session_duration, max_players, status, notes, game_id))
+          duration_per_game, session_duration, max_players, status, notes,
+          1 if is_video else 0, 1 if is_photo else 0, 1 if is_referee else 0, game_id))
+
+    # Handle add partner
+    if add_partner and partner_type:
+        cursor.execute("""
+            INSERT INTO game_partner (game_id, type, name, contact, fee)
+            VALUES (?, ?, ?, ?, ?)
+        """, (game_id, partner_type, partner_name, partner_contact, partner_fee))
+        conn.commit()
 
     conn.commit()
     conn.close()
