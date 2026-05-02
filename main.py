@@ -2602,6 +2602,15 @@ async def generate_schedule(
         matches = generate_group_knockout(teams)
     elif format == "king_of_court":
         matches = generate_king_of_court(teams)
+    elif format == "custom":
+        # Custom: create one placeholder match
+        matches = [{
+            "team_home_id": None,
+            "team_away_id": None,
+            "round_number": 1,
+            "bracket_slot": None,
+            "is_tbd": 1
+        }]
     else:
         matches = generate_round_robin(teams)
 
