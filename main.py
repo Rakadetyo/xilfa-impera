@@ -2004,7 +2004,34 @@ async def list_games(request: Request):
         LEFT JOIN arena a ON g.arena_id = a.id
         ORDER BY g.datetime ASC
     """)
-    games = cursor.fetchall()
+    all_games = cursor.fetchall()
+
+    # Filter to show 7 games: 3 before + 1 closest + 3 after
+    games_list = list(all_games)
+    if len(games_list) <= 7:
+        games = games_list
+    else:
+        from datetime import datetime
+        now = datetime.now()
+        # Find closest game to now
+        closest_idx = 0
+        closest_diff = float('inf')
+        for i, g in enumerate(games_list):
+            game_dt = g["datetime"]
+            if game_dt:
+                if isinstance(game_dt, str):
+                    game_dt = datetime.fromisoformat(game_dt.replace("Z", "+00:00").replace("+00:00", ""))
+                diff = (game_dt - now).total_seconds()
+                if diff >= 0 and diff < closest_diff:
+                    closest_diff = diff
+                    closest_idx = i
+        # If no upcoming, use last game
+        if closest_diff == float('inf'):
+            closest_idx = len(games_list) - 1
+
+        start = max(0, closest_idx - 3)
+        end = min(len(games_list), closest_idx + 4)
+        games = games_list[start:end]
 
     cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
     arenas = cursor.fetchall()
@@ -3402,7 +3429,7 @@ async def generate_invite(request: Request, game_id: int):
         conn.close()
         return RedirectResponse(f"/manage/games/{game_id}?tab=overview", status_code=302)
 
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(8)
     cursor.execute("UPDATE game SET invite_token = ? WHERE id = ?", (token, game_id))
     conn.commit()
     conn.close()
@@ -3415,7 +3442,7 @@ async def regenerate_invite(request: Request, game_id: int):
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(8)
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE game SET invite_token = ? WHERE id = ?", (token, game_id))
