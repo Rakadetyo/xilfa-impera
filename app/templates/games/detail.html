@@ -595,6 +595,20 @@
                     <h3 class="font-medium mb-4">Schedule Format</h3>
                     {% if teams|length < 2 %}
                     <p class="text-gray-500">Need at least 2 teams to generate schedule.</p>
+                    {% elif matches %}
+                    {% set team_counts = {} %}
+                    {% for m in matches %}
+                        {% if m.team_home_id %}{% set _ = team_counts.update({m.team_home_id: team_counts.get(m.team_home_id, 0) + 1}) %}{% endif %}
+                        {% if m.team_away_id %}{% set _ = team_counts.update({m.team_away_id: team_counts.get(m.team_away_id, 0) + 1}) %}{% endif %}
+                    {% endfor %}
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-gray-500">Matches per team: </span>
+                        {% for t in teams %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-sm bg-accent/10 text-accent mr-1 mb-1">
+                                {{ t.team_name }}: {{ team_counts.get(t.id, 0) }}
+                            </span>
+                        {% endfor %}
+                    </div>
                     {% else %}
                     <form method="post" action="/manage/games/{{ game.id }}/schedule/generate" class="space-y-4">
                         <div class="flex flex-wrap gap-4 items-center">
