@@ -247,7 +247,7 @@ Klik link untuk lihat info tim kamu
                                     class="flex-1 px-4 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accent/90">
                                 Copy
                             </button>
-                            <a id="waLink" href="https://wa.me/?text={{ ('🏀 *IMPERA Basketball*\nKamu diundang ke sesi game!\n\n📅 ' + game.title + '\n📍 ' + (game.arena_name or 'TBA') + '\n\nKlik link untuk lihat info tim kamu\n👇\n' + request.url.scheme + '://' + request.url.netloc + '/invite/' + game.invite_token) | urlencode }}"
+                            <a id="waLink" href="https://wa.me/?text={{ ('🏀 *IMPERA Basketball*\nKamu diundang ke sesi game!\n\n📅 ' + game.title + '\n📍 ' + (game.arena_name or 'TBA') + '\n\nKlik link untuk lihat info tim kamu\n👇\n' + request.url.scheme + '://' + request.url.netloc + '/invite/' + (game.invite_token or '')) | urlencode }}"
                                target="_blank"
                                class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-center">
                                 WhatsApp

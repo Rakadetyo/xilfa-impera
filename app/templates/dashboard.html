@@ -102,6 +102,68 @@
                     </div>
                 </div>
 
+                <!-- Game Sessions -->
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <!-- Last Session -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Last Session</p>
+                        {% if last_game %}
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-lg font-display text-gray-800">
+                                    {{ last_game.datetime[:10] }}
+                                    <span class="text-sm font-body font-normal text-gray-500 ml-1">{{ last_game.datetime[11:16] }}</span>
+                                </p>
+                                <p class="text-sm text-gray-500 mt-1">{{ last_game.location_name or 'No arena' }}</p>
+                                <p class="text-sm text-gray-400 mt-1">{{ last_game.attendee_count }} players attended</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-bold rounded
+                                {% if last_game.status == 'open' %}bg-green-100 text-green-700
+                                {% elif last_game.status == 'closed' %}bg-gray-100 text-gray-500
+                                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                {{ last_game.status }}
+                            </span>
+                        </div>
+                        <a href="/manage/games/{{ last_game.id }}" class="inline-block mt-4 text-xs font-bold text-accent hover:underline">View session →</a>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No past sessions yet.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Upcoming Session -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm {% if not upcoming_game %}border-dashed{% endif %}">
+                        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Next Session</p>
+                        {% if upcoming_game %}
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-lg font-display text-accent">
+                                    {{ upcoming_game.datetime[:10] }}
+                                    <span class="text-sm font-body font-normal text-gray-500 ml-1">{{ upcoming_game.datetime[11:16] }}</span>
+                                </p>
+                                <p class="text-sm text-gray-500 mt-1">{{ upcoming_game.location_name or 'No arena' }}</p>
+                                <p class="text-sm text-gray-400 mt-1">{{ upcoming_game.attendee_count }} players registered</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-bold rounded
+                                {% if upcoming_game.status == 'open' %}bg-green-100 text-green-700
+                                {% elif upcoming_game.status == 'closed' %}bg-gray-100 text-gray-500
+                                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                {{ upcoming_game.status }}
+                            </span>
+                        </div>
+                        <a href="/manage/games/{{ upcoming_game.id }}" class="inline-block mt-4 text-xs font-bold text-accent hover:underline">Manage session →</a>
+                        {% else %}
+                        <p class="text-sm text-gray-500 mb-4">No upcoming sessions scheduled.</p>
+                        <p class="text-xs text-gray-400 mb-4">Ready to run the next game? Create a session and start inviting players.</p>
+                        <a href="/manage/games/new" class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-black text-sm font-bold hover:bg-accent-light transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Create Game
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
                 <!-- Navigation Grid -->
                 <div class="grid grid-cols-3 gap-4">
                     <a href="/manage/posts" class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:border-accent transition-colors">
