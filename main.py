@@ -1907,8 +1907,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     # Overview tab computed data
     from datetime import datetime as dt, timedelta
 
-    paid_count = sum(1 for a in attendees if getattr(a, "is_paid", 0))
-    assigned_count = sum(1 for a in attendees if getattr(a, "team_id", None))
+    paid_count = sum(1 for a in attendees if dict(a).get("is_paid", 0))
+    assigned_count = sum(1 for a in attendees if dict(a).get("team_id", None))
     total_attendees = len(attendees)
 
     # Analytics: Average skill level
@@ -1948,7 +1948,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     # Step completion
     step_general = bool(game_dict.get("arena_id") and game_dict.get("datetime"))
     step_players = total_attendees > 0 and (paid_count / total_attendees) >= 0.5
-    step_teams = len(teams) > 0 and total_attendees > 0 and assigned_count == total_attendees
+    step_teams = len(teams) > 0
     step_schedule = len(matches) > 0
 
     overview_steps = [
