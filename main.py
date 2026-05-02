@@ -2074,9 +2074,9 @@ async def update_game(
     max_players: int = Form(25),
     status: str = Form("open"),
     notes: str = Form(""),
-    is_video: bool = Form(False),
-    is_photo: bool = Form(False),
-    is_referee: bool = Form(False),
+    is_video: bool = Form(default=False),
+    is_photo: bool = Form(default=False),
+    is_referee: bool = Form(default=False),
     add_partner: str = Form(None),
     partner_type: str = Form(None),
     partner_name: str = Form(None),
@@ -2112,7 +2112,7 @@ async def update_game(
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
 
 # --- Partners CRUD ---
@@ -2139,7 +2139,7 @@ async def add_partner(
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=partners", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/partners/{partner_id}/delete")
@@ -2154,7 +2154,7 @@ async def delete_partner(request: Request, game_id: int, partner_id: int):
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=partners", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
 
 # --- Attendees CRUD ---

@@ -442,10 +442,10 @@
                     </div>
                 </div>
 
-                <!-- Partners & Services -->
+                <!-- Services -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-4">Partners & Services</h3>
-                    <div class="grid grid-cols-3 gap-6 mb-6">
+                    <h3 class="font-medium mb-4">Services</h3>
+                    <div class="grid grid-cols-3 gap-6">
                         <label class="flex items-center gap-2">
                             <input type="checkbox" name="is_video" {% if game.is_video %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent">
                             <span>Video</span>
@@ -459,43 +459,6 @@
                             <span>Referee</span>
                         </label>
                     </div>
-
-                    <!-- Add Partner -->
-                    <div class="border-t border-gray-200 pt-4">
-                        <h4 class="text-sm font-medium text-gray-500 mb-3">Add Partner</h4>
-                        <div class="flex gap-2">
-                            <select name="partner_type" class="px-4 py-2 border border-gray-300 rounded-lg">
-                                <option value="referee">Referee</option>
-                                <option value="videographer">Videographer</option>
-                                <option value="photographer">Photographer</option>
-                                <option value="sponsor">Sponsor</option>
-                                <option value="other">Other</option>
-                            </select>
-                            <input type="text" name="partner_name" placeholder="Name" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                            <input type="text" name="partner_contact" placeholder="Contact" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                            <input type="number" name="partner_fee" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
-                            <button type="submit" name="add_partner" value="1" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
-                        </div>
-                    </div>
-
-                    <!-- Partner List -->
-                    <div class="mt-4 space-y-2">
-                        {% for p in partners %}
-                        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                            <div>
-                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">{{ p.type }}</span>
-                                <span class="ml-2 font-medium">{{ p.name or '-' }}</span>
-                                <span class="ml-2 text-gray-500">{{ p.contact or '' }}</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <span class="text-gray-600">Rp{{ "{:,.0f}".format(p.fee) }}</span>
-                                <a href="/manage/games/{{ game.id }}/partners/{{ p.id }}/delete" class="text-red-600 hover:text-red-800 text-sm">Delete</a>
-                            </div>
-                        </div>
-                        {% else %}
-                        <p class="text-gray-400 text-sm py-2">No partners added</p>
-                        {% endfor %}
-                    </div>
                 </div>
 
                 <!-- Notes -->
@@ -506,11 +469,71 @@
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end gap-3">
-                    <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')">
-                        <button type="submit" class="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium">Delete Game</button>
-                    </form>
                     <button type="submit" class="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Save Changes</button>
                 </div>
+            </form>
+
+            <!-- Partners & Services (separate form) -->
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mt-6">
+                <h3 class="font-medium mb-4">Partners & Services</h3>
+                <div class="grid grid-cols-3 gap-6 mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" {% if game.is_video %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
+                        <span>Video</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" {% if game.is_photo %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
+                        <span>Photo</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" {% if game.is_referee %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
+                        <span>Referee</span>
+                    </label>
+                </div>
+
+                <!-- Add Partner Form -->
+                <form method="POST" action="/manage/games/{{ game.id }}/partners" class="border-t border-gray-200 pt-4">
+                    <h4 class="text-sm font-medium text-gray-500 mb-3">Add Partner</h4>
+                    <div class="flex gap-2">
+                        <select name="type" class="px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="referee">Referee</option>
+                            <option value="videographer">Videographer</option>
+                            <option value="photographer">Photographer</option>
+                            <option value="sponsor">Sponsor</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="text" name="name" placeholder="Name" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                        <input type="text" name="contact" placeholder="Contact" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                        <input type="number" name="fee" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
+                        <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
+                    </div>
+                </form>
+
+                <!-- Partner List -->
+                <div class="mt-4 space-y-2">
+                    {% for p in partners %}
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                        <div>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">{{ p.type }}</span>
+                            <span class="ml-2 font-medium">{{ p.name or '-' }}</span>
+                            <span class="ml-2 text-gray-500">{{ p.contact or '' }}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-gray-600">Rp{{ "{:,.0f}".format(p.fee) }}</span>
+                            <form method="POST" action="/manage/games/{{ game.id }}/partners/{{ p.id }}/delete" class="inline">
+                                <button type="submit" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-400 text-sm py-2">No partners added</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Delete Game Button (outside form) -->
+            <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')" class="mt-6">
+                <button type="submit" class="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium">Delete Game</button>
             </form>
 
             {% elif tab == 'players' %}
