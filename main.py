@@ -2686,13 +2686,16 @@ async def add_match(request: Request, game_id: int):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COALESCE(MAX(match_order), 0) + 1 as next_order FROM game_match WHERE game_id = ?", (game_id,))
-    next_order = cursor.fetchone()["next_order"]
+    # Get max round_number and max match_order
+    cursor.execute("SELECT COALESCE(MAX(round_number), 0) as max_round, COALESCE(MAX(match_order), 0) as max_order FROM game_match WHERE game_id = ?", (game_id,))
+    result = cursor.fetchone()
+    next_round = (result["max_round"] or 0) + 1
+    next_order = (result["max_order"] or 0) + 1
 
     cursor.execute("""
         INSERT INTO game_match (game_id, round_number, match_order, is_tbd, type)
-        VALUES (?, 1, ?, 1, 'custom')
-    """, (game_id, next_order))
+        VALUES (?, ?, ?, 1, 'custom')
+    """, (game_id, next_round, next_order))
 
     conn.commit()
     conn.close()
