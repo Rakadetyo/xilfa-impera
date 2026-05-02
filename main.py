@@ -3523,7 +3523,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT g.*, a.location_name as arena_name, a.address as arena_address
+        SELECT g.*, a.location_name as arena_name, a.address as arena_address, a.map_url as arena_map_url
         FROM game g
         LEFT JOIN arena a ON g.arena_id = a.id
         WHERE g.invite_token = ?
@@ -3599,6 +3599,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         "date_fmt": date_fmt,
         "price": price or 0,
         "partners": [dict(p) for p in partners],
+        "arena_map_url": game_dict.get("arena_map_url"),
     })
 
 

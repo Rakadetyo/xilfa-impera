@@ -259,10 +259,17 @@
         }
 
         function updateMapPreview() {
-            const url = document.getElementById('arenaMapUrl').value;
+            let url = document.getElementById('arenaMapUrl').value;
             const preview = document.getElementById('mapPreview');
             const iframe = document.getElementById('mapIframe');
             if (url && url.includes('google.com/maps')) {
+                // Force 2D map view by adding !2e if not present
+                if (!url.includes('!2e')) {
+                    url = url.replace('!3e', '!2e'); // Replace satellite with 2D if present
+                    if (!url.includes('!2e')) {
+                        url += '!2e';
+                    }
+                }
                 iframe.src = url;
                 preview.classList.remove('hidden');
             } else {
