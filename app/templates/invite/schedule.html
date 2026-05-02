@@ -17,7 +17,13 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0A0A0A; color: #FFFFFF; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background:
+                url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 10V70M20 30H60M25 50H55M15 40L65 40M22 22L58 58M58 22L22 58' stroke='%23C9A84C' stroke-opacity='0.06' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"),
+                linear-gradient(180deg, #0f0a1a 0%, #1a1025 40%, #2d1f35 60%, #1a1025 100%);
+            color: #FFFFFF;
+        }
         .match-details { display: none; }
         .match-details.open { display: block; }
         .chevron { transition: transform 0.2s; }
@@ -44,7 +50,7 @@
             {% for match in all_matches %}
             {% set is_my_match = (match.team_home_id == player_team_id or match.team_away_id == player_team_id) %}
             <div class="rounded-2xl border overflow-hidden
-                        {% if is_my_match %}border-accent/50 bg-accent/5{% else %}border-[#2A2A2A] bg-[#1A1A1A]{% endif %}">
+                        {% if is_my_match %}border-accent bg-[#1A1A1A]{% else %}border-[#2A2A2A] bg-[#1A1A1A]{% endif %}">
 
                 <!-- Match header — always visible, tappable -->
                 <button type="button"
@@ -52,21 +58,21 @@
                         class="w-full text-left px-5 py-4 flex items-center justify-between">
                     <div>
                         {% if match.match_start %}
-                        <div class="text-accent font-mono text-sm font-bold mb-1">{{ match.match_start }} - {{ match.match_end }} ({{ match_duration }} min)</div>
+                        <div class="text-white font-mono text-sm font-bold mb-1">{{ match.match_start }} - {{ match.match_end }} ({{ match_duration }} min)</div>
                         {% elif match.scheduled_start %}
-                        <div class="text-accent font-mono text-sm font-bold mb-1">{{ match.scheduled_start }}</div>
+                        <div class="text-white font-mono text-sm font-bold mb-1">{{ match.scheduled_start }}</div>
                         {% endif %}
                         <div class="flex items-center gap-2 text-sm">
                             <!-- Home team color dot + name -->
                             <span class="w-2 h-2 rounded-full flex-shrink-0"
                                   style="background-color: {{ match.home_color or '#6B7280' }}"></span>
-                            <span class="{% if match.team_home_id == player_team_id %}text-white font-bold{% else %}text-gray-300{% endif %}">
+                            <span class="{% if match.team_home_id == player_team_id %}text-accent font-normal{% else %}text-gray-300{% endif %}">
                                 {{ match.home_name or 'TBD' }}
                             </span>
                             <span class="text-gray-600 text-xs">vs</span>
                             <span class="w-2 h-2 rounded-full flex-shrink-0"
                                   style="background-color: {{ match.away_color or '#6B7280' }}"></span>
-                            <span class="{% if match.team_away_id == player_team_id %}text-white font-bold{% else %}text-gray-300{% endif %}">
+                            <span class="{% if match.team_away_id == player_team_id %}text-accent font-normal{% else %}text-gray-300{% endif %}">
                                 {{ match.away_name or 'TBD' }}
                             </span>
                         </div>
