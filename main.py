@@ -1743,7 +1743,7 @@ async def preview_homepage(request: Request):
     return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
 
 @app.post("/manage/arena")
-async def create_arena(request: Request, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form("")):
+async def create_arena(request: Request, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form(""), map_url: str = Form("")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -1751,8 +1751,8 @@ async def create_arena(request: Request, location_name: str = Form(...), address
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO arena (location_name, address, price, contact_person) VALUES (?, ?, ?, ?)",
-        (location_name, address, price, contact_person)
+        "INSERT INTO arena (location_name, address, price, contact_person, map_url) VALUES (?, ?, ?, ?, ?)",
+        (location_name, address, price, contact_person, map_url)
     )
     conn.commit()
     conn.close()
@@ -1760,7 +1760,7 @@ async def create_arena(request: Request, location_name: str = Form(...), address
     return RedirectResponse("/manage/arena", status_code=302)
 
 @app.post("/manage/arena/{arena_id}")
-async def update_arena(request: Request, arena_id: int, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form("")):
+async def update_arena(request: Request, arena_id: int, location_name: str = Form(...), address: str = Form(""), price: float = Form(0), contact_person: str = Form(""), map_url: str = Form("")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -1768,8 +1768,8 @@ async def update_arena(request: Request, arena_id: int, location_name: str = For
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE arena SET location_name = ?, address = ?, price = ?, contact_person = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (location_name, address, price, contact_person, arena_id)
+        "UPDATE arena SET location_name = ?, address = ?, price = ?, contact_person = ?, map_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (location_name, address, price, contact_person, map_url, arena_id)
     )
     conn.commit()
     conn.close()

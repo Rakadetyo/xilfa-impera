@@ -92,7 +92,15 @@
                         <div class="absolute right-3 top-0 bottom-0 w-px border-r-2 border-dashed border-black/20"></div>
                     </div>
                     {% for a in arenas %}
-                    <div class="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer" onclick="openArenaModal({{ a.id }}, '{{ a.location_name }}', '{{ a.address or '' }}', {{ a.price }}, '{{ a.contact_person or '' }}')" style="clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));">
+                    <div class="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer"
+                         data-id="{{ a.id }}"
+                         data-name="{{ a.location_name }}"
+                         data-address="{{ a.address or '' }}"
+                         data-price="{{ a.price }}"
+                         data-contact="{{ a.contact_person or '' }}"
+                         data-map-url="{{ a.map_url or '' }}"
+                         onclick="openArenaModalFromData(this)"
+                         style="clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));">
                         <!-- Main section -->
                         <div class="p-6 pr-16">
                             <!-- Header -->
@@ -187,6 +195,14 @@
                     <label class="block text-xs font-bold text-gray-700 mb-1">Contact Person</label>
                     <input type="text" name="contact_person" id="arenaContact" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Google Maps Embed URL</label>
+                    <input type="text" name="map_url" id="arenaMapUrl" placeholder="https://www.google.com/maps/embed?pb=..." class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent" oninput="updateMapPreview()">
+                    <p class="text-xs text-gray-500 mt-1">1. Go to Google Maps → 2. Click Share → 3. Choose "Embed a map" → 4. Copy only the URL inside src="" (not the iframe tag)</p>
+                    <div id="mapPreview" class="mt-2 hidden">
+                        <iframe id="mapIframe" width="100%" height="150" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
+                </div>
                 <div class="flex gap-2 justify-between pt-2">
                     <button type="button" id="deleteBtn" onclick="deleteCurrentArena()" class="px-4 py-2 text-red-600 hover:bg-red-50 hidden">Delete</button>
                     <div class="flex gap-2">
@@ -199,7 +215,17 @@
     </div>
 
     <script>
-        function openArenaModal(id, name, address, price, contact) {
+        function openArenaModalFromData(el) {
+            const id = el.dataset.id;
+            const name = el.dataset.name || '';
+            const address = el.dataset.address || '';
+            const price = el.dataset.price || 0;
+            const contact = el.dataset.contact || '';
+            const mapUrl = el.dataset.mapUrl || '';
+            openArenaModal(id, name, address, price, contact, mapUrl);
+        }
+
+        function openArenaModal(id, name, address, price, contact, mapUrl) {
             const modal = document.getElementById('arenaModal');
             const form = document.getElementById('arenaForm');
             const title = document.getElementById('modalTitle');
@@ -213,6 +239,7 @@
                 document.getElementById('arenaAddress').value = address;
                 document.getElementById('arenaPrice').value = price;
                 document.getElementById('arenaContact').value = contact;
+                document.getElementById('arenaMapUrl').value = mapUrl;
                 deleteBtn.classList.remove('hidden');
             } else {
                 title.textContent = 'Add Arena';
@@ -220,13 +247,27 @@
                 form.reset();
                 document.getElementById('arenaId').value = '';
                 document.getElementById('arenaPrice').value = 0;
+                document.getElementById('arenaMapUrl').value = '';
                 deleteBtn.classList.add('hidden');
+                document.getElementById('mapPreview').classList.add('hidden');
             }
 
-            document.getElementById('googleMapsUrl').value = '';
+            updateMapPreview();
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+        }
+
+        function updateMapPreview() {
+            const url = document.getElementById('arenaMapUrl').value;
+            const preview = document.getElementById('mapPreview');
+            const iframe = document.getElementById('mapIframe');
+            if (url && url.includes('google.com/maps')) {
+                iframe.src = url;
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+            }
         }
 
         function deleteCurrentArena() {
