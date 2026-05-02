@@ -199,6 +199,8 @@ def init_db():
         cursor.execute("ALTER TABLE game ADD COLUMN best_of INTEGER DEFAULT 1")
     if 'break_time' not in game_columns:
         cursor.execute("ALTER TABLE game ADD COLUMN break_time INTEGER DEFAULT 0")
+    if 'invite_token' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN invite_token TEXT")
 
     # game_attendee: add new columns
     cursor.execute("PRAGMA table_info(game_attendee)")
@@ -311,6 +313,12 @@ def init_db():
             FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE
         )
     """)
+
+    # Add team_color_name column to game_team
+    cursor.execute("PRAGMA table_info(game_team)")
+    team_columns = {row[1] for row in cursor.fetchall()}
+    if 'team_color_name' not in team_columns:
+        cursor.execute("ALTER TABLE game_team ADD COLUMN team_color_name TEXT")
 
     # game_match: scheduled matches within a game
     cursor.execute("""

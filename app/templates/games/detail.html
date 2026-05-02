@@ -64,7 +64,7 @@
     <div class="flex min-h-screen">
         {% include '_sidebar.html' %}
 
-        <main class="ml-64 flex-1 p-8">
+        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-8">
             <div class="mb-6">
                 <a href="/manage/games" class="text-gray-500 hover:text-accent">← Back to Games</a>
             </div>
@@ -144,20 +144,63 @@
 
                     <!-- Share & Invite -->
                     <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                        <h3 class="font-medium text-sm text-gray-500 mb-3">Share & Invite</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button disabled title="Coming soon"
-                                class="flex flex-col items-center gap-2 px-4 py-4 border-2 border-gray-200 text-gray-400 rounded-xl cursor-not-allowed">
-                                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M13 0C6.373 0 1 5.373 1 12c0 2.127.555 4.126 1.527 5.855L1 23l5.293-1.527A11.953 11.953 0 0013 23c6.627 0 12-5.373 12-12S19.627 0 13 0z"/></svg>
-                                <span class="text-sm font-medium">WhatsApp</span>
-                            </button>
-                            <button disabled title="Coming soon"
-                                class="flex flex-col items-center gap-2 px-4 py-4 border-2 border-gray-200 text-gray-400 rounded-xl cursor-not-allowed">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                <span class="text-sm font-medium">Invite</span>
-                            </button>
+                        <h3 class="font-medium mb-3 text-sm text-gray-500">Share & Invite</h3>
+
+                        {% if game.invite_token %}
+                        <div class="mb-3">
+                            <div class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <span class="text-xs text-gray-500 flex-1 truncate font-mono">
+                                    {{ request.url.scheme }}://{{ request.url.netloc }}/invite/{{ game.invite_token }}
+                                </span>
+                                <button onclick="copyInviteLink()"
+                                        class="text-xs text-accent font-medium hover:underline flex-shrink-0">
+                                    Copy
+                                </button>
+                            </div>
                         </div>
+                        <div class="flex gap-3 flex-wrap">
+                            <a href="https://wa.me/?text={{ ('🏀 *IMPERA Basketball*\nKamu diundang ke sesi game!\n\n📅 ' + game.title + '\n📍 ' + (game.arena_name or 'TBA') + '\n\nKlik link untuk lihat info tim kamu\n👇\n' + request.url.scheme + '://' + request.url.netloc + '/invite/' + game.invite_token) | urlencode }}"
+                               target="_blank"
+                               class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                </svg>
+                                Share via WhatsApp
+                            </a>
+                            <form method="post" action="/manage/games/{{ game.id }}/invite/regenerate"
+                                  onsubmit="return confirm('Regenerate link? Old link will stop working.')">
+                                <button type="submit"
+                                        class="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">
+                                    🔄 Regenerate Link
+                                </button>
+                            </form>
+                        </div>
+
+                        {% else %}
+                        <p class="text-sm text-gray-400 mb-3">Generate a unique invite link to share with players.</p>
+                        <form method="post" action="/manage/games/{{ game.id }}/invite/generate">
+                            <button type="submit"
+                                    class="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                                Create Invitation Link
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
+
+                    <script>
+                        function copyInviteLink() {
+                            const url = '{{ request.url.scheme }}://{{ request.url.netloc }}/invite/{{ game.invite_token }}';
+                            navigator.clipboard.writeText(url).then(() => {
+                                const btn = event.target;
+                                btn.textContent = 'Copied!';
+                                setTimeout(() => btn.textContent = 'Copy', 2000);
+                            });
+                        }
+                    </script>
                 </div>
 
                 <!-- Section 1: Setup Progress -->
@@ -1033,7 +1076,7 @@
                             <div class="flex justify-between items-center">
                                 <form method="post" action="/manage/games/{{ game.id }}/teams/{{ team.id }}/edit" class="flex items-center gap-2">
                                     <input type="text" name="team_name" value="{{ team.team_name }}" class="font-semibold border border-transparent hover:border-gray-300 rounded px-1 py-0.5 text-sm focus:border-accent focus:outline-none" style="color: {{ team.team_color or '#6B7280' }}">
-                                    <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="this.form.submit()">
+                                    <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="updateColorName(this)">
                                         <option value="#E74C3C" {% if team.team_color == '#E74C3C' %}selected{% endif %}>Red</option>
                                         <option value="#3498DB" {% if team.team_color == '#3498DB' %}selected{% endif %}>Blue</option>
                                         <option value="#2ECC71" {% if team.team_color == '#2ECC71' %}selected{% endif %}>Green</option>
@@ -1043,7 +1086,16 @@
                                         <option value="#000000" {% if team.team_color == '#000000' %}selected{% endif %}>Black</option>
                                         <option value="#9CA3AF" {% if team.team_color == '#9CA3AF' %}selected{% endif %}>Gray / White</option>
                                     </select>
+                                    <input type="hidden" name="team_color_name" id="team_color_name_{{ team.id }}" value="{{ team.team_color_name or team.team_color }}">
                                 </form>
+                                <script>
+                                function updateColorName(select) {
+                                    const form = select.closest('form');
+                                    const hiddenInput = form.querySelector('input[name="team_color_name"]');
+                                    hiddenInput.value = select.options[select.selectedIndex].text;
+                                    form.submit();
+                                }
+                                </script>
                                 <span class="text-sm font-semibold text-accent">{{ "%.0f"|format(team_avg_value) }} Team Rating</span>
                             </div>
                             <div class="flex gap-1 mt-1.5">
@@ -1499,5 +1551,17 @@
         }
     </script>
     {% endif %}
+    <script>
+    // Initialize team_color_name from selected options on page load
+    document.querySelectorAll('select[name="team_color"]').forEach(function(select) {
+        if (select.value && select.selectedOptions[0]) {
+            const form = select.closest('form');
+            const hiddenInput = form.querySelector('input[name="team_color_name"]');
+            if (hiddenInput && !hiddenInput.value || hiddenInput && hiddenInput.value.startsWith('#')) {
+                hiddenInput.value = select.selectedOptions[0].text;
+            }
+        }
+    });
+    </script>
 </body>
 </html>

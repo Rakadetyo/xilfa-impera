@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import bcrypt
 import logging
+import secrets
+from urllib.parse import quote
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -24,6 +26,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 templates = Jinja2Templates(directory="app/templates")
+templates.env.filters["urlencode"] = lambda s: quote(s, safe="")
 
 from app.database import init_db, seed_admin, get_db
 
@@ -215,7 +218,8 @@ async def list_users(request: Request):
     return templates.TemplateResponse(request, "users.html", {
         "request": request,
         "user": user,
-        "users": users
+        "users": users,
+        "active": "users",
     })
 
 @app.post("/manage/users")
@@ -422,7 +426,8 @@ async def list_players(request: Request):
             "positions_1": position_dict_1,
             "positions_2": position_dict_2,
             "skill_dist": {row["skill_level"]: row["cnt"] for row in skill_counts}
-        }
+        },
+        "active": "players"
     })
 
 @app.post("/manage/players")
@@ -625,7 +630,8 @@ async def admin_dashboard(request: Request):
             "members_this_month": members_this_month,
             "total_arenas": total_arenas,
             "recent_games": recent_games
-        }
+        },
+        "active": "dashboard"
     })
 
 @app.get("/manage/posts", response_class=HTMLResponse)
@@ -657,7 +663,8 @@ async def admin_dashboard(request: Request):
         "request": request,
         "user": user,
         "posts": posts,
-        "stats": {"total": total, "drafts": drafts, "published": published}
+        "stats": {"total": total, "drafts": drafts, "published": published},
+        "active": "posts"
     })
 
 @app.get("/manage/new", response_class=HTMLResponse)
@@ -925,7 +932,8 @@ async def members_page(request: Request):
         "filter_month": filter_month,
         "filter_year": filter_year,
         "months": months,
-        "years": years
+        "years": years,
+        "active": "members"
     })
 
 @app.post("/manage/members/{member_id}/toggle-paid")
@@ -1328,6 +1336,7 @@ async def new_partner_form(request: Request):
     return templates.TemplateResponse(request, "partners/new.html", {
         "user": user,
         "suggested_types": suggested_types,
+        "active": "partners",
     })
 
 @app.post("/manage/partners/new")
@@ -1389,6 +1398,7 @@ async def edit_partner_form(request: Request, partner_id: int):
         "partner": partner,
         "suggested_types": suggested_types,
         "parse_types": parse_types,
+        "active": "partners",
     })
 
 @app.post("/manage/partners/{partner_id}/edit")
@@ -1473,6 +1483,7 @@ async def partner_detail(request: Request, partner_id: int):
         "total_earned": total_earned,
         "total_paid": total_paid,
         "parse_types": parse_types,
+        "active": "partners",
     })
 
 # --- API: Partner Search ---
@@ -1639,7 +1650,8 @@ async def arena_page(request: Request):
             "arenas_played": arenas_played
         },
         "arena_game_counts": arena_game_counts,
-        "arena_game_list": arena_rows
+        "arena_game_list": arena_rows,
+        "active": "arena"
     })
 
 # --- Page Settings ---
@@ -1653,7 +1665,8 @@ async def page_settings(request: Request):
     return templates.TemplateResponse(request, "page_settings.html", {
         "request": request,
         "user": user,
-        "settings": settings
+        "settings": settings,
+        "active": "page_settings",
     })
 
 @app.post("/manage/page_settings/homepage")
@@ -2000,7 +2013,8 @@ async def list_games(request: Request):
     return templates.TemplateResponse(request, "games/list.html", {
         "user": user,
         "games": games,
-        "arenas": arenas
+        "arenas": arenas,
+        "active": "games"
     })
 
 
@@ -2018,7 +2032,8 @@ async def new_game(request: Request):
 
     return templates.TemplateResponse(request, "games/new.html", {
         "user": user,
-        "arenas": arenas
+        "arenas": arenas,
+        "active": "games"
     })
 
 
@@ -2343,6 +2358,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "avg_skill": avg_skill,
         "avg_skill_label": avg_skill_label,
         "position_counts": position_counts,
+        "active": "games"
     })
 
 
@@ -2366,7 +2382,8 @@ async def edit_game(request: Request, game_id: int):
     return templates.TemplateResponse(request, "games/edit.html", {
         "user": user,
         "game": game,
-        "arenas": arenas
+        "arenas": arenas,
+        "active": "games"
     })
 
 
@@ -2557,7 +2574,8 @@ async def create_team(
     request: Request,
     game_id: int,
     team_name: str = Form(...),
-    team_color: str = Form("")
+    team_color: str = Form(""),
+    team_color_name: str = Form("")
 ):
     user = get_current_user(request)
     if not user:
@@ -2565,8 +2583,8 @@ async def create_team(
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO game_team (game_id, team_name, team_color) VALUES (?, ?, ?)",
-                  (game_id, team_name, team_color))
+    cursor.execute("INSERT INTO game_team (game_id, team_name, team_color, team_color_name) VALUES (?, ?, ?, ?)",
+                  (game_id, team_name, team_color, team_color_name))
     conn.commit()
     conn.close()
 
@@ -2579,7 +2597,8 @@ async def edit_team(
     game_id: int,
     team_id: int,
     team_name: str = Form(...),
-    team_color: str = Form("")
+    team_color: str = Form(""),
+    team_color_name: str = Form("")
 ):
     user = get_current_user(request)
     if not user:
@@ -2587,8 +2606,8 @@ async def edit_team(
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE game_team SET team_name = ?, team_color = ? WHERE id = ? AND game_id = ?",
-                  (team_name, team_color, team_id, game_id))
+    cursor.execute("UPDATE game_team SET team_name = ?, team_color = ?, team_color_name = ? WHERE id = ? AND game_id = ?",
+                  (team_name, team_color, team_color_name, team_id, game_id))
     conn.commit()
     conn.close()
 
@@ -3363,3 +3382,292 @@ async def delete_game(request: Request, game_id: int):
     conn.close()
 
     return RedirectResponse("/manage/games", status_code=302)
+
+
+# ============================================
+# PLAYER INVITE ROUTES (public, no auth)
+# ============================================
+
+@app.post("/manage/games/{game_id}/invite/generate")
+async def generate_invite(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT invite_token FROM game WHERE id = ?", (game_id,))
+    row = cursor.fetchone()
+    if row and row["invite_token"]:
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=overview", status_code=302)
+
+    token = secrets.token_urlsafe(32)
+    cursor.execute("UPDATE game SET invite_token = ? WHERE id = ?", (token, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=overview", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/invite/regenerate")
+async def regenerate_invite(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    token = secrets.token_urlsafe(32)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game SET invite_token = ? WHERE id = ?", (token, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=overview", status_code=302)
+
+
+@app.get("/invite/{token}")
+async def invite_landing(request: Request, token: str):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT g.*, a.location_name as arena_name, a.address as arena_address
+        FROM game g
+        LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE g.invite_token = ?
+    """, (token,))
+    game = cursor.fetchone()
+
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    cursor.execute("""
+        SELECT ga.id as attendee_id, p.id as player_id, p.name
+        FROM game_attendee ga
+        JOIN player p ON ga.player_id = p.id
+        WHERE ga.game_id = ?
+        ORDER BY p.name
+    """, (game["id"],))
+    attendees = cursor.fetchall()
+    conn.close()
+
+    from datetime import datetime as dt, timedelta
+    game_dict = dict(game)
+    start_fmt, end_fmt, date_fmt = "", "", ""
+    try:
+        raw = game_dict["datetime"].replace("T", " ")
+        if len(raw) == 16:
+            raw += ":00"
+        start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
+        end_dt = start_dt + timedelta(minutes=int(game_dict.get("session_duration") or 120))
+        start_fmt = start_dt.strftime("%H:%M")
+        end_fmt = end_dt.strftime("%H:%M")
+        date_fmt = start_dt.strftime("%A, %d %B %Y")
+    except Exception:
+        pass
+
+    return templates.TemplateResponse(request, "invite/landing.html", {
+        "token": token,
+        "game": game_dict,
+        "attendees": attendees,
+        "start_fmt": start_fmt,
+        "end_fmt": end_fmt,
+        "date_fmt": date_fmt,
+    })
+
+
+@app.post("/invite/{token}/identify")
+async def invite_identify(request: Request, token: str, attendee_id: int = Form(...)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM game WHERE invite_token = ?", (token,))
+    game = cursor.fetchone()
+    conn.close()
+
+    if not game:
+        raise HTTPException(status_code=404)
+
+    return RedirectResponse(f"/invite/{token}/{attendee_id}", status_code=302)
+
+
+@app.get("/invite/{token}/{attendee_id}")
+async def invite_player(request: Request, token: str, attendee_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT g.*, a.location_name as arena_name, a.address as arena_address
+        FROM game g
+        LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE g.invite_token = ?
+    """, (token,))
+    game = cursor.fetchone()
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("""
+        SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2
+        FROM game_attendee ga
+        JOIN player p ON ga.player_id = p.id
+        WHERE ga.id = ? AND ga.game_id = ?
+    """, (attendee_id, game["id"]))
+    attendee = cursor.fetchone()
+    if not attendee:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    team = None
+    teammates = []
+    if attendee["team_id"]:
+        cursor.execute("SELECT * FROM game_team WHERE id = ?", (attendee["team_id"],))
+        team = cursor.fetchone()
+
+        cursor.execute("""
+            SELECT ga.id as attendee_id, p.name, p.position_1, p.position_2
+            FROM game_attendee ga
+            JOIN player p ON ga.player_id = p.id
+            WHERE ga.team_id = ? AND ga.game_id = ?
+            ORDER BY p.name
+        """, (attendee["team_id"], game["id"]))
+        teammates = cursor.fetchall()
+
+    # Get partners
+    cursor.execute("""
+        SELECT gp.*, p.name as partner_name, p.contact as partner_contact
+        FROM game_partner gp
+        LEFT JOIN partner p ON gp.partner_id = p.id
+        WHERE gp.game_id = ?
+        ORDER BY gp.type
+    """, (game["id"],))
+    partners = cursor.fetchall()
+
+    conn.close()
+
+    from datetime import datetime as dt, timedelta
+    game_dict = dict(game)
+    start_fmt, end_fmt, date_fmt = "", "", ""
+    try:
+        raw = game_dict["datetime"].replace("T", " ")
+        if len(raw) == 16:
+            raw += ":00"
+        start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
+        end_dt = start_dt + timedelta(minutes=int(game_dict.get("session_duration") or 120))
+        start_fmt = start_dt.strftime("%H:%M")
+        end_fmt = end_dt.strftime("%H:%M")
+        date_fmt = start_dt.strftime("%A, %d %B %Y")
+    except Exception:
+        pass
+
+    price = game_dict.get("price_per_member") if attendee["slot_type"] == "member" else game_dict.get("price_per_person")
+
+    return templates.TemplateResponse(request, "invite/player.html", {
+        "token": token,
+        "game": game_dict,
+        "attendee": dict(attendee),
+        "team": dict(team) if team else None,
+        "teammates": [dict(t) for t in teammates],
+        "start_fmt": start_fmt,
+        "end_fmt": end_fmt,
+        "date_fmt": date_fmt,
+        "price": price or 0,
+        "partners": [dict(p) for p in partners],
+    })
+
+
+@app.get("/invite/{token}/{attendee_id}/schedule")
+async def invite_schedule(request: Request, token: str, attendee_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT g.*, a.location_name as arena_name
+        FROM game g LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE g.invite_token = ?
+    """, (token,))
+    game = cursor.fetchone()
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("""
+        SELECT ga.team_id FROM game_attendee ga
+        WHERE ga.id = ? AND ga.game_id = ?
+    """, (attendee_id, game["id"]))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404)
+    player_team_id = row["team_id"]
+
+    cursor.execute("""
+        SELECT gm.*,
+               th.team_name as home_name, th.team_color as home_color,
+               ta.team_name as away_name, ta.team_color as away_color
+        FROM game_match gm
+        LEFT JOIN game_team th ON gm.team_home_id = th.id
+        LEFT JOIN game_team ta ON gm.team_away_id = ta.id
+        WHERE gm.game_id = ?
+        ORDER BY gm.match_order
+    """, (game["id"],))
+    all_matches = [dict(m) for m in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game["id"],))
+    teams_raw = cursor.fetchall()
+    team_rosters = {}
+    for t in teams_raw:
+        cursor.execute("""
+            SELECT p.name, p.position_1, ga.id as attendee_id
+            FROM game_attendee ga
+            JOIN player p ON ga.player_id = p.id
+            WHERE ga.team_id = ? AND ga.game_id = ?
+            ORDER BY p.name
+        """, (t["id"], game["id"]))
+        team_rosters[t["id"]] = {
+            "id": t["id"],
+            "name": t["team_name"],
+            "color": t["team_color"] or "#6B7280",
+            "players": [dict(p) for p in cursor.fetchall()]
+        }
+
+    # Format game time
+    from datetime import datetime as dt, timedelta
+    game_dict = dict(game)
+    start_fmt, end_fmt, date_fmt, session_duration, match_duration = "", "", "", 120, 8
+    try:
+        raw = game_dict["datetime"].replace("T", " ")
+        if len(raw) == 16:
+            raw += ":00"
+        start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
+        session_duration = int(game_dict.get("session_duration") or 120)
+        match_duration = int(game_dict.get("duration_per_game") or 8)
+        end_dt = start_dt + timedelta(minutes=session_duration)
+        start_fmt = start_dt.strftime("%H:%M")
+        end_fmt = end_dt.strftime("%H:%M")
+        date_fmt = start_dt.strftime("%A, %d %B %Y")
+    except Exception:
+        pass
+
+    # Calculate each match's start and end time
+    for i, match in enumerate(all_matches):
+        if match.get("match_order"):
+            match_start = start_dt + timedelta(minutes=(match["match_order"] - 1) * match_duration)
+            match_end = match_start + timedelta(minutes=match_duration)
+            match["match_start"] = match_start.strftime("%H:%M")
+            match["match_end"] = match_end.strftime("%H:%M")
+
+    conn.close()
+
+    return templates.TemplateResponse(request, "invite/schedule.html", {
+        "token": token,
+        "attendee_id": attendee_id,
+        "game": game_dict,
+        "all_matches": all_matches,
+        "player_team_id": player_team_id,
+        "team_rosters": team_rosters,
+        "start_fmt": start_fmt,
+        "end_fmt": end_fmt,
+        "date_fmt": date_fmt,
+        "duration": session_duration,
+        "match_duration": match_duration,
+    })
