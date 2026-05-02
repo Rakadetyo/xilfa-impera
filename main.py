@@ -2583,10 +2583,15 @@ async def generate_schedule(
         conn.close()
         return JSONResponse({"error": "Need at least 2 teams"}, status_code=400)
 
-    # Update game schedule_format, best_of, duration, break_time
+    # Update game schedule_format, best_of, duration, break_time, and datetime
+    cursor.execute("SELECT datetime FROM game WHERE id = ?", (game_id,))
+    game = cursor.fetchone()
+    current_date = game["datetime"].split("T")[0] if game and game["datetime"] else "2025-01-01"
+    new_datetime = f"{current_date}T{start_time}:00"
+
     cursor.execute(
-        "UPDATE game SET schedule_format = ?, best_of = ?, duration_per_game = ?, break_time = ? WHERE id = ?",
-        (format, best_of, duration, break_time, game_id)
+        "UPDATE game SET schedule_format = ?, best_of = ?, duration_per_game = ?, break_time = ?, datetime = ? WHERE id = ?",
+        (format, best_of, duration, break_time, new_datetime, game_id)
     )
 
     # Clear existing matches
