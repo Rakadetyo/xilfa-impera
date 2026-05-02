@@ -720,7 +720,7 @@
                                 <td class="py-2">
                                     <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/update-teams" class="inline">
                                         <select name="team_home_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
-                                            <option value="">—</option>
+                                            <option value="">Pickup / Free</option>
                                             {% for t in teams %}
                                             <option value="{{ t.id }}" {% if m.team_home_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
                                             {% endfor %}
@@ -729,7 +729,7 @@
                                 </td>
                                 <td class="py-2">
                                         <select name="team_away_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
-                                            <option value="">—</option>
+                                            <option value="">Pickup / Free</option>
                                             {% for t in teams %}
                                             <option value="{{ t.id }}" {% if m.team_away_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
                                             {% endfor %}
