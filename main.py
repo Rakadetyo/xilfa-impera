@@ -149,10 +149,61 @@ async def get_post(post_id: int):
     })
 
 # --- Auth Routes ---
+@app.get("/setup/{token}", response_class=HTMLResponse)
+async def setup_password_page(request: Request, token: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM users WHERE invite_token = ?", (token,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return templates.TemplateResponse(request, "setup_password.html", {
+            "request": request, "error": "Invalid or expired invite link.", "token": token, "invalid": True
+        })
+    return templates.TemplateResponse(request, "setup_password.html", {
+        "request": request, "token": token, "username": row["username"], "error": None, "invalid": False
+    })
+
+@app.post("/setup/{token}", response_class=HTMLResponse)
+async def setup_password(request: Request, token: str, password: str = Form(...), confirm_password: str = Form(...)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username FROM users WHERE invite_token = ?", (token,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return templates.TemplateResponse(request, "setup_password.html", {
+            "request": request, "error": "Invalid or expired invite link.", "token": token, "invalid": True
+        })
+
+    username = row["username"]
+
+    if password != confirm_password:
+        return templates.TemplateResponse(request, "setup_password.html", {
+            "request": request, "token": token, "username": username, "error": "Passwords don't match.", "invalid": False
+        })
+
+    if len(password) < 6:
+        return templates.TemplateResponse(request, "setup_password.html", {
+            "request": request, "token": token, "username": username, "error": "Password must be at least 6 characters.", "invalid": False
+        })
+
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET password_hash = ?, invite_token = NULL WHERE id = ?", (password_hash, row["id"]))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/masukgan?success=Password+set.+You+can+now+log+in.&username={row['username']}", status_code=302)
+
 @app.get("/masukgan", response_class=HTMLResponse)
 async def login_page(request: Request):
     error = request.query_params.get("error")
-    return templates.TemplateResponse(request, "login.html", {"request": request, "error": error})
+    success = request.query_params.get("success")
+    prefill_username = request.query_params.get("username", "")
+    return templates.TemplateResponse(request, "login.html", {"request": request, "error": error, "success": success, "prefill_username": prefill_username})
 
 @app.post("/masukgan")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -211,7 +262,7 @@ async def list_users(request: Request):
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC")
+    cursor.execute("SELECT id, username, role, created_at, invite_token FROM users ORDER BY created_at DESC")
     users = cursor.fetchall()
     conn.close()
 
@@ -220,20 +271,18 @@ async def list_users(request: Request):
         "user": user,
         "users": users,
         "active": "users",
+        "new_invite_token": request.query_params.get("new_invite"),
+        "new_invite_username": request.query_params.get("new_username"),
     })
 
 @app.post("/manage/users")
-async def create_user(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form("admin")):
+async def create_user(request: Request, username: str = Form(...), role: str = Form("admin")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
-    # Only superadmin can create superadmin
     if role == "superadmin" and not is_superadmin(user):
         return RedirectResponse("/manage/users?error=Only superadmin can create superadmin users", status_code=302)
-
-    if len(password) < 6:
-        return RedirectResponse("/manage/users?error=Password must be at least 6 characters", status_code=302)
 
     conn = get_db()
     cursor = conn.cursor()
@@ -243,15 +292,37 @@ async def create_user(request: Request, username: str = Form(...), password: str
         conn.close()
         return RedirectResponse("/manage/users?error=Username already taken", status_code=302)
 
-    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    placeholder_hash = bcrypt.hashpw(secrets.token_bytes(32), bcrypt.gensalt()).decode()
+    invite_token = secrets.token_urlsafe(32)
     cursor.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-        (username, password_hash, role)
+        "INSERT INTO users (username, password_hash, role, invite_token) VALUES (?, ?, ?, ?)",
+        (username, placeholder_hash, role, invite_token)
     )
     conn.commit()
     conn.close()
 
-    return RedirectResponse("/manage/users?success=User created", status_code=302)
+    return RedirectResponse(f"/manage/users?new_invite={invite_token}&new_username={username}", status_code=302)
+
+@app.post("/manage/users/{user_id}/invite")
+async def generate_user_invite(request: Request, user_id: int):
+    user = get_current_user(request)
+    if not user or not is_superadmin(user):
+        return RedirectResponse("/manage/users?error=Unauthorized", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+    target = cursor.fetchone()
+    if not target:
+        conn.close()
+        return RedirectResponse("/manage/users?error=User not found", status_code=302)
+
+    token = secrets.token_urlsafe(32)
+    cursor.execute("UPDATE users SET invite_token = ? WHERE id = ?", (token, user_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/users?new_invite={token}&new_username={target['username']}", status_code=302)
 
 @app.post("/manage/users/{user_id}/delete")
 async def delete_user(request: Request, user_id: int):
@@ -3569,10 +3640,25 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     """, (game["id"],))
     partners = cursor.fetchall()
 
-    conn.close()
-
+    # Build game_dict before closing connection
     from datetime import datetime as dt, timedelta
     game_dict = dict(game)
+
+    # Check if player is a member by querying member table with current month period
+    current_month = dt.now().strftime("%B %Y")  # e.g., "May 2026"
+
+    cursor.execute("""
+        SELECT is_paid FROM member
+        WHERE player_id = ? AND member_period = ? AND is_paid = 1
+    """, (attendee["player_id"], current_month))
+    member_record = cursor.fetchone()
+
+    is_member = member_record is not None
+    is_member_slot = True if attendee["slot_type"] == "member" else False
+    price = game_dict.get("price_per_member") if (is_member or is_member_slot) else game_dict.get("price_per_person")
+
+    conn.close()
+
     start_fmt, end_fmt, date_fmt = "", "", ""
     try:
         raw = game_dict["datetime"].replace("T", " ")
@@ -3585,8 +3671,6 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         date_fmt = start_dt.strftime("%A, %d %B %Y")
     except Exception:
         pass
-
-    price = game_dict.get("price_per_member") if attendee["slot_type"] == "member" else game_dict.get("price_per_person")
 
     return templates.TemplateResponse(request, "invite/player.html", {
         "token": token,

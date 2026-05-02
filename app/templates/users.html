@@ -61,20 +61,14 @@
 
                 <!-- Create User Form -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
-                    <h2 class="text-lg font-bold mb-4">Create New User</h2>
+                    <h2 class="text-lg font-bold mb-1">Invite New Admin</h2>
+                    <p class="text-sm text-gray-500 mb-4">Creates an account and generates an invite link for them to set their password.</p>
                     <form action="/manage/users" method="POST" class="flex gap-4">
                         <input
                             type="text"
                             name="username"
                             required
                             placeholder="Username"
-                            class="flex-1 bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent"
-                        >
-                        <input
-                            type="password"
-                            name="password"
-                            required
-                            placeholder="Password (min 6 chars)"
                             class="flex-1 bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent"
                         >
                         <select
@@ -90,7 +84,7 @@
                             type="submit"
                             class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light transition-colors"
                         >
-                            Create
+                            Create & Get Invite Link
                         </button>
                     </form>
                 </div>
@@ -103,6 +97,7 @@
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">ID</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Username</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Role</th>
+                                <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Status</th>
                                 <th class="text-left p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Created</th>
                                 <th class="text-right p-4 text-xs font-bold uppercase tracking-widest text-gray-500">Actions</th>
                             </tr>
@@ -117,17 +112,34 @@
                                         {{ u.role }}
                                     </span>
                                 </td>
+                                <td class="p-4">
+                                    {% if u.invite_token %}
+                                    <span class="px-2 py-1 text-xs font-bold rounded bg-yellow-100 text-yellow-700">Invite Pending</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs font-bold rounded bg-green-100 text-green-700">Active</span>
+                                    {% endif %}
+                                </td>
                                 <td class="p-4 text-gray-400">{{ u.created_at[:10] }}</td>
-                                <td class="p-4 text-right">
-                                    {% if user.role == 'superadmin' and u.id != user.id %}
+                                <td class="p-4 text-right flex items-center justify-end gap-2">
+                                    {% if u.id == user.id %}
+                                    <span class="text-gray-400 text-xs">(you)</span>
+                                    {% else %}
+                                    {% if u.invite_token %}
+                                    <button
+                                        onclick="showInviteModal('{{ u.username }}', '{{ u.invite_token }}')"
+                                        class="px-3 py-1 text-xs font-bold text-accent border border-accent rounded hover:bg-accent hover:text-black transition-colors"
+                                    >Show Invite Link</button>
+                                    {% else %}
+                                    <form method="POST" action="/manage/users/{{ u.id }}/invite" style="display:inline;">
+                                        <button type="submit" class="px-3 py-1 text-xs font-bold text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition-colors">Resend Invite</button>
+                                    </form>
+                                    {% endif %}
+                                    {% if user.role == 'superadmin' %}
                                     <button
                                         onclick="deleteUser({{ u.id }}, '{{ u.username }}')"
                                         class="px-3 py-1 text-xs font-bold text-red-600 hover:text-red-700"
                                     >Delete</button>
-                                    {% elif u.id == user.id %}
-                                    <span class="text-gray-400 text-xs">(you)</span>
-                                    {% else %}
-                                    <span class="text-gray-400 text-xs">-</span>
+                                    {% endif %}
                                     {% endif %}
                                 </td>
                             </tr>
@@ -145,12 +157,62 @@
         </main>
     </div>
 
+    <!-- Invite Link Modal -->
+    <div id="inviteModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-lg font-bold">Invite Link</h3>
+                    <p class="text-sm text-gray-500 mt-1">Share this link with <strong id="modalUsername"></strong> — single use, expires after they set their password.</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none ml-4">&times;</button>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3 mb-4">
+                <span id="modalLink" class="text-sm text-gray-700 flex-1 break-all font-mono"></span>
+            </div>
+            <button
+                onclick="copyLink()"
+                id="copyBtn"
+                class="w-full bg-accent text-black font-bold py-3 rounded hover:bg-accent-light transition-colors"
+            >
+                Copy Link
+            </button>
+        </div>
+    </div>
+
     <script>
+        function showInviteModal(username, token) {
+            const url = window.location.origin + '/setup/' + token;
+            document.getElementById('modalUsername').textContent = username;
+            document.getElementById('modalLink').textContent = url;
+            document.getElementById('inviteModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('inviteModal').classList.add('hidden');
+            document.getElementById('copyBtn').textContent = 'Copy Link';
+        }
+
+        function copyLink() {
+            const link = document.getElementById('modalLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                document.getElementById('copyBtn').textContent = 'Copied!';
+                setTimeout(() => { document.getElementById('copyBtn').textContent = 'Copy Link'; }, 2000);
+            });
+        }
+
         async function deleteUser(userId, username) {
             if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
             const res = await fetch(`/manage/users/${userId}/delete`, { method: 'POST' });
             if (res.ok) location.reload();
         }
+
+        // Auto-show modal if redirected after creating/regenerating invite
+        {% if new_invite_token %}
+        window.addEventListener('DOMContentLoaded', () => {
+            showInviteModal('{{ new_invite_username }}', '{{ new_invite_token }}');
+        });
+        {% endif %}
     </script>
 </body>
 </html>
