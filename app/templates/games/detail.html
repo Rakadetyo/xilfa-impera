@@ -643,12 +643,12 @@
                                     <option value="5" {% if game.best_of == 5 %}selected{% endif %}>5</option>
                                 </select>
                             </div>
-                            <div class="flex gap-2 items-end">
-                                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Generate Schedule</button>
-                                <form method="post" action="/manage/games/{{ game.id }}/schedule/clear">
-                                    <button type="submit" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Clear</button>
-                                </form>
-                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Generate Schedule</button>
+                            <form method="post" action="/manage/games/{{ game.id }}/schedule/clear">
+                                <button type="submit" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Clear</button>
+                            </form>
                         </div>
                     </form>
                     {% endif %}
