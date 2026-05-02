@@ -2354,9 +2354,188 @@ async def clear_teams(request: Request, game_id: int):
     return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
 
 
+# --- Schedule Generators ---
+def generate_round_robin(teams: list) -> list:
+    """Each team plays every other team once."""
+    matches = []
+    team_ids = [t["id"] for t in teams]
+    for i in range(len(team_ids)):
+        for j in range(i + 1, len(team_ids)):
+            matches.append({
+                "team_home_id": team_ids[i],
+                "team_away_id": team_ids[j],
+                "round_number": 1,
+                "bracket_slot": None,
+                "next_match_id": None,
+                "is_tbd": 0
+            })
+    return matches
+
+
+def generate_single_elimination(teams: list) -> list:
+    """Single elimination bracket. Handles byes for non-power-of-2."""
+    import math
+    matches = []
+    team_ids = [t["id"] for t in teams]
+    n = len(team_ids)
+    num_rounds = math.ceil(math.log2(n))
+    bracket_size = 2 ** num_rounds
+
+    # Calculate byes
+    byes = bracket_size - n
+    seeds = team_ids.copy()
+
+    # Build first round matches
+    round_matches = []
+    match_id = 1
+    slot = 1
+
+    # Pair teams, giving byes to top seeds
+    if byes > 0:
+        # Top seeds get byes, face each other in first round
+        bye_teams = seeds[:byes]
+        playing_teams = seeds[byes:]
+
+        # Create matches for teams that must play
+        for i in range(0, len(playing_teams), 2):
+            if i + 1 < len(playing_teams):
+                round_matches.append({
+                    "team_home_id": playing_teams[i],
+                    "team_away_id": playing_teams[i + 1],
+                    "round_number": 1,
+                    "bracket_slot": f"W-{slot}",
+                    "is_tbd": 0
+                })
+                slot += 1
+            else:
+                # Odd team gets bye
+                pass
+    else:
+        for i in range(0, len(team_ids), 2):
+            if i + 1 < len(team_ids):
+                round_matches.append({
+                    "team_home_id": team_ids[i],
+                    "team_away_id": team_ids[i + 1],
+                    "round_number": 1,
+                    "bracket_slot": f"W-{slot}",
+                    "is_tbd": 0
+                })
+                slot += 1
+
+    # Add placeholder matches for byes (advance automatically)
+    # Simplified: just create TBD matches for next rounds
+    for r in range(2, num_rounds + 1):
+        matches_in_round = bracket_size // (2 ** r)
+        for m in range(matches_in_round):
+            matches.append({
+                "team_home_id": None,
+                "team_away_id": None,
+                "round_number": r,
+                "bracket_slot": f"W-{m + 1}",
+                "is_tbd": 1
+            })
+
+    # Add first round actual matches
+    for m in round_matches:
+        matches.append(m)
+
+    return matches
+
+
+def generate_double_elimination(teams: list) -> list:
+    """Double elimination - winners and losers brackets."""
+    # Simplified: same as single elim for now, extend later
+    return generate_single_elimination(teams)
+
+
+def generate_group_knockout(teams: list) -> list:
+    """Group stage then knockout. Creates TBD placeholders for knockout."""
+    matches = []
+    n = len(teams)
+
+    # Determine groups (2-4 teams per group)
+    if n <= 4:
+        num_groups = 1
+        teams_per_group = n
+    elif n <= 6:
+        num_groups = 2
+        teams_per_group = 3
+    else:
+        num_groups = 2
+        teams_per_group = n // 2
+
+    team_ids = [t["id"] for t in teams]
+
+    # Group matches (round robin within each group)
+    for g in range(num_groups):
+        start = g * teams_per_group
+        end = min(start + teams_per_group, len(team_ids))
+        group_teams = team_ids[start:end]
+
+        for i in range(len(group_teams)):
+            for j in range(i + 1, len(group_teams)):
+                matches.append({
+                    "team_home_id": group_teams[i],
+                    "team_away_id": group_teams[j],
+                    "round_number": 1,
+                    "bracket_slot": f"G{g + 1}",
+                    "is_tbd": 0
+                })
+
+    # Knockout placeholders
+    knockout_slots = max(2, num_groups * 2)
+    for k in range(knockout_slots // 2):
+        matches.append({
+            "team_home_id": None,
+            "team_away_id": None,
+            "round_number": 2,
+            "bracket_slot": f"KF{k + 1}",
+            "is_tbd": 1
+        })
+
+    return matches
+
+
+def generate_king_of_court(teams: list) -> list:
+    """Sequential queue - winner stays, loser goes to queue end."""
+    matches = []
+    team_ids = [t["id"] for t in teams]
+
+    # Queue mode: just create sequential matches
+    # Each match is: current winner vs next in queue
+    for i in range(len(team_ids) * 2):  # Double rotation
+        home = team_ids[i % len(team_ids)]
+        away = team_ids[(i + 1) % len(team_ids)]
+        matches.append({
+            "team_home_id": home,
+            "team_away_id": away,
+            "round_number": 1,
+            "bracket_slot": None,
+            "is_tbd": 0
+        })
+
+    return matches
+
+
+SUGGESTIONS = {
+    2: "single_elimination",
+    3: "round_robin",
+    4: "round_robin",
+    5: "king_of_court",
+    6: "group_knockout",
+    7: "group_knockout",
+    8: "single_elimination",
+}
+
+
 # --- Schedule / Matches ---
 @app.post("/manage/games/{game_id}/schedule/generate")
-async def generate_schedule(request: Request, game_id: int):
+async def generate_schedule(
+    request: Request,
+    game_id: int,
+    format: str = Form("round_robin"),
+    best_of: int = Form(1)
+):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -2372,25 +2551,69 @@ async def generate_schedule(request: Request, game_id: int):
         conn.close()
         return JSONResponse({"error": "Need at least 2 teams"}, status_code=400)
 
+    # Update game schedule_format and best_of
+    cursor.execute(
+        "UPDATE game SET schedule_format = ?, best_of = ? WHERE id = ?",
+        (format, best_of, game_id)
+    )
+
     # Clear existing matches
     cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
 
-    # Generate round-robin: each team plays every other team once
-    team_ids = [t["id"] for t in teams]
-    round_number = 1
-    match_order = 1
+    # Generate matches based on format
+    if format == "round_robin":
+        matches = generate_round_robin(teams)
+    elif format == "single_elimination":
+        matches = generate_single_elimination(teams)
+    elif format == "double_elimination":
+        matches = generate_double_elimination(teams)
+    elif format == "group_knockout":
+        matches = generate_group_knockout(teams)
+    elif format == "king_of_court":
+        matches = generate_king_of_court(teams)
+    else:
+        matches = generate_round_robin(teams)
 
-    for i in range(len(team_ids)):
-        for j in range(i + 1, len(team_ids)):
-            cursor.execute("""
-                INSERT INTO game_match (game_id, round_number, match_order, team_home_id, team_away_id, type)
-                VALUES (?, ?, ?, ?, ?, 'round_robin')
-            """, (game_id, round_number, match_order, team_ids[i], team_ids[j]))
-            match_order += 1
-            # Each round has at most len(teams)/2 matches
-            if match_order > len(teams) // 2:
-                round_number += 1
-                match_order = 1
+    # Insert matches
+    for i, m in enumerate(matches):
+        cursor.execute("""
+            INSERT INTO game_match (
+                game_id, round_number, match_order, team_home_id, team_away_id,
+                type, bracket_slot, next_match_id, is_tbd
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            game_id,
+            m.get("round_number", 1),
+            i + 1,
+            m.get("team_home_id"),
+            m.get("team_away_id"),
+            format,
+            m.get("bracket_slot"),
+            m.get("next_match_id"),
+            m.get("is_tbd", 0)
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/clear")
+async def clear_schedule(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Clear matches and reset format
+    cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
+    cursor.execute(
+        "UPDATE game SET schedule_format = 'round_robin', best_of = 1 WHERE id = ?",
+        (game_id,)
+    )
 
     conn.commit()
     conn.close()

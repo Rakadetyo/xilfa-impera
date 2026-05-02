@@ -193,6 +193,10 @@ def init_db():
         cursor.execute("ALTER TABLE game ADD COLUMN players_per_team INTEGER DEFAULT 5")
     if 'skill_weight' not in game_columns:
         cursor.execute("ALTER TABLE game ADD COLUMN skill_weight REAL DEFAULT 0.6")
+    if 'schedule_format' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN schedule_format TEXT DEFAULT 'round_robin'")
+    if 'best_of' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN best_of INTEGER DEFAULT 1")
 
     # game_attendee: add new columns
     cursor.execute("PRAGMA table_info(game_attendee)")
@@ -207,6 +211,16 @@ def init_db():
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN is_attend INTEGER DEFAULT 0")
     if 'team_id' not in attendee_columns:
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN team_id INTEGER")
+
+    # game_match: add new columns
+    cursor.execute("PRAGMA table_info(game_match)")
+    match_columns = {row[1] for row in cursor.fetchall()}
+    if 'bracket_slot' not in match_columns:
+        cursor.execute("ALTER TABLE game_match ADD COLUMN bracket_slot TEXT")
+    if 'next_match_id' not in match_columns:
+        cursor.execute("ALTER TABLE game_match ADD COLUMN next_match_id INTEGER")
+    if 'is_tbd' not in match_columns:
+        cursor.execute("ALTER TABLE game_match ADD COLUMN is_tbd INTEGER DEFAULT 0")
 
     # game_player_group: groups of players that always stay on the same team
     cursor.execute("""
