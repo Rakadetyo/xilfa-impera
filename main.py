@@ -2357,7 +2357,7 @@ async def clear_teams(request: Request, game_id: int):
 
 # --- Schedule Generators ---
 def generate_round_robin(teams: list) -> list:
-    """Each team plays every other team once. Avoid back-to-back matches."""
+    """Circle method round robin - even split, no back-to-back."""
     matches = []
     team_ids = [t["id"] for t in teams]
     n = len(team_ids)
@@ -2365,59 +2365,27 @@ def generate_round_robin(teams: list) -> list:
     if n < 2:
         return []
 
-    # Track last opponent for each team to avoid back-to-back
-    last_opponent = {tid: None for tid in team_ids}
+    # For odd number of teams, add a "bye"
+    if n % 2 == 1:
+        team_ids.append(None)  # None = bye
 
-    # Generate all pairs
-    all_pairs = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            all_pairs.append((team_ids[i], team_ids[j]))
+    n = len(team_ids)
+    rounds = n - 1  # Each team plays n-1 matches
+    matches_per_round = n // 2
 
-    # Schedule matches, avoiding back-to-back
-    round_num = 1
-    while all_pairs:
-        round_matches = []
-        used_teams = set()
+    # Circle method: keep first team fixed, rotate others
+    for round_num in range(1, rounds + 1):
+        for i in range(matches_per_round):
+            home_idx = i
+            away_idx = n - 1 - i
 
-        # Try to build this round with non-back-to-back matches
-        remaining_pairs = []
-        for home, away in all_pairs:
-            if home in used_teams or away in used_teams:
-                remaining_pairs.append((home, away))
+            home = team_ids[home_idx]
+            away = team_ids[away_idx]
+
+            # Skip if either is a bye
+            if home is None or away is None:
                 continue
 
-            # Check back-to-back constraint (both home and away can't play same opponent consecutively)
-            if last_opponent.get(home) == away or last_opponent.get(away) == home:
-                remaining_pairs.append((home, away))
-                continue
-
-            # This pair works
-            round_matches.append((home, away))
-            used_teams.add(home)
-            used_teams.add(away)
-            last_opponent[home] = away
-            last_opponent[away] = home
-
-        # If no valid matches this round, force one match but accept back-to-back for that round only
-        if not round_matches and remaining_pairs:
-            for home, away in remaining_pairs[:]:
-                if home in used_teams or away in used_teams:
-                    continue
-                round_matches.append((home, away))
-                used_teams.add(home)
-                used_teams.add(away)
-                last_opponent[home] = away
-                last_opponent[away] = home
-                remaining_pairs.remove((home, away))
-                # Reset last_opponent for teams that got forced back-to-back
-                # so next round can try again
-                for tid in team_ids:
-                    last_opponent[tid] = None
-                break
-
-        # Add round matches to final list
-        for home, away in round_matches:
             matches.append({
                 "team_home_id": home,
                 "team_away_id": away,
@@ -2427,13 +2395,8 @@ def generate_round_robin(teams: list) -> list:
                 "is_tbd": 0
             })
 
-        # Remove used pairs
-        all_pairs = [p for p in all_pairs if p not in round_matches]
-        round_num += 1
-
-        # Safety: if no progress, break
-        if not round_matches:
-            break
+        # Rotate: move last element to second position
+        team_ids = [team_ids[0]] + [team_ids[-1]] + team_ids[1:-1]
 
     return matches
 
