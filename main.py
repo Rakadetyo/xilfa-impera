@@ -2746,7 +2746,7 @@ async def update_match_teams(
 
 
 @app.post("/manage/games/{game_id}/schedule/add")
-async def add_match(request: Request, game_id: int, _dummy: str = Form(None)):
+async def add_match(request: Request, game_id: int):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
