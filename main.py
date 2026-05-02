@@ -2387,7 +2387,7 @@ def generate_round_robin(teams: list) -> list:
                 remaining_pairs.append((home, away))
                 continue
 
-            # Check back-to-back constraint
+            # Check back-to-back constraint (both home and away can't play same opponent consecutively)
             if last_opponent.get(home) == away or last_opponent.get(away) == home:
                 remaining_pairs.append((home, away))
                 continue
@@ -2399,7 +2399,7 @@ def generate_round_robin(teams: list) -> list:
             last_opponent[home] = away
             last_opponent[away] = home
 
-        # If no valid matches this round, take whatever remains
+        # If no valid matches this round, force one match but accept back-to-back for that round only
         if not round_matches and remaining_pairs:
             for home, away in remaining_pairs[:]:
                 if home in used_teams or away in used_teams:
@@ -2407,7 +2407,14 @@ def generate_round_robin(teams: list) -> list:
                 round_matches.append((home, away))
                 used_teams.add(home)
                 used_teams.add(away)
+                last_opponent[home] = away
+                last_opponent[away] = home
                 remaining_pairs.remove((home, away))
+                # Reset last_opponent for teams that got forced back-to-back
+                # so next round can try again
+                for tid in team_ids:
+                    last_opponent[tid] = None
+                break
 
         # Add round matches to final list
         for home, away in round_matches:
