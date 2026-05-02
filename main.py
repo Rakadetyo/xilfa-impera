@@ -2563,7 +2563,10 @@ async def generate_schedule(
     request: Request,
     game_id: int,
     format: str = Form("round_robin"),
-    best_of: int = Form(1)
+    best_of: int = Form(1),
+    start_time: str = Form("18:00"),
+    duration: int = Form(8),
+    break_time: int = Form(0)
 ):
     user = get_current_user(request)
     if not user:
@@ -2580,10 +2583,10 @@ async def generate_schedule(
         conn.close()
         return JSONResponse({"error": "Need at least 2 teams"}, status_code=400)
 
-    # Update game schedule_format and best_of
+    # Update game schedule_format, best_of, duration, break_time
     cursor.execute(
-        "UPDATE game SET schedule_format = ?, best_of = ? WHERE id = ?",
-        (format, best_of, game_id)
+        "UPDATE game SET schedule_format = ?, best_of = ?, duration_per_game = ?, break_time = ? WHERE id = ?",
+        (format, best_of, duration, break_time, game_id)
     )
 
     # Clear existing matches

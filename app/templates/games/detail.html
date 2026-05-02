@@ -614,6 +614,18 @@
                     <form method="post" action="/manage/games/{{ game.id }}/schedule/generate" class="space-y-4">
                         <div class="flex flex-wrap gap-4 items-center">
                             <div>
+                                <label class="block text-sm text-gray-500 mb-1">Game start at</label>
+                                <input type="time" name="start_time" value="{{ game.datetime.split('T')[1][:5] if game.datetime else '18:00' }}" class="px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-500 mb-1">Game duration (min)</label>
+                                <input type="number" name="duration" value="{{ game.duration_per_game or 8 }}" min="1" class="px-4 py-2 border border-gray-300 rounded-lg w-20">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-500 mb-1">Break between (min)</label>
+                                <input type="number" name="break_time" value="0" min="0" class="px-4 py-2 border border-gray-300 rounded-lg w-20">
+                            </div>
+                            <div>
                                 <label class="block text-sm text-gray-500 mb-1">Format</label>
                                 <select name="format" class="px-4 py-2 border border-gray-300 rounded-lg">
                                     <option value="round_robin" {% if game.schedule_format == 'round_robin' %}selected{% endif %}>Round Robin — everyone vs everyone</option>
@@ -708,8 +720,11 @@
                                 <td class="py-2 match-num">{{ loop.index }}</td>
                                 <td class="py-2">
                                     {% if game_datetime %}
-                                        {% set start_min = (loop.index0 * game.duration_per_game) %}
-                                        {% set end_min = (loop.index * game.duration_per_game) %}
+                                        {% set duration = game.duration_per_game or 8 %}
+                                        {% set break_time = game.break_time or 0 %}
+                                        {% set slot_duration = duration + break_time %}
+                                        {% set start_min = (loop.index0 * slot_duration) %}
+                                        {% set end_min = (loop.index0 * slot_duration + duration) %}
                                         {% set start_h = (game_datetime.split('T')[1].split(':')[0]|int + start_min // 60) %}
                                         {% set start_m = (game_datetime.split('T')[1].split(':')[1]|int + start_min % 60) %}
                                         {% set end_h = (game_datetime.split('T')[1].split(':')[0]|int + end_min // 60) %}
@@ -718,8 +733,8 @@
                                     {% else %}--:--{% endif %}
                                 </td>
                                 <td class="py-2">
-                                    <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/update-teams" class="inline flex items-center gap-1">
-                                        <select name="team_home_id" class="text-sm border rounded px-2 py-1">
+                                    <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/update-teams" class="inline">
+                                        <select name="team_home_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
                                             <option value="">Pickup / Free</option>
                                             {% for t in teams %}
                                             <option value="{{ t.id }}" {% if m.team_home_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
@@ -727,13 +742,12 @@
                                         </select>
                                 </td>
                                 <td class="py-2">
-                                        <select name="team_away_id" class="text-sm border rounded px-2 py-1">
+                                        <select name="team_away_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
                                             <option value="">Pickup / Free</option>
                                             {% for t in teams %}
                                             <option value="{{ t.id }}" {% if m.team_away_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
                                             {% endfor %}
                                         </select>
-                                        <button type="submit" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-xs">Save</button>
                                     </form>
                                 </td>
                                 <td class="py-2">

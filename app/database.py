@@ -197,6 +197,8 @@ def init_db():
         cursor.execute("ALTER TABLE game ADD COLUMN schedule_format TEXT DEFAULT 'round_robin'")
     if 'best_of' not in game_columns:
         cursor.execute("ALTER TABLE game ADD COLUMN best_of INTEGER DEFAULT 1")
+    if 'break_time' not in game_columns:
+        cursor.execute("ALTER TABLE game ADD COLUMN break_time INTEGER DEFAULT 0")
 
     # game_attendee: add new columns
     cursor.execute("PRAGMA table_info(game_attendee)")
