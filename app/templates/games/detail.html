@@ -595,7 +595,8 @@
                     <h3 class="font-medium mb-4">Schedule Format</h3>
                     {% if teams|length < 2 %}
                     <p class="text-gray-500">Need at least 2 teams to generate schedule.</p>
-                    {% elif matches %}
+                    {% else %}
+                    {% if matches %}
                     {% set team_counts = {} %}
                     {% for m in matches %}
                         {% if m.team_home_id %}{% set _ = team_counts.update({m.team_home_id: team_counts.get(m.team_home_id, 0) + 1}) %}{% endif %}
@@ -609,7 +610,7 @@
                             </span>
                         {% endfor %}
                     </div>
-                    {% else %}
+                    {% endif %}
                     <form method="post" action="/manage/games/{{ game.id }}/schedule/generate" class="space-y-4">
                         <div class="flex flex-wrap gap-4 items-center">
                             <div>
