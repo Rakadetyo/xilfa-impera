@@ -112,6 +112,54 @@
             {% if tab == 'overview' %}
             <div class="space-y-6">
 
+                <!-- Analytics Row -->
+                <div class="grid grid-cols-3 gap-4">
+                    <!-- Average Skill -->
+                    <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                        <h3 class="font-medium text-sm text-gray-500 mb-2">Average Skill</h3>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-bold">{{ avg_skill }}</span>
+                            <span class="text-lg text-gray-500">{{ avg_skill_label }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Position Distribution -->
+                    <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                        <h3 class="font-medium text-sm text-gray-500 mb-3">Positions</h3>
+                        {% set max_pos_count = position_counts.values() | max if position_counts.values() else 1 %}
+                        <div class="space-y-2">
+                            {% for pos in ['PG', 'SG', 'SF', 'PF', 'C'] %}
+                            {% set count = position_counts.get(pos, 0) %}
+                            {% set pct = (count / max_pos_count * 100) if max_pos_count > 0 else 0 %}
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 text-xs font-medium text-gray-500">{{ pos }}</span>
+                                <div class="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-accent rounded-full" style="width: {{ pct }}%"></div>
+                                </div>
+                                <span class="w-6 text-xs text-right font-medium">{{ count }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Share & Invite -->
+                    <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                        <h3 class="font-medium text-sm text-gray-500 mb-3">Share & Invite</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button disabled title="Coming soon"
+                                class="flex flex-col items-center gap-2 px-4 py-4 border-2 border-gray-200 text-gray-400 rounded-xl cursor-not-allowed">
+                                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M13 0C6.373 0 1 5.373 1 12c0 2.127.555 4.126 1.527 5.855L1 23l5.293-1.527A11.953 11.953 0 0013 23c6.627 0 12-5.373 12-12S19.627 0 13 0z"/></svg>
+                                <span class="text-sm font-medium">WhatsApp</span>
+                            </button>
+                            <button disabled title="Coming soon"
+                                class="flex flex-col items-center gap-2 px-4 py-4 border-2 border-gray-200 text-gray-400 rounded-xl cursor-not-allowed">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                <span class="text-sm font-medium">Invite</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Section 1: Setup Progress -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
@@ -330,31 +378,6 @@
 
                 </div>
 
-                <!-- Section 3: Action Buttons (future) -->
-                <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-3 text-sm text-gray-500">Share & Invite</h3>
-                    <div class="flex gap-3">
-                        <button disabled title="Coming soon"
-                            class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-400 rounded-lg text-sm cursor-not-allowed">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94
-1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-
-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077
- 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                                <path d="M13 0C6.373 0 1 5.373 1 12c0 2.127.555 4.126 1.527 5.855L1 23l5.293-1.527A11.953 11.953 0 0013 23c6.627 0 12-5.373 12-12S19.627 0 13 0z"/>
-                            </svg>
-                            Copy WhatsApp Message
-                        </button>
-                        <button disabled title="Coming soon"
-                            class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-400 rounded-lg text-sm cursor-not-allowed">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                            Create Invitation
-                        </button>
-                    </div>
-                </div>
-
             </div>
             {% elif tab == 'general' %}
             <form method="post" action="/manage/games/{{ game.id }}/edit" class="space-y-6">
@@ -492,9 +515,14 @@
 
             {% elif tab == 'players' %}
             <div class="space-y-6">
+                <!-- New Player Button -->
+                <div class="flex justify-end">
+                    <button type="button" onclick="document.getElementById('new-player-modal').classList.remove('hidden')" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm">+ New Player</button>
+                </div>
+
                 <!-- Bulk Add Player Form -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-4">Add Players</h3>
+                    <h3 class="font-medium mb-4">Add Existing Players</h3>
                     <div class="flex gap-4">
                         <select id="player-select" onchange="addToBulkList()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
                             <option value="">Select player...</option>
@@ -507,6 +535,70 @@
 
                     <!-- Bulk List -->
                     <div id="bulk-list" class="mt-4 flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- New Player Modal -->
+                <div id="new-player-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-medium text-lg">Add New Player</h3>
+                            <button type="button" onclick="document.getElementById('new-player-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <form method="post" action="/manage/games/{{ game.id }}/players/add" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Name *</label>
+                                <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Nickname</label>
+                                <input type="text" name="nickname" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Position 1</label>
+                                    <select name="position_1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select...</option>
+                                        <option value="PG">PG</option>
+                                        <option value="SG">SG</option>
+                                        <option value="SF">SF</option>
+                                        <option value="PF">PF</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Position 2</label>
+                                    <select name="position_2" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select...</option>
+                                        <option value="PG">PG</option>
+                                        <option value="SG">SG</option>
+                                        <option value="SF">SF</option>
+                                        <option value="PF">PF</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Skill Level</label>
+                                <select name="skill_level" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="1">1 - Beginner</option>
+                                    <option value="2">2 - Elementary</option>
+                                    <option value="3" selected>3 - Intermediate</option>
+                                    <option value="4">4 - Advanced</option>
+                                    <option value="5">5 - Pro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Contact No</label>
+                                <input type="text" name="contact_no" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div class="flex justify-end gap-3 pt-2">
+                                <button type="button" onclick="document.getElementById('new-player-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+                                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg text-sm">Create Player</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Player Count -->
@@ -546,7 +638,7 @@
                                 <td class="px-6 py-4 text-sm">{% if a %}{{ a.position_1 or '-' }}{% else %}-{% endif %}</td>
                                 <td class="px-6 py-4">
                                     {% if a %}
-                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">★{{ a.skill_level }}</span>
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">{{ skill_labels.get(a.skill_level, 'Intermediate') }}</span>
                                     {% else %}
                                     <span class="text-gray-400">-</span>
                                     {% endif %}
@@ -584,9 +676,16 @@
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     {% if a %}
-                                    <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
-                                        <button type="submit" class="text-red-600 hover:text-red-800 text-sm">Remove</button>
-                                    </form>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button type="button" onclick="openEditModal('{{ a.id }}', '{{ a.name }}', '{{ a.nickname or '' }}', '{{ a.position_1 or '' }}', '{{ a.position_2 or '' }}', '{{ a.skill_level or 3 }}')" class="p-1.5 text-gray-500 hover:text-accent hover:bg-gray-100 rounded" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                        </button>
+                                        <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
+                                            <button type="submit" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded" title="Remove">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
                                     {% else %}
                                     <span class="text-gray-400">-</span>
                                     {% endif %}
@@ -596,6 +695,80 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Edit Player Modal -->
+                <div id="edit-player-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-medium text-lg">Edit Player</h3>
+                            <button type="button" onclick="document.getElementById('edit-player-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <form id="edit-player-form" method="post" class="space-y-4">
+                            <input type="hidden" name="attendee_id" id="edit-attendee-id">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Name</label>
+                                <input type="text" name="name" id="edit-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Nickname</label>
+                                <input type="text" name="nickname" id="edit-nickname" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Position 1</label>
+                                    <select name="position_1" id="edit-position-1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select...</option>
+                                        <option value="PG">PG</option>
+                                        <option value="SG">SG</option>
+                                        <option value="SF">SF</option>
+                                        <option value="PF">PF</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Position 2</label>
+                                    <select name="position_2" id="edit-position-2" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select...</option>
+                                        <option value="PG">PG</option>
+                                        <option value="SG">SG</option>
+                                        <option value="SF">SF</option>
+                                        <option value="PF">PF</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500 mb-1">Skill Level</label>
+                                <select name="skill_level" id="edit-skill-level" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="1">1 - Beginner</option>
+                                    <option value="2">2 - Elementary</option>
+                                    <option value="3">3 - Intermediate</option>
+                                    <option value="4">4 - Advanced</option>
+                                    <option value="5">5 - Pro</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-2">
+                                <button type="button" onclick="document.getElementById('edit-player-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+                                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg text-sm">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <script>
+                function openEditModal(id, name, nickname, pos1, pos2, skill) {
+                    document.getElementById('edit-attendee-id').value = id;
+                    document.getElementById('edit-name').value = name;
+                    document.getElementById('edit-nickname').value = nickname;
+                    document.getElementById('edit-position-1').value = pos1;
+                    document.getElementById('edit-position-2').value = pos2;
+                    document.getElementById('edit-skill-level').value = skill;
+                    document.getElementById('edit-player-form').action = '/manage/games/{{ game.id }}/attendees/' + id + '/edit';
+                    document.getElementById('edit-player-modal').classList.remove('hidden');
+                }
+                </script>
             </div>
 
             {% elif tab == 'teams' %}
@@ -611,7 +784,6 @@
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-sm truncate">{{ a.name }}</div>
                                 <div class="text-xs text-gray-400">{{ a.position_1 or '?' }}{% if a.position_2 %}/{{ a.position_2 }}{% endif %} ·
-                                    {% set skill_labels = {1: 'Beginner', 2: 'Elementary', 3: 'Intermediate', 4: 'Advanced', 5: 'Pro'} %}
                                     {{ skill_labels.get(a.skill_level, 'Intermediate') }}
                                 </div>
                             </div>
@@ -825,9 +997,7 @@
                                 <span class="text-gray-300 text-sm">⠿</span>
                                 <div class="flex-1 min-w-0">
                                     <div class="font-medium text-sm truncate">{{ a.name }}</div>
-                                    <div class="text-xs text-gray-400">{{ a.position_1 or '?' }}{% if a.position_2 %}/{{ a.position_2 }}{% endif %} ·
-                                        {% set skill_labels = {1: 'Beginner', 2: 'Elementary', 3: 'Intermediate', 4: 'Advanced', 5: 'Pro'} %}
-                                        {{ skill_labels.get(a.skill_level, 'Intermediate') }}</div>
+                                    <div class="text-xs text-gray-400">{{ a.position_1 or '?' }}{% if a.position_2 %}/{{ a.position_2 }}{% endif %} · {{ skill_labels.get(a.skill_level, 'Intermediate') }}</div>
                                 </div>
                                 <span class="value-badge text-xs px-1.5 py-0.5 rounded font-mono font-medium
                                     {% if val >= 70 %}bg-green-100 text-green-700
