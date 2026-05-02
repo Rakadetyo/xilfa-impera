@@ -1247,6 +1247,314 @@ async def generate_whatsapp_chat(request: Request, month: int, year: int):
         "chat_text": "\n".join(lines)
     })
 
+# ============================================
+# PARTNER MANAGEMENT ROUTES
+# ============================================
+
+def parse_types(types_str):
+    """Parse comma-separated types string into cleaned list."""
+    if not types_str:
+        return []
+    return [t.strip() for t in types_str.split(",") if t.strip()]
+
+def format_types(types_list):
+    """Join list into comma-separated string."""
+    return ",".join(t.strip() for t in types_list if t.strip())
+
+# --- Partner List ---
+@app.get("/manage/partners")
+async def list_partners(request: Request, type_filter: str = ""):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT p.*,
+               COUNT(DISTINCT gp.id) as game_count,
+               COALESCE(SUM(gp.fee), 0) as total_earned,
+               MAX(g.datetime) as last_game_date
+        FROM partner p
+        LEFT JOIN game_partner gp ON gp.partner_id = p.id
+        LEFT JOIN game g ON gp.game_id = g.id
+        WHERE p.is_active = 1
+        GROUP BY p.id
+        ORDER BY p.name
+    """)
+    partners = cursor.fetchall()
+
+    all_types = set()
+    for p in partners:
+        for t in parse_types(p["types"]):
+            all_types.add(t)
+
+    conn.close()
+
+    if type_filter:
+        partners = [p for p in partners if type_filter in parse_types(p["types"])]
+
+    return templates.TemplateResponse(request, "partners/list.html", {
+        "user": user,
+        "partners": partners,
+        "all_types": sorted(all_types),
+        "type_filter": type_filter,
+        "parse_types": parse_types,
+        "active": "partners",
+    })
+
+# --- New Partner Form + Create ---
+@app.get("/manage/partners/new")
+async def new_partner_form(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT types FROM partner WHERE types != ''")
+    existing_types = set()
+    for row in cursor.fetchall():
+        for t in parse_types(row["types"]):
+            existing_types.add(t)
+    conn.close()
+
+    suggested_types = sorted(existing_types | {
+        "referee", "videographer", "photographer",
+        "sponsor", "jersey", "equipment", "other"
+    })
+
+    return templates.TemplateResponse(request, "partners/new.html", {
+        "user": user,
+        "suggested_types": suggested_types,
+    })
+
+@app.post("/manage/partners/new")
+async def create_partner(
+    request: Request,
+    name: str = Form(...),
+    company: str = Form(""),
+    types: str = Form(""),
+    contact: str = Form(""),
+    social_media: str = Form(""),
+    default_fee: float = Form(0),
+    internal_rating: int = Form(0),
+    notes: str = Form(""),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO partner (name, company, types, contact, social_media, default_fee, internal_rating, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, company, types, contact, social_media, default_fee, internal_rating, notes))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse("/manage/partners", status_code=302)
+
+# --- Edit Partner ---
+@app.get("/manage/partners/{partner_id}/edit")
+async def edit_partner_form(request: Request, partner_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM partner WHERE id = ?", (partner_id,))
+    partner = cursor.fetchone()
+    if not partner:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("SELECT types FROM partner WHERE types != ''")
+    existing_types = set()
+    for row in cursor.fetchall():
+        for t in parse_types(row["types"]):
+            existing_types.add(t)
+    conn.close()
+
+    suggested_types = sorted(existing_types | {
+        "referee", "videographer", "photographer",
+        "sponsor", "jersey", "equipment", "other"
+    })
+
+    return templates.TemplateResponse(request, "partners/edit.html", {
+        "user": user,
+        "partner": partner,
+        "suggested_types": suggested_types,
+        "parse_types": parse_types,
+    })
+
+@app.post("/manage/partners/{partner_id}/edit")
+async def update_partner(
+    request: Request,
+    partner_id: int,
+    name: str = Form(...),
+    company: str = Form(""),
+    types: str = Form(""),
+    contact: str = Form(""),
+    social_media: str = Form(""),
+    default_fee: float = Form(0),
+    internal_rating: int = Form(0),
+    notes: str = Form(""),
+    is_active: int = Form(1),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE partner
+        SET name=?, company=?, types=?, contact=?, social_media=?, default_fee=?,
+            internal_rating=?, notes=?, is_active=?, updated_at=CURRENT_TIMESTAMP
+        WHERE id=?
+    """, (name, company, types, contact, social_media, default_fee, internal_rating, notes, is_active, partner_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse("/manage/partners", status_code=302)
+
+@app.post("/manage/partners/{partner_id}/delete")
+async def delete_partner(request: Request, partner_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE partner SET is_active = 0 WHERE id = ?", (partner_id,))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse("/manage/partners", status_code=302)
+
+# --- Partner Detail (Game History) ---
+@app.get("/manage/partners/{partner_id}")
+async def partner_detail(request: Request, partner_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM partner WHERE id = ?", (partner_id,))
+    partner = cursor.fetchone()
+    if not partner:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("""
+        SELECT gp.*, g.datetime, a.location_name as arena_name
+        FROM game_partner gp
+        JOIN game g ON gp.game_id = g.id
+        LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE gp.partner_id = ?
+        ORDER BY g.datetime DESC
+    """, (partner_id,))
+    history = cursor.fetchall()
+    conn.close()
+
+    total_earned = sum(h["fee"] for h in history)
+    total_paid = sum(h["fee"] for h in history if h["is_paid"])
+
+    return templates.TemplateResponse(request, "partners/detail.html", {
+        "user": user,
+        "partner": partner,
+        "history": history,
+        "total_earned": total_earned,
+        "total_paid": total_paid,
+        "parse_types": parse_types,
+    })
+
+# --- API: Partner Search ---
+@app.get("/api/partners/search")
+async def search_partners(request: Request, q: str = ""):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"results": []})
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name, types, contact, default_fee
+        FROM partner
+        WHERE is_active = 1 AND name LIKE ?
+        ORDER BY name
+        LIMIT 8
+    """, (f"%{q}%",))
+    results = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return JSONResponse({"results": results})
+
+# --- Toggle Partner Payment on Game ---
+@app.post("/manage/games/{game_id}/partners/{game_partner_id}/pay")
+async def toggle_partner_payment(request: Request, game_id: int, game_partner_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE game_partner SET is_paid = 1 - is_paid WHERE id = ? AND game_id = ?",
+        (game_partner_id, game_id)
+    )
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
+
+# --- Update Add Partner Route (for master partner lookup) ---
+@app.post("/manage/games/{game_id}/partners/new")
+async def add_partner(
+    request: Request,
+    game_id: int,
+    partner_id: str = Form(""),
+    partner_name: str = Form(""),
+    types: str = Form(""),
+    contact: str = Form(""),
+    fee: float = Form(0),
+    notes: str = Form(""),
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    resolved_partner_id = int(partner_id) if partner_id.strip().isdigit() else None
+    resolved_name = partner_name.strip()
+
+    if resolved_partner_id and not resolved_name:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, contact FROM partner WHERE id = ?", (resolved_partner_id,))
+        master = cursor.fetchone()
+        conn.close()
+        if master:
+            resolved_name = master["name"]
+            if not contact:
+                contact = master["contact"]
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO game_partner (game_id, partner_id, name, types, contact, fee, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (game_id, resolved_partner_id, resolved_name, types, contact, fee, notes))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
+
 # --- Arena ---
 @app.get("/api/resolve-google-maps")
 async def resolve_google_maps(url: str):
@@ -2030,6 +2338,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "total_attendees": total_attendees,
         "revenue_collected": revenue_collected,
         "assigned_count": assigned_count,
+        "parse_types": parse_types,
         "skill_labels": {1: "Newbie", 2: "Beginner", 3: "Intermediate", 4: "Expert", 5: "Pro"},
         "avg_skill": avg_skill,
         "avg_skill_label": avg_skill_label,
@@ -2109,48 +2418,6 @@ async def update_game(
         """, (game_id, partner_type, partner_name, partner_contact, partner_fee))
         conn.commit()
 
-    conn.commit()
-    conn.close()
-
-    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
-
-
-# --- Partners CRUD ---
-@app.post("/manage/games/{game_id}/partners")
-async def add_partner(
-    request: Request,
-    game_id: int,
-    type: str = Form(...),
-    name: str = Form(""),
-    contact: str = Form(""),
-    fee: float = Form(0),
-    notes: str = Form("")
-):
-    user = get_current_user(request)
-    if not user:
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO game_partner (game_id, type, name, contact, fee, notes)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (game_id, type, name, contact, fee, notes))
-    conn.commit()
-    conn.close()
-
-    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
-
-
-@app.post("/manage/games/{game_id}/partners/{partner_id}/delete")
-async def delete_partner(request: Request, game_id: int, partner_id: int):
-    user = get_current_user(request)
-    if not user:
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM game_partner WHERE id = ? AND game_id = ?", (partner_id, game_id))
     conn.commit()
     conn.close()
 

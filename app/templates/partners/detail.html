@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ partner.name }} — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 fixed h-full">
+            <div class="p-6">
+                <span class="text-lg font-display tracking-widest text-accent">IMPERA</span>
+                <span class="text-xs text-gray-500 block mt-1">/ Manage</span>
+            </div>
+
+            <nav class="mt-6 px-4">
+                <a href="/manage" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    Dashboard
+                </a>
+                <a href="/manage/posts" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Posts
+                </a>
+                <a href="/manage/players" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Players
+                </a>
+                <a href="/manage/members" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Members
+                </a>
+                <a href="/manage/arena" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Arenas
+                </a>
+                <a href="/manage/games" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Games
+                </a>
+                <a href="/manage/partners" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-accent text-black font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Partners
+                </a>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Page Settings</p>
+                    <a href="/manage/page_settings/homepage" class="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 ml-2 text-sm">Homepage</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-64 flex-1 p-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <a href="/manage/partners" class="text-gray-500 hover:text-gray-700 text-sm">← Back to Partners</a>
+                    <h1 class="text-3xl font-display tracking-wide mt-2">{{ partner.name }}</h1>
+                    <div class="flex gap-2 mt-2">
+                        {% for t in parse_types(partner.types) %}
+                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-sm">{{ t }}</span>
+                        {% endfor %}
+                        {% if partner.internal_rating > 0 %}
+                        <span class="text-accent text-sm">
+                            {% for i in range(1, 6) %}
+                            {% if i <= partner.internal_rating %}★{% else %}☆{% endif %}
+                            {% endfor %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="/manage/partners/{{ partner.id }}/edit" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">Edit Partner</a>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <div class="text-2xl font-bold">{{ history | length }}</div>
+                    <div class="text-gray-500 text-sm">Games</div>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <div class="text-2xl font-bold">Rp{{ "{:,.0f}".format(total_earned) }}</div>
+                    <div class="text-gray-500 text-sm">Total Earned</div>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <div class="text-2xl font-bold">Rp{{ "{:,.0f}".format(total_earned - total_paid) }}</div>
+                    <div class="text-gray-500 text-sm">Unpaid</div>
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            {% if partner.contact or partner.social_media %}
+            <div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+                <h3 class="font-medium mb-4">Contact Information</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    {% if partner.contact %}
+                    <div>
+                        <div class="text-xs text-gray-400">Contact</div>
+                        <div>{{ partner.contact }}</div>
+                    </div>
+                    {% endif %}
+                    {% if partner.social_media %}
+                    <div>
+                        <div class="text-xs text-gray-400">Social Media</div>
+                        <div>{{ partner.social_media }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Game History -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="font-medium">Game History</h3>
+                </div>
+                {% if history %}
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Arena</th>
+                            <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Types</th>
+                            <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Fee</th>
+                            <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Paid</th>
+                            <th class="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Game</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for h in history %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm">{{ h.datetime[:10] if h.datetime else '—' }}</td>
+                            <td class="px-6 py-4 text-sm">{{ h.arena_name or '—' }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-1">
+                                    {% for t in parse_types(h.types or h.type or '') %}
+                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{{ t }}</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm">Rp{{ "{:,.0f}".format(h.fee) }}</td>
+                            <td class="px-6 py-4">
+                                {% if h.is_paid %}
+                                <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">✓ Paid</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">Unpaid</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="/manage/games/{{ h.game_id }}" class="text-sm text-accent hover:underline">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="p-6 text-center text-gray-500">
+                    No game history yet.
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
