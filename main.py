@@ -461,6 +461,52 @@ async def create_player(
 
     return RedirectResponse("/manage/players?success=Player added", status_code=302)
 
+
+@app.post("/manage/games/{game_id}/players/add")
+async def add_player_to_game(
+    request: Request,
+    game_id: int,
+    name: str = Form(...),
+    nickname: str = Form(""),
+    position_1: str = Form(""),
+    position_2: str = Form(""),
+    skill_level: int = Form(3),
+    contact_no: str = Form(""),
+    instagram: str = Form(""),
+    reclub: str = Form(""),
+    status: int = Form(1)
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    if skill_level < 1 or skill_level > 5:
+        skill_level = 3
+    if status not in (-1, 0, 1):
+        status = 1
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Create player
+    cursor.execute("""
+        INSERT INTO player (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
+    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, status))
+
+    player_id = cursor.lastrowid
+
+    # Add to game as attendee
+    cursor.execute("""
+        INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
+        VALUES (?, ?, 0, 0)
+    """, (game_id, player_id))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+
 @app.post("/manage/players/{player_id}")
 async def update_player(
     request: Request,
@@ -1703,7 +1749,7 @@ async def create_game(
 
 
 @app.get("/manage/games/{game_id}")
-async def game_detail(request: Request, game_id: int, tab: str = "general", error: str = None):
+async def game_detail(request: Request, game_id: int, tab: str = "overview", error: str = None):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
@@ -1861,14 +1907,48 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
     # Overview tab computed data
     from datetime import datetime as dt, timedelta
 
-    paid_count = sum(1 for a in attendees if a["is_paid"])
-    assigned_count = sum(1 for a in attendees if a["team_id"])
+    paid_count = sum(1 for a in attendees if dict(a).get("is_paid", 0))
+    assigned_count = sum(1 for a in attendees if dict(a).get("team_id", None))
     total_attendees = len(attendees)
+
+    # Analytics: Average skill level
+    if total_attendees > 0:
+        total_skill = 0
+        for a in attendees:
+            a_dict = dict(a)
+            skill = a_dict.get("skill_level", 0) or 0
+            if skill:
+                total_skill += skill
+        avg_skill = round(total_skill / total_attendees, 1)
+    else:
+        avg_skill = 0
+
+    if avg_skill <= 1.5:
+        avg_skill_label = "Newbie"
+    elif avg_skill <= 2.5:
+        avg_skill_label = "Beginner"
+    elif avg_skill <= 3.75:
+        avg_skill_label = "Intermediate"
+    elif avg_skill <= 4.49:
+        avg_skill_label = "Expert"
+    else:
+        avg_skill_label = "Pro"
+
+    # Analytics: Position counts
+    position_counts = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
+    for a in attendees:
+        a_dict = dict(a)
+        pos1 = a_dict.get("position_1")
+        pos2 = a_dict.get("position_2")
+        if pos1:
+            position_counts[pos1] = position_counts.get(pos1, 0) + 1
+        if pos2:
+            position_counts[pos2] = position_counts.get(pos2, 0) + 1
 
     # Step completion
     step_general = bool(game_dict.get("arena_id") and game_dict.get("datetime"))
     step_players = total_attendees > 0 and (paid_count / total_attendees) >= 0.5
-    step_teams = len(teams) > 0 and total_attendees > 0 and assigned_count == total_attendees
+    step_teams = len(teams) > 0
     step_schedule = len(matches) > 0
 
     overview_steps = [
@@ -1950,6 +2030,10 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
         "total_attendees": total_attendees,
         "revenue_collected": revenue_collected,
         "assigned_count": assigned_count,
+        "skill_labels": {1: "Newbie", 2: "Beginner", 3: "Intermediate", 4: "Expert", 5: "Pro"},
+        "avg_skill": avg_skill,
+        "avg_skill_label": avg_skill_label,
+        "position_counts": position_counts,
     })
 
 
@@ -1990,9 +2074,9 @@ async def update_game(
     max_players: int = Form(25),
     status: str = Form("open"),
     notes: str = Form(""),
-    is_video: bool = Form(False),
-    is_photo: bool = Form(False),
-    is_referee: bool = Form(False),
+    is_video: bool = Form(default=False),
+    is_photo: bool = Form(default=False),
+    is_referee: bool = Form(default=False),
     add_partner: str = Form(None),
     partner_type: str = Form(None),
     partner_name: str = Form(None),
@@ -2028,7 +2112,7 @@ async def update_game(
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
 
 # --- Partners CRUD ---
@@ -2055,7 +2139,7 @@ async def add_partner(
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=partners", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/partners/{partner_id}/delete")
@@ -2070,7 +2154,7 @@ async def delete_partner(request: Request, game_id: int, partner_id: int):
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=partners", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
 
 # --- Attendees CRUD ---
@@ -2113,6 +2197,34 @@ async def add_attendees_bulk(request: Request, game_id: int):
         if not cursor.fetchone():
             cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, int(player_id)))
 
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/edit")
+async def edit_attendee(
+    request: Request,
+    game_id: int,
+    attendee_id: int,
+    name: str = Form(...),
+    nickname: str = Form(""),
+    position_1: str = Form(""),
+    position_2: str = Form(""),
+    skill_level: int = Form(3)
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    # Update player info
+    cursor.execute("""
+        UPDATE player SET nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?
+        WHERE id = (SELECT player_id FROM game_attendee WHERE id = ? AND game_id = ?)
+    """, (nickname, position_1, position_2, skill_level, attendee_id, game_id))
     conn.commit()
     conn.close()
 
