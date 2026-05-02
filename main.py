@@ -1793,7 +1793,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
         LEFT JOIN game_team th ON gm.team_home_id = th.id
         LEFT JOIN game_team ta ON gm.team_away_id = ta.id
         WHERE gm.game_id = ?
-        ORDER BY gm.round_number, gm.match_order
+        ORDER BY gm.match_order
     """, (game_id,))
     matches = cursor.fetchall()
 
