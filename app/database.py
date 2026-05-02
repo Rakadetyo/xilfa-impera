@@ -263,6 +263,43 @@ def init_db():
         )
     """)
 
+    # Master partner registry
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS partner (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            types TEXT DEFAULT '',
+            contact TEXT,
+            social_media TEXT,
+            default_fee REAL DEFAULT 0,
+            internal_rating INTEGER DEFAULT 0,
+            notes TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Add company column to partner if not exists
+    cursor.execute("PRAGMA table_info(partner)")
+    partner_cols = {row[1] for row in cursor.fetchall()}
+    if "company" not in partner_cols:
+        cursor.execute("ALTER TABLE partner ADD COLUMN company TEXT DEFAULT ''")
+
+    # Migrate game_partner with new columns
+    cursor.execute("PRAGMA table_info(game_partner)")
+    gp_columns = {row[1] for row in cursor.fetchall()}
+
+    if "types" not in gp_columns:
+        cursor.execute("ALTER TABLE game_partner ADD COLUMN types TEXT DEFAULT ''")
+        cursor.execute("UPDATE game_partner SET types = type WHERE type IS NOT NULL AND type != ''")
+
+    if "partner_id" not in gp_columns:
+        cursor.execute("ALTER TABLE game_partner ADD COLUMN partner_id INTEGER")
+
+    if "is_paid" not in gp_columns:
+        cursor.execute("ALTER TABLE game_partner ADD COLUMN is_paid INTEGER DEFAULT 0")
+
     # game_team: teams within a game
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS game_team (

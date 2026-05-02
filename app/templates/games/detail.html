@@ -492,19 +492,18 @@
                 </div>
 
                 <!-- Add Partner Form -->
-                <form method="POST" action="/manage/games/{{ game.id }}/partners" class="border-t border-gray-200 pt-4">
+                <form method="POST" action="/manage/games/{{ game.id }}/partners/new" class="border-t border-gray-200 pt-4">
                     <h4 class="text-sm font-medium text-gray-500 mb-3">Add Partner</h4>
-                    <div class="flex gap-2">
-                        <select name="type" class="px-4 py-2 border border-gray-300 rounded-lg">
-                            <option value="referee">Referee</option>
-                            <option value="videographer">Videographer</option>
-                            <option value="photographer">Photographer</option>
-                            <option value="sponsor">Sponsor</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <input type="text" name="name" placeholder="Name" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                        <input type="text" name="contact" placeholder="Contact" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                        <input type="number" name="fee" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <!-- Name with auto-lookup -->
+                        <div class="flex-1 min-w-48 relative">
+                            <input type="text" id="partner-name-input" placeholder="Name (type to search)" autocomplete="off" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <input type="hidden" name="partner_id" id="partner-id-hidden">
+                            <input type="hidden" name="partner_name" id="partner-name-hidden">
+                            <div id="partner-suggestions" class="hidden absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20"></div>
+                        </div>
+                        <input type="text" name="types" id="partner-types-input" placeholder="Types (e.g. referee)" class="w-40 px-4 py-2 border border-gray-300 rounded-lg">
+                        <input type="number" name="fee" id="partner-fee-input" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
                         <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
                     </div>
                 </form>
@@ -513,15 +512,26 @@
                 <div class="mt-4 space-y-2">
                     {% for p in partners %}
                     <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                        <div>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">{{ p.type }}</span>
-                            <span class="ml-2 font-medium">{{ p.name or '-' }}</span>
-                            <span class="ml-2 text-gray-500">{{ p.contact or '' }}</span>
+                        <div class="flex items-center gap-3">
+                            <div>
+                                {% for t in parse_types(p.types or p.type or '') %}
+                                <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs mr-1">{{ t }}</span>
+                                {% endfor %}
+                                <span class="font-medium text-sm">{{ p.name or '—' }}</span>
+                                {% if p.contact %}
+                                <span class="text-gray-400 text-sm ml-2">{{ p.contact }}</span>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <span class="text-gray-600">Rp{{ "{:,.0f}".format(p.fee) }}</span>
-                            <form method="POST" action="/manage/games/{{ game.id }}/partners/{{ p.id }}/delete" class="inline">
-                                <button type="submit" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-600 text-sm">Rp{{ "{:,.0f}".format(p.fee) }}</span>
+                            <form method="post" action="/manage/games/{{ game.id }}/partners/{{ p.id }}/pay">
+                                <button type="submit" class="px-2 py-0.5 rounded text-xs font-medium {% if p.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                    {{ 'Paid' if p.is_paid else 'Unpaid' }}
+                                </button>
+                            </form>
+                            <form method="post" action="/manage/games/{{ game.id }}/partners/{{ p.id }}/delete">
+                                <button type="submit" class="text-red-500 text-sm hover:text-red-700">Delete</button>
                             </form>
                         </div>
                     </div>
@@ -535,6 +545,43 @@
             <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')" class="mt-6">
                 <button type="submit" class="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium">Delete Game</button>
             </form>
+
+            <script>
+                function searchPartners(q) {
+                    const suggestBox = document.getElementById('partner-suggestions');
+                    if (q.length < 2) { suggestBox.classList.add('hidden'); return; }
+
+                    fetch(`/api/partners/search?q=${encodeURIComponent(q)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data.results.length) { suggestBox.classList.add('hidden'); return; }
+                            suggestBox.innerHTML = data.results.map(p => `
+                                <div class="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                                     onclick="selectPartner(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.types}', ${p.default_fee})">
+                                    <div class="font-medium">${p.name}</div>
+                                    <div class="text-xs text-gray-400">${p.types.replace(/,/g, ' · ')} · Rp${Number(p.default_fee).toLocaleString()}</div>
+                                </div>
+                            `).join('');
+                            suggestBox.classList.remove('hidden');
+                        });
+                }
+
+                function selectPartner(id, name, types, fee) {
+                    document.getElementById('partner-id-hidden').value = id;
+                    document.getElementById('partner-name-hidden').value = name;
+                    document.getElementById('partner-name-input').value = name;
+                    document.getElementById('partner-types-input').value = types;
+                    document.getElementById('partner-fee-input').value = fee;
+                    document.getElementById('partner-suggestions').classList.add('hidden');
+                }
+
+                document.getElementById('partner-name-input').addEventListener('input', e => searchPartners(e.target.value));
+
+                document.addEventListener('click', e => {
+                    if (!document.getElementById('partner-name-input').parentElement.contains(e.target))
+                        document.getElementById('partner-suggestions').classList.add('hidden');
+                });
+            </script>
 
             {% elif tab == 'players' %}
             <div class="space-y-6">
