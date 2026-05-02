@@ -629,18 +629,7 @@
                                 <label class="block text-sm text-gray-500 mb-1">Format</label>
                                 <select name="format" class="px-4 py-2 border border-gray-300 rounded-lg">
                                     <option value="round_robin" {% if game.schedule_format == 'round_robin' %}selected{% endif %}>Round Robin — everyone vs everyone</option>
-                                    <option value="single_elimination" {% if game.schedule_format == 'single_elimination' %}selected{% endif %}>Single Elimination — classic bracket</option>
-                                    <option value="double_elimination" {% if game.schedule_format == 'double_elimination' %}selected{% endif %}>Double Elimination — winners + losers bracket</option>
-                                    <option value="group_knockout" {% if game.schedule_format == 'group_knockout' %}selected{% endif %}>Group + Knockout — pools then elimination</option>
                                     <option value="king_of_court" {% if game.schedule_format == 'king_of_court' %}selected{% endif %}>King of the Court — winner stays</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-500 mb-1">Best of</label>
-                                <select name="best_of" class="px-4 py-2 border border-gray-300 rounded-lg">
-                                    <option value="1" {% if game.best_of == 1 %}selected{% endif %}>1</option>
-                                    <option value="3" {% if game.best_of == 3 %}selected{% endif %}>3</option>
-                                    <option value="5" {% if game.best_of == 5 %}selected{% endif %}>5</option>
                                 </select>
                             </div>
                         </div>
@@ -653,46 +642,6 @@
                     </form>
                     {% endif %}
                 </div>
-
-                <!-- Bracket View (for elimination formats) -->
-                {% if game.schedule_format in ['single_elimination', 'double_elimination', 'group_knockout'] and matches %}
-                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-4">Bracket</h3>
-                    <div class="overflow-x-auto">
-                        <div class="flex gap-8 min-w-max">
-                            {% set rounds = {} %}
-                            {% for m in matches %}
-                                {% set rn = m.round_number %}
-                                {% if rn not in rounds %}
-                                    {% set _ = rounds.update({rn: []}) %}
-                                {% endif %}
-                                {% set _ = rounds[rn].append(m) %}
-                            {% endfor %}
-                            {% for rn in rounds|sort %}
-                            <div class="flex flex-col gap-4">
-                                <div class="text-sm font-medium text-gray-500 text-center">{% if rn == 1 %}Round 1{% elif rn == 2 %}Quarterfinals{% elif rn == 3 %}Semifinals{% elif rn == 4 %}Final{% else %}Round {{ rn }}{% endif %}</div>
-                                {% for m in rounds[rn] %}
-                                <div class="bg-gray-50 rounded-lg p-3 border min-w-[160px]">
-                                    <div class="flex justify-between items-center gap-2">
-                                        <span class="{% if m.team_home_id %}font-medium{% else %}text-gray-400{% endif %}">
-                                            {% if m.team_home_id %}{% for t in teams %}{% if t.id == m.team_home_id %}{{ t.team_name }}{% endif %}{% endfor %}{% else %}TBD{% endif %}
-                                        </span>
-                                        <span class="text-xs text-gray-400">{{ m.score_home or '-' }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center gap-2 mt-1">
-                                        <span class="{% if m.team_away_id %}font-medium{% else %}text-gray-400{% endif %}">
-                                            {% if m.team_away_id %}{% for t in teams %}{% if t.id == m.team_away_id %}{{ t.team_name }}{% endif %}{% endfor %}{% else %}TBD{% endif %}
-                                        </span>
-                                        <span class="text-xs text-gray-400">{{ m.score_away or '-' }}</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
 
                 <!-- Match Schedule Table -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
