@@ -703,14 +703,22 @@
                                     {% else %}--:--{% endif %}
                                 </td>
                                 <td class="py-2">
-                                    {% if m.team_home_id %}
-                                        {% for t in teams %}{% if t.id == m.team_home_id %}{{ t.team_name }}{% endif %}{% endfor %}
-                                    {% else %}<span class="text-gray-400">TBD</span>{% endif %}
+                                    <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/update-teams" class="inline">
+                                        <select name="team_home_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                            <option value="">—</option>
+                                            {% for t in teams %}
+                                            <option value="{{ t.id }}" {% if m.team_home_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
+                                            {% endfor %}
+                                        </select>
                                 </td>
                                 <td class="py-2">
-                                    {% if m.team_away_id %}
-                                        {% for t in teams %}{% if t.id == m.team_away_id %}{{ t.team_name }}{% endif %}{% endfor %}
-                                    {% else %}<span class="text-gray-400">TBD</span>{% endif %}
+                                        <select name="team_away_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                            <option value="">—</option>
+                                            {% for t in teams %}
+                                            <option value="{{ t.id }}" {% if m.team_away_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
                                 </td>
                                 <td class="py-2">
                                     <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}" class="flex items-center gap-1">

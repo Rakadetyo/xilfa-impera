@@ -2712,6 +2712,35 @@ async def update_match(
     return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
 
 
+@app.post("/manage/games/{game_id}/schedule/{match_id}/update-teams")
+async def update_match_teams(
+    request: Request,
+    game_id: int,
+    match_id: int,
+    team_home_id: str = Form(""),
+    team_away_id: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    home_id = int(team_home_id) if team_home_id else None
+    away_id = int(team_away_id) if team_away_id else None
+
+    cursor.execute("""
+        UPDATE game_match SET team_home_id = ?, team_away_id = ?, is_tbd = ?
+        WHERE id = ? AND game_id = ?
+    """, (home_id, away_id, 0 if home_id and away_id else 1, match_id, game_id))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
 @app.post("/manage/games/{game_id}/schedule/{match_id}/delete")
 async def delete_match(request: Request, game_id: int, match_id: int):
     user = get_current_user(request)
