@@ -2357,19 +2357,77 @@ async def clear_teams(request: Request, game_id: int):
 
 # --- Schedule Generators ---
 def generate_round_robin(teams: list) -> list:
-    """Each team plays every other team once."""
+    """Each team plays every other team once. Avoid back-to-back matches."""
     matches = []
     team_ids = [t["id"] for t in teams]
-    for i in range(len(team_ids)):
-        for j in range(i + 1, len(team_ids)):
+    n = len(team_ids)
+
+    if n < 2:
+        return []
+
+    # Track last opponent for each team to avoid back-to-back
+    last_opponent = {tid: None for tid in team_ids}
+
+    # Generate all pairs
+    all_pairs = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            all_pairs.append((team_ids[i], team_ids[j]))
+
+    # Schedule matches, avoiding back-to-back
+    round_num = 1
+    while all_pairs:
+        round_matches = []
+        used_teams = set()
+
+        # Try to build this round with non-back-to-back matches
+        remaining_pairs = []
+        for home, away in all_pairs:
+            if home in used_teams or away in used_teams:
+                remaining_pairs.append((home, away))
+                continue
+
+            # Check back-to-back constraint
+            if last_opponent.get(home) == away or last_opponent.get(away) == home:
+                remaining_pairs.append((home, away))
+                continue
+
+            # This pair works
+            round_matches.append((home, away))
+            used_teams.add(home)
+            used_teams.add(away)
+            last_opponent[home] = away
+            last_opponent[away] = home
+
+        # If no valid matches this round, take whatever remains
+        if not round_matches and remaining_pairs:
+            for home, away in remaining_pairs[:]:
+                if home in used_teams or away in used_teams:
+                    continue
+                round_matches.append((home, away))
+                used_teams.add(home)
+                used_teams.add(away)
+                remaining_pairs.remove((home, away))
+
+        # Add round matches to final list
+        for home, away in round_matches:
             matches.append({
-                "team_home_id": team_ids[i],
-                "team_away_id": team_ids[j],
-                "round_number": 1,
+                "team_home_id": home,
+                "team_away_id": away,
+                "round_number": round_num,
                 "bracket_slot": None,
                 "next_match_id": None,
                 "is_tbd": 0
             })
+
+        # Remove used pairs
+        all_pairs = [p for p in all_pairs if p not in round_matches]
+        round_num += 1
+
+        # Safety: if no progress, break
+        if not round_matches:
+            break
+
     return matches
 
 
