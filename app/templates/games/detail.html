@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game {{ game.id }} — Impera</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -670,9 +671,13 @@
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Match Schedule</h3>
                     {% if matches %}
+                    <form id="reorderForm" method="post" action="/manage/games/{{ game.id }}/schedule/reorder">
+                        <input type="hidden" name="match_ids" id="matchIds">
+                    </form>
                     <table class="w-full">
                         <thead class="border-b">
                             <tr>
+                                <th class="w-8 py-2 text-sm text-gray-500"></th>
                                 <th class="text-left py-2 text-sm text-gray-500">#</th>
                                 <th class="text-left py-2 text-sm text-gray-500">Time</th>
                                 <th class="text-left py-2 text-sm text-gray-500">Home</th>
@@ -681,12 +686,21 @@
                                 <th class="text-left py-2 text-sm text-gray-500">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="matchTableBody">
                             {% for m in matches %}
-                            <tr class="border-b">
-                                <td class="py-2">{{ loop.index }}</td>
+                            <tr class="border-b cursor-move" data-match-id="{{ m.id }}">
+                                <td class="py-2 text-gray-400">⋮⋮</td>
+                                <td class="py-2 match-num">{{ loop.index }}</td>
                                 <td class="py-2">
-                                    {% if m.scheduled_start %}{{ m.scheduled_start }}{% else %}{{ loop.index * game.duration_per_game }} min{% endif %}
+                                    {% if game_datetime %}
+                                        {% set start_min = (loop.index0 * game.duration_per_game) %}
+                                        {% set end_min = (loop.index * game.duration_per_game) %}
+                                        {% set start_h = (game_datetime.split('T')[1].split(':')[0]|int + start_min // 60) %}
+                                        {% set start_m = (game_datetime.split('T')[1].split(':')[1]|int + start_min % 60) %}
+                                        {% set end_h = (game_datetime.split('T')[1].split(':')[0]|int + end_min // 60) %}
+                                        {% set end_m = (game_datetime.split('T')[1].split(':')[1]|int + end_min % 60) %}
+                                        {% if start_h < 24 %}{{ '%02d:%02d' | format(start_h, start_m) }}{% else %}--:--{% endif %} - {% if end_h < 24 %}{{ '%02d:%02d' | format(end_h, end_m) }}{% else %}--:--{% endif %}
+                                    {% else %}--:--{% endif %}
                                 </td>
                                 <td class="py-2">
                                     {% if m.team_home_id %}
@@ -715,11 +729,55 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    <button type="button" onclick="saveOrder()" class="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
                     {% else %}
                     <p class="text-gray-500 text-center py-8">No matches yet. Generate a schedule above.</p>
                     {% endif %}
                 </div>
             </div>
+
+            {% if tab == 'schedule' %}
+            <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+            <script>
+                const matchTableBody = document.getElementById('matchTableBody');
+                if (matchTableBody) {
+                    new Sortable(matchTableBody, {
+                        animation: 150,
+                        handle: 'tr',
+                        ghostClass: 'opacity-40',
+                        onEnd: function(evt) {
+                            updateMatchNumbers();
+                        }
+                    });
+                }
+
+                function updateMatchNumbers() {
+                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    rows.forEach((row, idx) => {
+                        const numCell = row.querySelector('.match-num');
+                        if (numCell) numCell.textContent = idx + 1;
+                    });
+                }
+
+                function saveOrder() {
+                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    const matchIds = Array.from(rows).map(row => row.dataset.matchId);
+                    document.getElementById('matchIds').value = matchIds.join(',');
+
+                    fetch(`/manage/games/{{ game.id }}/schedule/reorder`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ match_ids: matchIds })
+                    }).then(r => {
+                        if (r.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('Failed to save order');
+                        }
+                    });
+                }
+            </script>
+            {% endif %}
 
             {% elif tab == 'results' %}
             <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">

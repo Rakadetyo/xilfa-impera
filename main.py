@@ -1861,6 +1861,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
     return templates.TemplateResponse(request, "games/detail.html", {
         "user": user,
         "game": game_dict,
+        "game_datetime": game_dict.get("datetime", ""),
         "attendees": attendees,
         "partners": partners,
         "teams": teams,
@@ -2597,6 +2598,33 @@ async def generate_schedule(
     conn.close()
 
     return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/reorder")
+async def reorder_matches(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    match_ids = data.get("match_ids", [])
+
+    if not match_ids:
+        return JSONResponse({"error": "No match IDs provided"}, status_code=400)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    for order, match_id in enumerate(match_ids):
+        cursor.execute(
+            "UPDATE game_match SET match_order = ? WHERE id = ? AND game_id = ?",
+            (order + 1, match_id, game_id)
+        )
+
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"success": True})
 
 
 @app.post("/manage/games/{game_id}/schedule/clear")
