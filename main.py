@@ -2690,8 +2690,8 @@ async def add_match(request: Request, game_id: int):
     next_order = cursor.fetchone()["next_order"]
 
     cursor.execute("""
-        INSERT INTO game_match (game_id, match_order, is_tbd, type)
-        VALUES (?, ?, 1, 'custom')
+        INSERT INTO game_match (game_id, round_number, match_order, is_tbd, type)
+        VALUES (?, 1, ?, 1, 'custom')
     """, (game_id, next_order))
 
     conn.commit()
