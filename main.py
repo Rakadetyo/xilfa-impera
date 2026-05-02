@@ -422,7 +422,8 @@ async def list_players(request: Request):
             "positions_1": position_dict_1,
             "positions_2": position_dict_2,
             "skill_dist": {row["skill_level"]: row["cnt"] for row in skill_counts}
-        }
+        },
+        "active": "players"
     })
 
 @app.post("/manage/players")
@@ -625,7 +626,8 @@ async def admin_dashboard(request: Request):
             "members_this_month": members_this_month,
             "total_arenas": total_arenas,
             "recent_games": recent_games
-        }
+        },
+        "active": "dashboard"
     })
 
 @app.get("/manage/posts", response_class=HTMLResponse)
@@ -657,7 +659,8 @@ async def admin_dashboard(request: Request):
         "request": request,
         "user": user,
         "posts": posts,
-        "stats": {"total": total, "drafts": drafts, "published": published}
+        "stats": {"total": total, "drafts": drafts, "published": published},
+        "active": "posts"
     })
 
 @app.get("/manage/new", response_class=HTMLResponse)
@@ -925,7 +928,8 @@ async def members_page(request: Request):
         "filter_month": filter_month,
         "filter_year": filter_year,
         "months": months,
-        "years": years
+        "years": years,
+        "active": "members"
     })
 
 @app.post("/manage/members/{member_id}/toggle-paid")
@@ -1639,7 +1643,8 @@ async def arena_page(request: Request):
             "arenas_played": arenas_played
         },
         "arena_game_counts": arena_game_counts,
-        "arena_game_list": arena_rows
+        "arena_game_list": arena_rows,
+        "active": "arena"
     })
 
 # --- Page Settings ---
@@ -2000,7 +2005,8 @@ async def list_games(request: Request):
     return templates.TemplateResponse(request, "games/list.html", {
         "user": user,
         "games": games,
-        "arenas": arenas
+        "arenas": arenas,
+        "active": "games"
     })
 
 
@@ -2018,7 +2024,8 @@ async def new_game(request: Request):
 
     return templates.TemplateResponse(request, "games/new.html", {
         "user": user,
-        "arenas": arenas
+        "arenas": arenas,
+        "active": "games"
     })
 
 
@@ -2343,6 +2350,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "avg_skill": avg_skill,
         "avg_skill_label": avg_skill_label,
         "position_counts": position_counts,
+        "active": "games"
     })
 
 
@@ -2366,7 +2374,8 @@ async def edit_game(request: Request, game_id: int):
     return templates.TemplateResponse(request, "games/edit.html", {
         "user": user,
         "game": game,
-        "arenas": arenas
+        "arenas": arenas,
+        "active": "games"
     })
 
 
