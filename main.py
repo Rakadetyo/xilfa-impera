@@ -2677,6 +2677,29 @@ async def clear_schedule(request: Request, game_id: int):
     return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
 
 
+@app.post("/manage/games/{game_id}/schedule/add")
+async def add_match(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COALESCE(MAX(match_order), 0) + 1 as next_order FROM game_match WHERE game_id = ?", (game_id,))
+    next_order = cursor.fetchone()["next_order"]
+
+    cursor.execute("""
+        INSERT INTO game_match (game_id, match_order, is_tbd, type)
+        VALUES (?, ?, 1, 'custom')
+    """, (game_id, next_order))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
 @app.post("/manage/games/{game_id}/schedule/{match_id}")
 async def update_match(
     request: Request,
@@ -2738,30 +2761,6 @@ async def update_match_teams(
         UPDATE game_match SET team_home_id = ?, team_away_id = ?, is_tbd = ?
         WHERE id = ? AND game_id = ?
     """, (home_id, away_id, 0 if home_id and away_id else 1, match_id, game_id))
-
-    conn.commit()
-    conn.close()
-
-    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
-
-
-@app.post("/manage/games/{game_id}/schedule/add")
-async def add_match(request: Request, game_id: int):
-    user = get_current_user(request)
-    if not user:
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    # Get next match order
-    cursor.execute("SELECT COALESCE(MAX(match_order), 0) + 1 as next_order FROM game_match WHERE game_id = ?", (game_id,))
-    next_order = cursor.fetchone()["next_order"]
-
-    cursor.execute("""
-        INSERT INTO game_match (game_id, match_order, is_tbd, type)
-        VALUES (?, ?, 1, 'custom')
-    """, (game_id, next_order))
 
     conn.commit()
     conn.close()
