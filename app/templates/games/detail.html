@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game {{ game.id }} — Impera</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -109,8 +110,251 @@
 
             <!-- Tab Content -->
             {% if tab == 'overview' %}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
-                <p class="text-yellow-800 font-medium">Feature on development</p>
+            <div class="space-y-6">
+
+                <!-- Section 1: Setup Progress -->
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-medium">Setup Progress</h3>
+                        <span class="text-sm font-semibold text-green-600">
+                            {{ overview_progress }}% complete
+                        </span>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="w-full bg-gray-100 rounded-full h-2 mb-6">
+                        <div class="h-2 rounded-full transition-all bg-green-500"
+                            style="width: {{ overview_progress }}%"></div>
+                    </div>
+
+                    <!-- Steps -->
+                    <div class="grid grid-cols-4 gap-4">
+                        {% for step in overview_steps %}
+                        <a href="?tab={{ step.tab }}" class="flex flex-col items-center text-center group">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center mb-2 transition
+                                {% if step.done %}bg-green-100 text-green-600 group-hover:bg-green-200
+                                {% else %}bg-gray-100 text-gray-400 group-hover:bg-gray-200{% endif %}">
+                                {% if step.done %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                {% else %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <span class="text-sm font-medium {% if step.done %}text-gray-800{% else %}text-gray-400{% endif %}">
+                                {{ step.label }}
+                            </span>
+                            <span class="text-xs text-gray-400 mt-0.5">{{ step.sub }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Section 2: Summary Grid -->
+                <div class="grid grid-cols-2 gap-4">
+
+                    <!-- Game Details Card -->
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-medium">Game Details</h3>
+                            <a href="?tab=general" class="text-xs text-accent hover:underline">→ Edit</a>
+                        </div>
+                        <dl class="space-y-2 text-sm">
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28 flex-shrink-0">Date</dt>
+                                <dd class="font-medium">{{ game.title.split(' @ ')[0] }}</dd>
+                            </div>
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28 flex-shrink-0">Time</dt>
+                                <dd class="font-medium">
+                                    {% if overview_start_time_fmt %}
+                                        {{ overview_start_time_fmt }}
+                                        {% if overview_end_time_fmt %} – {{ overview_end_time_fmt }}{% endif %}
+                                        <span class="text-gray-400">({{ game.session_duration }} min)</span>
+                                    {% else %}—{% endif %}
+                                </dd>
+                            </div>
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28 flex-shrink-0">Arena</dt>
+                                <dd class="font-medium">{{ game.arena_name or '—' }}</dd>
+                            </div>
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28 flex-shrink-0">Status</dt>
+                                <dd>
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium
+                                        {% if game.status == 'open' %}bg-green-100 text-green-700
+                                        {% else %}bg-gray-100 text-gray-500{% endif %}">
+                                        {{ game.status | title }}
+                                    </span>
+                                </dd>
+                            </div>
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28 flex-shrink-0">Price</dt>
+                                <dd class="font-medium">
+                                    Rp{{ "{:,.0f}".format(game.price_per_person) }}
+                                    <span class="text-gray-400">/ person</span>
+                                    · Rp{{ "{:,.0f}".format(game.price_per_member) }}
+                                    <span class="text-gray-400">/ member</span>
+                                </dd>
+                            </div>
+
+                            <!-- Partners & Services -->
+                            <div class="pt-2 mt-2 border-t border-gray-100">
+                                <dt class="text-gray-400 text-xs mb-2">Services</dt>
+                                <dd class="flex flex-wrap gap-1.5">
+                                    {% if game.is_video %}
+                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">Video</span>
+                                    {% endif %}
+                                    {% if game.is_photo %}
+                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">Photo</span>
+                                    {% endif %}
+                                    {% if game.is_referee %}
+                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">Referee</span>
+                                    {% endif %}
+                                    {% if not game.is_video and not game.is_photo and not game.is_referee %}
+                                    <span class="text-gray-400 text-xs">None</span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            {% if partners %}
+                            <div class="flex flex-col gap-1">
+                                <dt class="text-gray-400 text-xs">Partners</dt>
+                                {% for p in partners %}
+                                <dd class="flex justify-between text-xs">
+                                    <span class="text-gray-600">{{ p.type | title }} — {{ p.name or '—' }}</span>
+                                    <span class="text-gray-400">Rp{{ "{:,.0f}".format(p.fee) }}</span>
+                                </dd>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </dl>
+                    </div>
+
+                    <!-- Players Card -->
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-medium">Players</h3>
+                            <a href="?tab=players" class="text-xs text-accent hover:underline">→ Edit</a>
+                        </div>
+                        <div class="text-3xl font-bold mb-1">{{ total_attendees }} <span class="text-gray-300">/</span> {{ game.max_players }}</div>
+                        <div class="text-sm text-gray-400 mb-4">attending / max capacity</div>
+
+                        <!-- Payment progress bar -->
+                        <div class="mb-1 flex justify-between text-xs text-gray-500">
+                            <span>Payments</span>
+                            <span>{{ paid_count }} / {{ total_attendees }} paid</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2 mb-4">
+                            {% set pay_pct = (paid_count / total_attendees * 100) | int if total_attendees > 0 else 0 %}
+                            <div class="h-2 rounded-full bg-green-500" style="width: {{ pay_pct }}%"></div>
+                        </div>
+
+                        <div class="text-sm">
+                            <span class="font-semibold">Rp{{ "{:,.0f}".format(revenue_collected) }}</span>
+                            <span class="text-gray-400"> collected</span>
+                        </div>
+
+                        {% if attendees %}
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <dt class="text-xs text-gray-400 mb-2">Player List</dt>
+                            <dd class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                                {% for a in attendees %}
+                                <span class="px-2 py-0.5 bg-gray-50 text-gray-600 rounded text-xs">{{ a.name }}</span>
+                                {% endfor %}
+                            </dd>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Teams Card -->
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-medium">Teams</h3>
+                            <a href="?tab=teams" class="text-xs text-accent hover:underline">→ Edit</a>
+                        </div>
+                        {% if teams %}
+                        <div class="text-3xl font-bold mb-1">{{ teams | length }}</div>
+                        <div class="text-sm text-gray-400 mb-4">teams generated</div>
+                        <div class="flex flex-wrap gap-2">
+                            {% for team in teams %}
+                            {% set member_count = attendees | selectattr('team_id', 'equalto', team.id) | list | length %}
+                            <span class="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm text-white font-medium"
+                                  style="background-color: {{ team.team_color or '#6B7280' }}">
+                                {{ team.team_name }}
+                                <span class="opacity-75 text-xs">{{ member_count }}p</span>
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% if assigned_count < total_attendees %}
+                        <p class="text-xs text-amber-600 mt-3">⚠ {{ total_attendees - assigned_count }} players not assigned to a team</p>
+                        {% endif %}
+                        {% else %}
+                        <p class="text-gray-400 text-sm">Teams not generated yet.</p>
+                        <a href="?tab=teams" class="text-sm text-accent hover:underline mt-1 inline-block">Generate teams →</a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Schedule Card -->
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-medium">Schedule</h3>
+                            <a href="?tab=schedule" class="text-xs text-accent hover:underline">→ Edit</a>
+                        </div>
+                        {% if matches %}
+                        <div class="text-3xl font-bold mb-1">{{ matches | length }}</div>
+                        <div class="text-sm text-gray-400 mb-4">matches scheduled</div>
+                        <dl class="space-y-1.5 text-sm">
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28">Format</dt>
+                                <dd class="font-medium capitalize">{{ (game.schedule_format or 'round_robin') | replace('_', ' ') }}</dd>
+                            </div>
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28">Duration/game</dt>
+                                <dd class="font-medium">{{ game.duration_per_game }} min</dd>
+                            </div>
+                            {% if overview_start_time_fmt %}
+                            <div class="flex gap-2">
+                                <dt class="text-gray-400 w-28">Tip-off</dt>
+                                <dd class="font-medium">{{ overview_start_time_fmt }}</dd>
+                            </div>
+                            {% endif %}
+                        </dl>
+                        {% else %}
+                        <p class="text-gray-400 text-sm">Schedule not generated yet.</p>
+                        <a href="?tab=schedule" class="text-sm text-accent hover:underline mt-1 inline-block">Generate schedule →</a>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <!-- Section 3: Action Buttons (future) -->
+                <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                    <h3 class="font-medium mb-3 text-sm text-gray-500">Share & Invite</h3>
+                    <div class="flex gap-3">
+                        <button disabled title="Coming soon"
+                            class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-400 rounded-lg text-sm cursor-not-allowed">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94
+1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-
+.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077
+ 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                <path d="M13 0C6.373 0 1 5.373 1 12c0 2.127.555 4.126 1.527 5.855L1 23l5.293-1.527A11.953 11.953 0 0013 23c6.627 0 12-5.373 12-12S19.627 0 13 0z"/>
+                            </svg>
+                            Copy WhatsApp Message
+                        </button>
+                        <button disabled title="Coming soon"
+                            class="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-400 rounded-lg text-sm cursor-not-allowed">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            Create Invitation
+                        </button>
+                    </div>
+                </div>
+
             </div>
             {% elif tab == 'general' %}
             <form method="post" action="/manage/games/{{ game.id }}/edit" class="space-y-6">
@@ -452,6 +696,12 @@
                         </div>
                     </form>
 
+                    {% if teams %}
+                    <form method="post" action="/manage/games/{{ game.id }}/teams/randomize">
+                        <button type="submit" class="mt-3 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Randomize</button>
+                    </form>
+                    {% endif %}
+
                     <!-- Player Groups: standalone forms, NOT inside generate-form -->
                     <div class="border-t border-gray-100 pt-5 mt-5">
                         <h4 class="font-medium text-sm mb-1">Player Groups</h4>
@@ -529,7 +779,7 @@
                 {% endif %}
 
                 <!-- Team Columns: max 3 per row, wraps automatically -->
-                <div class="grid grid-cols-3 gap-4">
+                <div id="teams" class="grid grid-cols-3 gap-4">
                     {% for team in teams %}
                     {% set team_members = [] %}
                     {% for a in attendees %}{% if a.team_id == team.id %}{% set _ = team_members.append(a) %}{% endif %}{% endfor %}
@@ -539,7 +789,19 @@
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                         <div class="px-4 py-3 border-b border-gray-100" style="border-left: 4px solid {{ team.team_color or '#6B7280' }}">
                             <div class="flex justify-between items-center">
-                                <span class="font-semibold" style="color: {{ team.team_color or '#6B7280' }}">{{ team.team_name }}</span>
+                                <form method="post" action="/manage/games/{{ game.id }}/teams/{{ team.id }}/edit" class="flex items-center gap-2">
+                                    <input type="text" name="team_name" value="{{ team.team_name }}" class="font-semibold border border-transparent hover:border-gray-300 rounded px-1 py-0.5 text-sm focus:border-accent focus:outline-none" style="color: {{ team.team_color or '#6B7280' }}">
+                                    <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="this.form.submit()">
+                                        <option value="#E74C3C" {% if team.team_color == '#E74C3C' %}selected{% endif %}>Red</option>
+                                        <option value="#3498DB" {% if team.team_color == '#3498DB' %}selected{% endif %}>Blue</option>
+                                        <option value="#2ECC71" {% if team.team_color == '#2ECC71' %}selected{% endif %}>Green</option>
+                                        <option value="#F39C12" {% if team.team_color == '#F39C12' %}selected{% endif %}>Orange</option>
+                                        <option value="#9B59B6" {% if team.team_color == '#9B59B6' %}selected{% endif %}>Purple</option>
+                                        <option value="#E91E63" {% if team.team_color == '#E91E63' %}selected{% endif %}>Pink</option>
+                                        <option value="#000000" {% if team.team_color == '#000000' %}selected{% endif %}>Black</option>
+                                        <option value="#9CA3AF" {% if team.team_color == '#9CA3AF' %}selected{% endif %}>Gray / White</option>
+                                    </select>
+                                </form>
                                 <span class="text-sm font-semibold text-accent">{{ "%.0f"|format(team_avg_value) }} Team Rating</span>
                             </div>
                             <div class="flex gap-1 mt-1.5">
@@ -577,6 +839,15 @@
                                 {% if a.player_id in grouped_player_ids %}
                                 <span class="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium">G</span>
                                 {% endif %}
+                                <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/toggle-lock" class="inline">
+                                    <button type="submit" class="ml-1 p-1 rounded {% if a.locked %}bg-red-100 text-red-600{% else %}bg-gray-100 text-gray-400 hover:bg-gray-200{% endif %}" title="{% if a.locked %}Unlock{% else %}Lock{% endif %}">
+                                        {% if a.locked %}
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                                        {% else %}
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM18 10H6V6h12v4z"/></svg>
+                                        {% endif %}
+                                    </button>
+                                </form>
                             </div>
                             {% endfor %}
                         </div>
@@ -588,9 +859,190 @@
             </div>
 
             {% elif tab == 'schedule' %}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
-                <p class="text-yellow-800 font-medium">Feature on development</p>
+            <div class="space-y-6">
+                <!-- Format Selector -->
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="font-medium mb-4">Schedule Format</h3>
+                    {% if teams|length < 2 %}
+                    <p class="text-gray-500">Need at least 2 teams to generate schedule.</p>
+                    {% else %}
+                    {% if matches %}
+                    {% set team_counts = {} %}
+                    {% for m in matches %}
+                        {% if m.team_home_id %}{% set _ = team_counts.update({m.team_home_id: team_counts.get(m.team_home_id, 0) + 1}) %}{% endif %}
+                        {% if m.team_away_id %}{% set _ = team_counts.update({m.team_away_id: team_counts.get(m.team_away_id, 0) + 1}) %}{% endif %}
+                    {% endfor %}
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-gray-500">Matches per team: </span>
+                        {% for t in teams %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-sm bg-accent/10 text-accent mr-1 mb-1">
+                                {{ t.team_name }}: {{ team_counts.get(t.id, 0) }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <form method="post" action="/manage/games/{{ game.id }}/schedule/generate" class="space-y-4">
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <div>
+                                <label class="block text-sm text-gray-500 mb-1">Game start at</label>
+                                <input type="time" name="start_time" value="{{ game.datetime.split('T')[1][:5] if game.datetime else '18:00' }}" class="px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-500 mb-1">Game duration (min)</label>
+                                <input type="number" name="duration" value="{{ game.duration_per_game or 8 }}" min="1" class="px-4 py-2 border border-gray-300 rounded-lg w-20">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-500 mb-1">Break between (min)</label>
+                                <input type="number" name="break_time" value="0" min="0" class="px-4 py-2 border border-gray-300 rounded-lg w-20">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-500 mb-1">Format</label>
+                                <select name="format" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="round_robin" {% if game.schedule_format == 'round_robin' %}selected{% endif %}>Round Robin — everyone vs everyone</option>
+                                    <option value="king_of_court" {% if game.schedule_format == 'king_of_court' %}selected{% endif %}>King of the Court — winner stays</option>
+                                    <option value="custom" {% if game.schedule_format == 'custom' %}selected{% endif %}>Custom — manual</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Generate Schedule</button>
+                        </div>
+                    </form>
+                    <form method="post" action="/manage/games/{{ game.id }}/schedule/clear" class="mt-2">
+                        <button type="submit" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Clear</button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <!-- Match Schedule Table -->
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="font-medium mb-4">Match Schedule</h3>
+                    {% if matches %}
+                    <form id="reorderForm" method="post" action="/manage/games/{{ game.id }}/schedule/reorder">
+                        <input type="hidden" name="match_ids" id="matchIds">
+                    </form>
+                    <table class="w-full">
+                        <thead class="border-b">
+                            <tr>
+                                <th class="w-8 py-2 text-sm text-gray-500"></th>
+                                <th class="text-left py-2 text-sm text-gray-500">#</th>
+                                <th class="text-left py-2 text-sm text-gray-500">Time</th>
+                                <th class="text-left py-2 text-sm text-gray-500">Home</th>
+                                <th class="text-left py-2 text-sm text-gray-500">Away</th>
+                                <th class="text-left py-2 text-sm text-gray-500">Score</th>
+                                <th class="text-left py-2 text-sm text-gray-500">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matchTableBody">
+                            {% for m in matches %}
+                            <tr class="border-b cursor-move" data-match-id="{{ m.id }}">
+                                <td class="py-2 text-gray-400">⋮⋮</td>
+                                <td class="py-2 match-num">{{ loop.index }}</td>
+                                <td class="py-2">
+                                    {% if game_datetime %}
+                                        {% set duration = game.duration_per_game or 8 %}
+                                        {% set break_time = game.break_time or 0 %}
+                                        {% set slot_duration = duration + break_time %}
+                                        {% set start_min = (loop.index0 * slot_duration) %}
+                                        {% set end_min = (loop.index0 * slot_duration + duration) %}
+                                        {% set start_h = (game_datetime.split('T')[1].split(':')[0]|int + start_min // 60) %}
+                                        {% set start_m = (game_datetime.split('T')[1].split(':')[1]|int + start_min % 60) %}
+                                        {% set end_h = (game_datetime.split('T')[1].split(':')[0]|int + end_min // 60) %}
+                                        {% set end_m = (game_datetime.split('T')[1].split(':')[1]|int + end_min % 60) %}
+                                        {% if start_h < 24 %}{{ '%02d:%02d' | format(start_h, start_m) }}{% else %}--:--{% endif %} - {% if end_h < 24 %}{{ '%02d:%02d' | format(end_h, end_m) }}{% else %}--:--{% endif %}
+                                    {% else %}--:--{% endif %}
+                                </td>
+                                <td class="py-2">
+                                    <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/update-teams" class="inline">
+                                        <select name="team_home_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                            <option value="">Pickup / Free</option>
+                                            {% for t in teams %}
+                                            <option value="{{ t.id }}" {% if m.team_home_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                </td>
+                                <td class="py-2">
+                                        <select name="team_away_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                            <option value="">Pickup / Free</option>
+                                            {% for t in teams %}
+                                            <option value="{{ t.id }}" {% if m.team_away_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
+                                </td>
+                                <td class="py-2">
+                                    <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}" class="flex items-center gap-1">
+                                        <input type="number" name="score_home" value="{{ m.score_home or 0 }}" min="0" class="w-12 px-1 py-1 border rounded text-center text-sm">
+                                        <span>-</span>
+                                        <input type="number" name="score_away" value="{{ m.score_away or 0 }}" min="0" class="w-12 px-1 py-1 border rounded text-center text-sm">
+                                        <button type="submit" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-xs">Save</button>
+                                    </form>
+                                </td>
+                                <td class="py-2">
+                                    <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/delete" class="inline">
+                                        <button type="submit" class="text-red-600 text-sm hover:underline">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="flex gap-2 mt-4">
+                        <button type="button" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
+                        {% if game.schedule_format in ['round_robin', 'king_of_court', 'custom'] %}
+                        <form method="post" action="/manage/games/{{ game.id }}/schedule/add">
+                            <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">+ Add Match</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-8">No matches yet. Generate a schedule above.</p>
+                    {% endif %}
+                </div>
             </div>
+
+            {% if tab == 'schedule' %}
+            <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+            <script>
+                const matchTableBody = document.getElementById('matchTableBody');
+                if (matchTableBody) {
+                    new Sortable(matchTableBody, {
+                        animation: 150,
+                        handle: 'tr',
+                        ghostClass: 'opacity-40',
+                        onEnd: function(evt) {
+                            updateMatchNumbers();
+                        }
+                    });
+                }
+
+                function updateMatchNumbers() {
+                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    rows.forEach((row, idx) => {
+                        const numCell = row.querySelector('.match-num');
+                        if (numCell) numCell.textContent = idx + 1;
+                    });
+                }
+
+                function saveOrder() {
+                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    const matchIds = Array.from(rows).map(row => row.dataset.matchId);
+                    document.getElementById('matchIds').value = matchIds.join(',');
+
+                    fetch(`/manage/games/{{ game.id }}/schedule/reorder`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ match_ids: matchIds })
+                    }).then(r => {
+                        if (r.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('Failed to save order');
+                        }
+                    });
+                }
+            </script>
+            {% endif %}
 
             {% elif tab == 'results' %}
             <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">

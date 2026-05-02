@@ -1793,7 +1793,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
         LEFT JOIN game_team th ON gm.team_home_id = th.id
         LEFT JOIN game_team ta ON gm.team_away_id = ta.id
         WHERE gm.game_id = ?
-        ORDER BY gm.round_number, gm.match_order
+        ORDER BY gm.match_order
     """, (game_id,))
     matches = cursor.fetchall()
 
@@ -1858,9 +1858,77 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
     if tab not in tabs:
         tab = "overview"
 
+    # Overview tab computed data
+    from datetime import datetime as dt, timedelta
+
+    paid_count = sum(1 for a in attendees if a["is_paid"])
+    assigned_count = sum(1 for a in attendees if a["team_id"])
+    total_attendees = len(attendees)
+
+    # Step completion
+    step_general = bool(game_dict.get("arena_id") and game_dict.get("datetime"))
+    step_players = total_attendees > 0 and (paid_count / total_attendees) >= 0.5
+    step_teams = len(teams) > 0 and total_attendees > 0 and assigned_count == total_attendees
+    step_schedule = len(matches) > 0
+
+    overview_steps = [
+        {
+            "key": "general",
+            "label": "General",
+            "done": step_general,
+            "sub": "Arena & time set" if step_general else "Missing arena or time",
+            "tab": "general",
+        },
+        {
+            "key": "players",
+            "label": "Players",
+            "done": step_players,
+            "sub": f"{paid_count}/{total_attendees} paid" if total_attendees > 0 else "No players yet",
+            "tab": "players",
+        },
+        {
+            "key": "teams",
+            "label": "Teams",
+            "done": step_teams,
+            "sub": f"{len(teams)} teams generated" if len(teams) > 0 else "Not generated",
+            "tab": "teams",
+        },
+        {
+            "key": "schedule",
+            "label": "Schedule",
+            "done": step_schedule,
+            "sub": f"{len(matches)} matches" if step_schedule else "Not generated",
+            "tab": "schedule",
+        },
+    ]
+    overview_progress = round(sum(1 for s in overview_steps if s["done"]) / 4 * 100)
+
+    # End time calculation
+    if game_dict.get("datetime") and game_dict.get("session_duration"):
+        try:
+            dt_str = game_dict["datetime"].replace("T", " ")
+            if len(dt_str) == 16:
+                dt_str += ":00"
+            start_dt = dt.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            end_dt = start_dt + timedelta(minutes=int(game_dict["session_duration"]))
+            overview_start_time_fmt = start_dt.strftime("%H:%M")
+            overview_end_time_fmt = end_dt.strftime("%H:%M")
+        except Exception:
+            overview_start_time_fmt = ""
+            overview_end_time_fmt = ""
+    else:
+        overview_start_time_fmt = ""
+        overview_end_time_fmt = ""
+
+    # Revenue calculation
+    revenue_collected = sum(
+        (a["amount_paid"] if a["amount_paid"] else 0) for a in attendees
+    )
+
     return templates.TemplateResponse(request, "games/detail.html", {
         "user": user,
         "game": game_dict,
+        "game_datetime": game_dict.get("datetime", ""),
         "attendees": attendees,
         "partners": partners,
         "teams": teams,
@@ -1874,6 +1942,14 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
         "balance": balance,
         "player_values": player_values,
         "error": error,
+        "overview_steps": overview_steps,
+        "overview_progress": overview_progress,
+        "overview_start_time_fmt": overview_start_time_fmt,
+        "overview_end_time_fmt": overview_end_time_fmt,
+        "paid_count": paid_count,
+        "total_attendees": total_attendees,
+        "revenue_collected": revenue_collected,
+        "assigned_count": assigned_count,
     })
 
 
@@ -2115,7 +2191,29 @@ async def create_team(
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/{team_id}/edit")
+async def edit_team(
+    request: Request,
+    game_id: int,
+    team_id: int,
+    team_name: str = Form(...),
+    team_color: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game_team SET team_name = ?, team_color = ? WHERE id = ? AND game_id = ?",
+                  (team_name, team_color, team_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/teams/{team_id}/delete")
@@ -2132,7 +2230,7 @@ async def delete_team(request: Request, game_id: int, team_id: int):
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/attendees/{attendee_id}/assign-team")
@@ -2150,7 +2248,7 @@ async def assign_team(request: Request, game_id: int, attendee_id: int, team_id:
 
     if "application/json" in request.headers.get("Accept", "") or request.headers.get("X-Requested-With") == "fetch":
         return JSONResponse({"ok": True})
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 # --- Player Groups ---
@@ -2164,7 +2262,7 @@ async def create_group(request: Request, game_id: int, name: str = Form(...)):
     cursor.execute("INSERT INTO game_player_group (game_id, name) VALUES (?, ?)", (game_id, name))
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/groups/{group_id}/delete")
@@ -2177,7 +2275,7 @@ async def delete_group(request: Request, game_id: int, group_id: int):
     cursor.execute("DELETE FROM game_player_group WHERE id = ? AND game_id = ?", (group_id, game_id))
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/groups/{group_id}/members")
@@ -2213,7 +2311,7 @@ async def add_group_member(request: Request, game_id: int, group_id: int, player
     )
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/groups/{group_id}/members/{player_id}/delete")
@@ -2229,7 +2327,7 @@ async def remove_group_member(request: Request, game_id: int, group_id: int, pla
     )
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 # --- Team Generation ---
@@ -2254,7 +2352,7 @@ async def update_skill_weight(
     conn.close()
 
     # Redirect back to teams tab without regenerating
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/teams/generate")
@@ -2337,7 +2435,74 @@ async def generate_teams_route(
 
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/toggle-lock")
+async def toggle_attendee_lock(request: Request, game_id: int, attendee_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game_attendee SET locked = NOT locked WHERE id = ? AND game_id = ?", (attendee_id, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/randomize")
+async def randomize_teams(request: Request, game_id: int):
+    import random
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    # Get all teams for this game
+    cursor.execute("SELECT id FROM game_team WHERE game_id = ?", (game_id,))
+    teams = [row[0] for row in cursor.fetchall()]
+    if not teams:
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+    # Get locked attendees (keep their current team)
+    cursor.execute("SELECT id, team_id FROM game_attendee WHERE game_id = ? AND locked = 1", (game_id,))
+    locked_attendees = {row[0]: row[1] for row in cursor.fetchall()}
+    # Count locked players per team
+    locked_per_team = {}
+    for team_id in locked_attendees.values():
+        locked_per_team[team_id] = locked_per_team.get(team_id, 0) + 1
+    # Get unlocked attendees
+    cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND (locked != 1 OR locked IS NULL)", (game_id,))
+    unlocked = [row[0] for row in cursor.fetchall()]
+    if not unlocked:
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+    # Shuffle unlocked players
+    random.shuffle(unlocked)
+    # Calculate target per team (total players / num teams)
+    total_players = len(locked_attendees) + len(unlocked)
+    target_per_team = total_players // len(teams)
+    remainder = total_players % len(teams)
+    # Track current count per team
+    current_per_team = dict(locked_per_team)
+    for t in teams:
+        if t not in current_per_team:
+            current_per_team[t] = 0
+    # Assign unlocked players evenly
+    for attendee_id in unlocked:
+        # Find team with fewest players
+        team_counts = [(t, current_per_team.get(t, 0)) for t in teams]
+        team_counts.sort(key=lambda x: x[1])
+        # First fill teams that need more to reach target
+        min_count = team_counts[0][1]
+        candidates = [t for t, c in team_counts if c == min_count]
+        team_id = random.choice(candidates)
+        cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ?", (team_id, attendee_id))
+        current_per_team[team_id] = current_per_team.get(team_id, 0) + 1
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/teams/clear")
@@ -2351,12 +2516,225 @@ async def clear_teams(request: Request, game_id: int):
     cursor.execute("DELETE FROM game_team WHERE game_id = ?", (game_id,))
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+# --- Schedule Generators ---
+def generate_round_robin(teams: list) -> list:
+    """Circle method round robin - even split, no back-to-back."""
+    matches = []
+    team_ids = [t["id"] for t in teams]
+    n = len(team_ids)
+
+    if n < 2:
+        return []
+
+    # For odd number of teams, add a "bye"
+    if n % 2 == 1:
+        team_ids.append(None)  # None = bye
+
+    n = len(team_ids)
+    rounds = n - 1  # Each team plays n-1 matches
+    matches_per_round = n // 2
+
+    # Circle method: keep first team fixed, rotate others
+    for round_num in range(1, rounds + 1):
+        for i in range(matches_per_round):
+            home_idx = i
+            away_idx = n - 1 - i
+
+            home = team_ids[home_idx]
+            away = team_ids[away_idx]
+
+            # Skip if either is a bye
+            if home is None or away is None:
+                continue
+
+            matches.append({
+                "team_home_id": home,
+                "team_away_id": away,
+                "round_number": round_num,
+                "bracket_slot": None,
+                "next_match_id": None,
+                "is_tbd": 0
+            })
+
+        # Rotate: move last element to second position
+        team_ids = [team_ids[0]] + [team_ids[-1]] + team_ids[1:-1]
+
+    return matches
+
+
+def generate_single_elimination(teams: list) -> list:
+    """Single elimination bracket. All teams play first round, byes advance to next round as TBD."""
+    import math
+    matches = []
+    team_ids = [t["id"] for t in teams]
+    n = len(team_ids)
+
+    if n < 2:
+        return []
+
+    # Calculate bracket size (next power of 2)
+    num_rounds = math.ceil(math.log2(n))
+    bracket_size = 2 ** num_rounds
+    total_matches = bracket_size - 1  # Total games in tournament
+
+    # Assign seeds (top teams get byes)
+    seeds = team_ids.copy()
+
+    # First round: number of matches = bracket_size / 2
+    # We have n teams, so we can only have n/2 matches (if even) or (n-1)/2 (if odd, one team bye)
+    matches_in_round_1 = bracket_size // 2
+    teams_in_round_1 = min(n, bracket_size - (bracket_size - n))  # Teams that fit in round 1
+
+    # Create first round matches
+    slot = 1
+    teams_used = 0
+    for i in range(0, matches_in_round_1 * 2, 2):
+        if i + 1 < n:
+            # Both teams exist - normal match
+            matches.append({
+                "team_home_id": seeds[i],
+                "team_away_id": seeds[i + 1],
+                "round_number": 1,
+                "bracket_slot": f"R1-{slot}",
+                "is_tbd": 0
+            })
+            teams_used += 2
+            slot += 1
+        elif i < n:
+            # Odd team - gets bye to next round as TBD home
+            matches.append({
+                "team_home_id": seeds[i],
+                "team_away_id": None,
+                "round_number": 1,
+                "bracket_slot": f"R1-{slot}",
+                "is_tbd": 1
+            })
+            teams_used += 1
+            slot += 1
+
+    # Create TBD placeholder matches for rounds 2 onwards
+    for r in range(2, num_rounds + 1):
+        matches_in_round = bracket_size // (2 ** r)
+        for m in range(matches_in_round):
+            matches.append({
+                "team_home_id": None,
+                "team_away_id": None,
+                "round_number": r,
+                "bracket_slot": f"R{r}-{m + 1}",
+                "is_tbd": 1
+            })
+
+    return matches
+
+
+def generate_double_elimination(teams: list) -> list:
+    """Double elimination - winners and losers brackets."""
+    # Simplified: same as single elim for now, extend later
+    return generate_single_elimination(teams)
+
+
+def generate_group_knockout(teams: list) -> list:
+    """Group stage then knockout. Creates TBD placeholders for knockout."""
+    matches = []
+    n = len(teams)
+
+    # Determine groups (2-4 teams per group)
+    if n <= 4:
+        num_groups = 1
+        teams_per_group = n
+    elif n <= 6:
+        num_groups = 2
+        teams_per_group = 3
+    else:
+        num_groups = 2
+        teams_per_group = n // 2
+
+    team_ids = [t["id"] for t in teams]
+
+    # Group matches (round robin within each group)
+    for g in range(num_groups):
+        start = g * teams_per_group
+        end = min(start + teams_per_group, len(team_ids))
+        group_teams = team_ids[start:end]
+
+        for i in range(len(group_teams)):
+            for j in range(i + 1, len(group_teams)):
+                matches.append({
+                    "team_home_id": group_teams[i],
+                    "team_away_id": group_teams[j],
+                    "round_number": 1,
+                    "bracket_slot": f"G{g + 1}",
+                    "is_tbd": 0
+                })
+
+    # Knockout placeholders
+    knockout_slots = max(2, num_groups * 2)
+    for k in range(knockout_slots // 2):
+        matches.append({
+            "team_home_id": None,
+            "team_away_id": None,
+            "round_number": 2,
+            "bracket_slot": f"KF{k + 1}",
+            "is_tbd": 1
+        })
+
+    return matches
+
+
+def generate_king_of_court(teams: list) -> list:
+    """King of Court - first match only, rest TBD."""
+    matches = []
+    team_ids = [t["id"] for t in teams]
+
+    if len(team_ids) < 2:
+        return []
+
+    # First match: team 0 vs team 1
+    matches.append({
+        "team_home_id": team_ids[0],
+        "team_away_id": team_ids[1],
+        "round_number": 1,
+        "bracket_slot": None,
+        "is_tbd": 0
+    })
+
+    # Add TBD placeholders for more matches
+    for i in range(2):
+        matches.append({
+            "team_home_id": None,
+            "team_away_id": None,
+            "round_number": 1,
+            "bracket_slot": None,
+            "is_tbd": 1
+        })
+
+    return matches
+
+
+SUGGESTIONS = {
+    2: "single_elimination",
+    3: "round_robin",
+    4: "round_robin",
+    5: "king_of_court",
+    6: "group_knockout",
+    7: "group_knockout",
+    8: "single_elimination",
+}
 
 
 # --- Schedule / Matches ---
 @app.post("/manage/games/{game_id}/schedule/generate")
-async def generate_schedule(request: Request, game_id: int):
+async def generate_schedule(
+    request: Request,
+    game_id: int,
+    format: str = Form("round_robin"),
+    start_time: str = Form("18:00"),
+    duration: int = Form(8),
+    break_time: int = Form(0)
+):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -2372,25 +2750,136 @@ async def generate_schedule(request: Request, game_id: int):
         conn.close()
         return JSONResponse({"error": "Need at least 2 teams"}, status_code=400)
 
+    # Update game schedule_format, duration, break_time, and datetime
+    cursor.execute("SELECT datetime FROM game WHERE id = ?", (game_id,))
+    game = cursor.fetchone()
+    current_date = game["datetime"].split("T")[0] if game and game["datetime"] else "2025-01-01"
+    new_datetime = f"{current_date}T{start_time}:00"
+
+    cursor.execute(
+        "UPDATE game SET schedule_format = ?, duration_per_game = ?, break_time = ?, datetime = ? WHERE id = ?",
+        (format, duration, break_time, new_datetime, game_id)
+    )
+
     # Clear existing matches
     cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
 
-    # Generate round-robin: each team plays every other team once
-    team_ids = [t["id"] for t in teams]
-    round_number = 1
-    match_order = 1
+    # Generate matches based on format
+    if format == "round_robin":
+        matches = generate_round_robin(teams)
+    elif format == "single_elimination":
+        matches = generate_single_elimination(teams)
+    elif format == "double_elimination":
+        matches = generate_double_elimination(teams)
+    elif format == "group_knockout":
+        matches = generate_group_knockout(teams)
+    elif format == "king_of_court":
+        matches = generate_king_of_court(teams)
+    elif format == "custom":
+        # Custom: create one placeholder match
+        matches = [{
+            "team_home_id": None,
+            "team_away_id": None,
+            "round_number": 1,
+            "bracket_slot": None,
+            "is_tbd": 1
+        }]
+    else:
+        matches = generate_round_robin(teams)
 
-    for i in range(len(team_ids)):
-        for j in range(i + 1, len(team_ids)):
-            cursor.execute("""
-                INSERT INTO game_match (game_id, round_number, match_order, team_home_id, team_away_id, type)
-                VALUES (?, ?, ?, ?, ?, 'round_robin')
-            """, (game_id, round_number, match_order, team_ids[i], team_ids[j]))
-            match_order += 1
-            # Each round has at most len(teams)/2 matches
-            if match_order > len(teams) // 2:
-                round_number += 1
-                match_order = 1
+    # Insert matches
+    for i, m in enumerate(matches):
+        cursor.execute("""
+            INSERT INTO game_match (
+                game_id, round_number, match_order, team_home_id, team_away_id,
+                type, bracket_slot, next_match_id, is_tbd
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            game_id,
+            m.get("round_number", 1),
+            i + 1,
+            m.get("team_home_id"),
+            m.get("team_away_id"),
+            format,
+            m.get("bracket_slot"),
+            m.get("next_match_id"),
+            m.get("is_tbd", 0)
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/reorder")
+async def reorder_matches(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    match_ids = data.get("match_ids", [])
+
+    if not match_ids:
+        return JSONResponse({"error": "No match IDs provided"}, status_code=400)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    for order, match_id in enumerate(match_ids):
+        cursor.execute(
+            "UPDATE game_match SET match_order = ? WHERE id = ? AND game_id = ?",
+            (order + 1, match_id, game_id)
+        )
+
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"success": True})
+
+
+@app.post("/manage/games/{game_id}/schedule/clear")
+async def clear_schedule(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Clear matches and reset format
+    cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
+    cursor.execute(
+        "UPDATE game SET schedule_format = 'round_robin', best_of = 1 WHERE id = ?",
+        (game_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/add")
+async def add_match(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get max round_number and max match_order
+    cursor.execute("SELECT COALESCE(MAX(round_number), 0) as max_round, COALESCE(MAX(match_order), 0) as max_order FROM game_match WHERE game_id = ?", (game_id,))
+    result = cursor.fetchone()
+    next_round = (result["max_round"] or 0) + 1
+    next_order = (result["max_order"] or 0) + 1
+
+    cursor.execute("""
+        INSERT INTO game_match (game_id, round_number, match_order, is_tbd, type)
+        VALUES (?, ?, ?, 1, 'custom')
+    """, (game_id, next_round, next_order))
 
     conn.commit()
     conn.close()
@@ -2426,6 +2915,39 @@ async def update_match(
         UPDATE game_match SET score_home = ?, score_away = ?, winner_team_id = ?, notes = ?
         WHERE id = ? AND game_id = ?
     """, (score_home, score_away, winner, notes, match_id, game_id))
+
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/schedule/{match_id}/update-teams")
+async def update_match_teams(
+    request: Request,
+    game_id: int,
+    match_id: int,
+    team_home_id: str = Form(""),
+    team_away_id: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # Skip update if pickup is selected (handled in template)
+    if team_home_id == "pickup" or team_away_id == "pickup":
+        return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    home_id = int(team_home_id) if team_home_id else None
+    away_id = int(team_away_id) if team_away_id else None
+
+    cursor.execute("""
+        UPDATE game_match SET team_home_id = ?, team_away_id = ?, is_tbd = ?
+        WHERE id = ? AND game_id = ?
+    """, (home_id, away_id, 0 if home_id and away_id else 1, match_id, game_id))
 
     conn.commit()
     conn.close()
