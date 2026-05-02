@@ -680,7 +680,8 @@ async def admin_dashboard(request: Request):
 
     import datetime
     now = datetime.datetime.now()
-    current_period = f"{now.year}-{now.month:02d}"
+    month_names = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+    current_period = f"{month_names[now.month - 1]} {now.year}"
     cursor.execute("SELECT COUNT(*) as total FROM member WHERE member_period = ?", (current_period,))
     members_this_month = cursor.fetchone()["total"]
 
@@ -689,6 +690,24 @@ async def admin_dashboard(request: Request):
 
     cursor.execute("SELECT COUNT(*) as total FROM game WHERE datetime >= date('now', '-30 days')")
     recent_games = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT g.id, g.datetime, g.status, a.location_name,
+               (SELECT COUNT(*) FROM game_attendee WHERE game_id = g.id) as attendee_count
+        FROM game g LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE g.datetime < datetime('now')
+        ORDER BY g.datetime DESC LIMIT 1
+    """)
+    last_game = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT g.id, g.datetime, g.status, a.location_name,
+               (SELECT COUNT(*) FROM game_attendee WHERE game_id = g.id) as attendee_count
+        FROM game g LEFT JOIN arena a ON g.arena_id = a.id
+        WHERE g.datetime >= datetime('now')
+        ORDER BY g.datetime ASC LIMIT 1
+    """)
+    upcoming_game = cursor.fetchone()
 
     conn.close()
 
@@ -702,6 +721,8 @@ async def admin_dashboard(request: Request):
             "total_arenas": total_arenas,
             "recent_games": recent_games
         },
+        "last_game": dict(last_game) if last_game else None,
+        "upcoming_game": dict(upcoming_game) if upcoming_game else None,
         "active": "dashboard"
     })
 

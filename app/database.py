@@ -176,6 +176,18 @@ def init_db():
     if 'member_period' not in member_columns:
         cursor.execute("ALTER TABLE member ADD COLUMN member_period TEXT")
 
+    # Migrate member_period from "YYYY-MM" format to "Month Year" format
+    cursor.execute("""
+        UPDATE member SET member_period =
+            CASE CAST(substr(member_period, 6, 2) AS INTEGER)
+                WHEN 1 THEN 'January' WHEN 2 THEN 'February' WHEN 3 THEN 'March'
+                WHEN 4 THEN 'April' WHEN 5 THEN 'May' WHEN 6 THEN 'June'
+                WHEN 7 THEN 'July' WHEN 8 THEN 'August' WHEN 9 THEN 'September'
+                WHEN 10 THEN 'October' WHEN 11 THEN 'November' WHEN 12 THEN 'December'
+            END || ' ' || substr(member_period, 1, 4)
+        WHERE length(member_period) = 7 AND substr(member_period, 5, 1) = '-'
+    """)
+
     # Add status column to player if not exists
     cursor.execute("PRAGMA table_info(player)")
     player_columns = {row[1] for row in cursor.fetchall()}
