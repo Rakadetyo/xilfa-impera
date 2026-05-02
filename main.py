@@ -2402,57 +2402,59 @@ def generate_round_robin(teams: list) -> list:
 
 
 def generate_single_elimination(teams: list) -> list:
-    """Single elimination bracket. Handles byes for non-power-of-2."""
+    """Single elimination bracket. All teams play first round, byes advance to next round as TBD."""
     import math
     matches = []
     team_ids = [t["id"] for t in teams]
     n = len(team_ids)
+
+    if n < 2:
+        return []
+
+    # Calculate bracket size (next power of 2)
     num_rounds = math.ceil(math.log2(n))
     bracket_size = 2 ** num_rounds
+    total_matches = bracket_size - 1  # Total games in tournament
 
-    # Calculate byes
-    byes = bracket_size - n
+    # Assign seeds (top teams get byes)
     seeds = team_ids.copy()
 
-    # Build first round matches
-    round_matches = []
-    match_id = 1
+    # First round: all teams play (some may get bye to next round as TBD)
+    first_round_matches = bracket_size // 2
+    matches_in_round_1 = min(first_round_matches, (n + 1) // 2)
+
+    # Pair teams for first round
+    # If odd, last team gets bye to next round
+    playing_teams = seeds[:matches_in_round_1 * 2]
+    bye_teams = seeds[matches_in_round_1 * 2:]  # Teams that get bye to next round
+
+    # Create first round matches
     slot = 1
+    for i in range(0, len(playing_teams), 2):
+        if i + 1 < len(playing_teams):
+            matches.append({
+                "team_home_id": playing_teams[i],
+                "team_away_id": playing_teams[i + 1],
+                "round_number": 1,
+                "bracket_slot": f"R1-{slot}",
+                "is_tbd": 0
+            })
+            slot += 1
 
-    # Pair teams, giving byes to top seeds
-    if byes > 0:
-        # Top seeds get byes, face each other in first round
-        bye_teams = seeds[:byes]
-        playing_teams = seeds[byes:]
+    # Create TBD matches for remaining slots in round 1 (if odd teams)
+    # These teams get bye to round 2 as TBD away
+    for i, team_id in enumerate(bye_teams):
+        # Find next available slot in round 1, add TBD match with this team as home
+        matches.append({
+            "team_home_id": team_id,
+            "team_away_id": None,  # TBD opponent in round 2
+            "round_number": 1,
+            "bracket_slot": f"R1-{slot}",
+            "is_tbd": 1
+        })
+        slot += 1
 
-        # Create matches for teams that must play
-        for i in range(0, len(playing_teams), 2):
-            if i + 1 < len(playing_teams):
-                round_matches.append({
-                    "team_home_id": playing_teams[i],
-                    "team_away_id": playing_teams[i + 1],
-                    "round_number": 1,
-                    "bracket_slot": f"W-{slot}",
-                    "is_tbd": 0
-                })
-                slot += 1
-            else:
-                # Odd team gets bye
-                pass
-    else:
-        for i in range(0, len(team_ids), 2):
-            if i + 1 < len(team_ids):
-                round_matches.append({
-                    "team_home_id": team_ids[i],
-                    "team_away_id": team_ids[i + 1],
-                    "round_number": 1,
-                    "bracket_slot": f"W-{slot}",
-                    "is_tbd": 0
-                })
-                slot += 1
-
-    # Add placeholder matches for byes (advance automatically)
-    # Simplified: just create TBD matches for next rounds
+    # Create TBD placeholder matches for rounds 2 onwards
     for r in range(2, num_rounds + 1):
         matches_in_round = bracket_size // (2 ** r)
         for m in range(matches_in_round):
@@ -2460,13 +2462,9 @@ def generate_single_elimination(teams: list) -> list:
                 "team_home_id": None,
                 "team_away_id": None,
                 "round_number": r,
-                "bracket_slot": f"W-{m + 1}",
+                "bracket_slot": f"R{r}-{m + 1}",
                 "is_tbd": 1
             })
-
-    # Add first round actual matches
-    for m in round_matches:
-        matches.append(m)
 
     return matches
 
