@@ -2419,40 +2419,37 @@ def generate_single_elimination(teams: list) -> list:
     # Assign seeds (top teams get byes)
     seeds = team_ids.copy()
 
-    # First round: all teams play (some may get bye to next round as TBD)
-    first_round_matches = bracket_size // 2
-    matches_in_round_1 = min(first_round_matches, (n + 1) // 2)
-
-    # Pair teams for first round
-    # If odd, last team gets bye to next round
-    playing_teams = seeds[:matches_in_round_1 * 2]
-    bye_teams = seeds[matches_in_round_1 * 2:]  # Teams that get bye to next round
+    # First round: number of matches = bracket_size / 2
+    # We have n teams, so we can only have n/2 matches (if even) or (n-1)/2 (if odd, one team bye)
+    matches_in_round_1 = bracket_size // 2
+    teams_in_round_1 = min(n, bracket_size - (bracket_size - n))  # Teams that fit in round 1
 
     # Create first round matches
     slot = 1
-    for i in range(0, len(playing_teams), 2):
-        if i + 1 < len(playing_teams):
+    teams_used = 0
+    for i in range(0, matches_in_round_1 * 2, 2):
+        if i + 1 < n:
+            # Both teams exist - normal match
             matches.append({
-                "team_home_id": playing_teams[i],
-                "team_away_id": playing_teams[i + 1],
+                "team_home_id": seeds[i],
+                "team_away_id": seeds[i + 1],
                 "round_number": 1,
                 "bracket_slot": f"R1-{slot}",
                 "is_tbd": 0
             })
+            teams_used += 2
             slot += 1
-
-    # Create TBD matches for remaining slots in round 1 (if odd teams)
-    # These teams get bye to round 2 as TBD away
-    for i, team_id in enumerate(bye_teams):
-        # Find next available slot in round 1, add TBD match with this team as home
-        matches.append({
-            "team_home_id": team_id,
-            "team_away_id": None,  # TBD opponent in round 2
-            "round_number": 1,
-            "bracket_slot": f"R1-{slot}",
-            "is_tbd": 1
-        })
-        slot += 1
+        elif i < n:
+            # Odd team - gets bye to next round as TBD home
+            matches.append({
+                "team_home_id": seeds[i],
+                "team_away_id": None,
+                "round_number": 1,
+                "bracket_slot": f"R1-{slot}",
+                "is_tbd": 1
+            })
+            teams_used += 1
+            slot += 1
 
     # Create TBD placeholder matches for rounds 2 onwards
     for r in range(2, num_rounds + 1):
