@@ -1858,6 +1858,73 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
     if tab not in tabs:
         tab = "overview"
 
+    # Overview tab computed data
+    from datetime import datetime as dt, timedelta
+
+    paid_count = sum(1 for a in attendees if a["is_paid"])
+    assigned_count = sum(1 for a in attendees if a["team_id"])
+    total_attendees = len(attendees)
+
+    # Step completion
+    step_general = bool(game_dict.get("arena_id") and game_dict.get("datetime"))
+    step_players = total_attendees > 0 and (paid_count / total_attendees) >= 0.5
+    step_teams = len(teams) > 0 and total_attendees > 0 and assigned_count == total_attendees
+    step_schedule = len(matches) > 0
+
+    overview_steps = [
+        {
+            "key": "general",
+            "label": "General",
+            "done": step_general,
+            "sub": "Arena & time set" if step_general else "Missing arena or time",
+            "tab": "general",
+        },
+        {
+            "key": "players",
+            "label": "Players",
+            "done": step_players,
+            "sub": f"{paid_count}/{total_attendees} paid" if total_attendees > 0 else "No players yet",
+            "tab": "players",
+        },
+        {
+            "key": "teams",
+            "label": "Teams",
+            "done": step_teams,
+            "sub": f"{len(teams)} teams generated" if len(teams) > 0 else "Not generated",
+            "tab": "teams",
+        },
+        {
+            "key": "schedule",
+            "label": "Schedule",
+            "done": step_schedule,
+            "sub": f"{len(matches)} matches" if step_schedule else "Not generated",
+            "tab": "schedule",
+        },
+    ]
+    overview_progress = round(sum(1 for s in overview_steps if s["done"]) / 4 * 100)
+
+    # End time calculation
+    if game_dict.get("datetime") and game_dict.get("session_duration"):
+        try:
+            dt_str = game_dict["datetime"].replace("T", " ")
+            if len(dt_str) == 16:
+                dt_str += ":00"
+            start_dt = dt.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            end_dt = start_dt + timedelta(minutes=int(game_dict["session_duration"]))
+            overview_start_time_fmt = start_dt.strftime("%H:%M")
+            overview_end_time_fmt = end_dt.strftime("%H:%M")
+        except Exception:
+            overview_start_time_fmt = ""
+            overview_end_time_fmt = ""
+    else:
+        overview_start_time_fmt = ""
+        overview_end_time_fmt = ""
+
+    # Revenue calculation
+    revenue_collected = sum(
+        (a["amount_paid"] if a["amount_paid"] else 0) for a in attendees
+    )
+
     return templates.TemplateResponse(request, "games/detail.html", {
         "user": user,
         "game": game_dict,
@@ -1875,6 +1942,14 @@ async def game_detail(request: Request, game_id: int, tab: str = "general", erro
         "balance": balance,
         "player_values": player_values,
         "error": error,
+        "overview_steps": overview_steps,
+        "overview_progress": overview_progress,
+        "overview_start_time_fmt": overview_start_time_fmt,
+        "overview_end_time_fmt": overview_end_time_fmt,
+        "paid_count": paid_count,
+        "total_attendees": total_attendees,
+        "revenue_collected": revenue_collected,
+        "assigned_count": assigned_count,
     })
 
 
@@ -2116,7 +2191,29 @@ async def create_team(
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/{team_id}/edit")
+async def edit_team(
+    request: Request,
+    game_id: int,
+    team_id: int,
+    team_name: str = Form(...),
+    team_color: str = Form("")
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game_team SET team_name = ?, team_color = ? WHERE id = ? AND game_id = ?",
+                  (team_name, team_color, team_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/teams/{team_id}/delete")
@@ -2133,7 +2230,7 @@ async def delete_team(request: Request, game_id: int, team_id: int):
     conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/attendees/{attendee_id}/assign-team")
@@ -2151,7 +2248,7 @@ async def assign_team(request: Request, game_id: int, attendee_id: int, team_id:
 
     if "application/json" in request.headers.get("Accept", "") or request.headers.get("X-Requested-With") == "fetch":
         return JSONResponse({"ok": True})
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 # --- Player Groups ---
@@ -2165,7 +2262,7 @@ async def create_group(request: Request, game_id: int, name: str = Form(...)):
     cursor.execute("INSERT INTO game_player_group (game_id, name) VALUES (?, ?)", (game_id, name))
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/groups/{group_id}/delete")
@@ -2178,7 +2275,7 @@ async def delete_group(request: Request, game_id: int, group_id: int):
     cursor.execute("DELETE FROM game_player_group WHERE id = ? AND game_id = ?", (group_id, game_id))
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/groups/{group_id}/members")
@@ -2214,7 +2311,7 @@ async def add_group_member(request: Request, game_id: int, group_id: int, player
     )
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/groups/{group_id}/members/{player_id}/delete")
@@ -2230,7 +2327,7 @@ async def remove_group_member(request: Request, game_id: int, group_id: int, pla
     )
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 # --- Team Generation ---
@@ -2255,7 +2352,7 @@ async def update_skill_weight(
     conn.close()
 
     # Redirect back to teams tab without regenerating
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/teams/generate")
@@ -2338,7 +2435,74 @@ async def generate_teams_route(
 
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/attendees/{attendee_id}/toggle-lock")
+async def toggle_attendee_lock(request: Request, game_id: int, attendee_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game_attendee SET locked = NOT locked WHERE id = ? AND game_id = ?", (attendee_id, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/teams/randomize")
+async def randomize_teams(request: Request, game_id: int):
+    import random
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    # Get all teams for this game
+    cursor.execute("SELECT id FROM game_team WHERE game_id = ?", (game_id,))
+    teams = [row[0] for row in cursor.fetchall()]
+    if not teams:
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+    # Get locked attendees (keep their current team)
+    cursor.execute("SELECT id, team_id FROM game_attendee WHERE game_id = ? AND locked = 1", (game_id,))
+    locked_attendees = {row[0]: row[1] for row in cursor.fetchall()}
+    # Count locked players per team
+    locked_per_team = {}
+    for team_id in locked_attendees.values():
+        locked_per_team[team_id] = locked_per_team.get(team_id, 0) + 1
+    # Get unlocked attendees
+    cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND (locked != 1 OR locked IS NULL)", (game_id,))
+    unlocked = [row[0] for row in cursor.fetchall()]
+    if not unlocked:
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+    # Shuffle unlocked players
+    random.shuffle(unlocked)
+    # Calculate target per team (total players / num teams)
+    total_players = len(locked_attendees) + len(unlocked)
+    target_per_team = total_players // len(teams)
+    remainder = total_players % len(teams)
+    # Track current count per team
+    current_per_team = dict(locked_per_team)
+    for t in teams:
+        if t not in current_per_team:
+            current_per_team[t] = 0
+    # Assign unlocked players evenly
+    for attendee_id in unlocked:
+        # Find team with fewest players
+        team_counts = [(t, current_per_team.get(t, 0)) for t in teams]
+        team_counts.sort(key=lambda x: x[1])
+        # First fill teams that need more to reach target
+        min_count = team_counts[0][1]
+        candidates = [t for t, c in team_counts if c == min_count]
+        team_id = random.choice(candidates)
+        cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ?", (team_id, attendee_id))
+        current_per_team[team_id] = current_per_team.get(team_id, 0) + 1
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 @app.post("/manage/games/{game_id}/teams/clear")
@@ -2352,7 +2516,7 @@ async def clear_teams(request: Request, game_id: int):
     cursor.execute("DELETE FROM game_team WHERE game_id = ?", (game_id,))
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams", status_code=302)
+    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
 # --- Schedule Generators ---

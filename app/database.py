@@ -213,6 +213,8 @@ def init_db():
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN is_attend INTEGER DEFAULT 0")
     if 'team_id' not in attendee_columns:
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN team_id INTEGER")
+    if 'locked' not in attendee_columns:
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN locked INTEGER DEFAULT 0")
 
     # game_match: add new columns
     cursor.execute("PRAGMA table_info(game_match)")
