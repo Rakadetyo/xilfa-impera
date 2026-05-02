@@ -68,10 +68,17 @@ def init_db():
             address TEXT,
             price REAL DEFAULT 0,
             contact_person TEXT,
+            map_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Add map_url column if not exists
+    cursor.execute("PRAGMA table_info(arena)")
+    arena_columns = {row[1] for row in cursor.fetchall()}
+    if 'map_url' not in arena_columns:
+        cursor.execute("ALTER TABLE arena ADD COLUMN map_url TEXT")
 
     # game: each session
     cursor.execute("""
@@ -156,6 +163,8 @@ def init_db():
     user_columns = [row[1] for row in cursor.fetchall()]
     if 'role' not in user_columns:
         cursor.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'")
+    if 'invite_token' not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN invite_token TEXT")
 
     # Add membership_price to member if not exists
     cursor.execute("PRAGMA table_info(member)")
