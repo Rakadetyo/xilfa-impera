@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Schedule — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { accent: '#C9A84C', 'accent-light': '#E5C878' },
+                    fontFamily: { 'display': ['Bangers', 'sans-serif'], 'body': ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0A0A0A; color: #FFFFFF; }
+        .match-details { display: none; }
+        .match-details.open { display: block; }
+        .chevron { transition: transform 0.2s; }
+        .chevron.open { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="min-h-screen px-6 py-8">
+    <div class="w-full max-w-sm mx-auto">
+
+        <!-- Back -->
+        <a href="/invite/{{ token }}/{{ attendee_id }}"
+           class="flex items-center gap-1 text-gray-500 text-sm mb-8 hover:text-gray-300">
+            ← Back
+        </a>
+
+        <!-- Header -->
+        <div class="mb-8">
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Full Schedule</p>
+            <h1 class="text-3xl font-display tracking-wide">{{ game.arena_name or 'Game' }}</h1>
+        </div>
+
+        <!-- Matches -->
+        <div class="space-y-3">
+            {% for match in all_matches %}
+            {% set is_my_match = (match.team_home_id == player_team_id or match.team_away_id == player_team_id) %}
+            <div class="rounded-2xl border overflow-hidden
+                        {% if is_my_match %}border-accent/50 bg-accent/5{% else %}border-[#2A2A2A] bg-[#1A1A1A]{% endif %}">
+
+                <!-- Match header — always visible, tappable -->
+                <button type="button"
+                        onclick="toggleMatch({{ loop.index }})"
+                        class="w-full text-left px-5 py-4 flex items-center justify-between">
+                    <div>
+                        {% if match.match_start %}
+                        <div class="text-accent font-mono text-sm font-bold mb-1">{{ match.match_start }} - {{ match.match_end }} ({{ match_duration }} min)</div>
+                        {% elif match.scheduled_start %}
+                        <div class="text-accent font-mono text-sm font-bold mb-1">{{ match.scheduled_start }}</div>
+                        {% endif %}
+                        <div class="flex items-center gap-2 text-sm">
+                            <!-- Home team color dot + name -->
+                            <span class="w-2 h-2 rounded-full flex-shrink-0"
+                                  style="background-color: {{ match.home_color or '#6B7280' }}"></span>
+                            <span class="{% if match.team_home_id == player_team_id %}text-white font-bold{% else %}text-gray-300{% endif %}">
+                                {{ match.home_name or 'TBD' }}
+                            </span>
+                            <span class="text-gray-600 text-xs">vs</span>
+                            <span class="w-2 h-2 rounded-full flex-shrink-0"
+                                  style="background-color: {{ match.away_color or '#6B7280' }}"></span>
+                            <span class="{% if match.team_away_id == player_team_id %}text-white font-bold{% else %}text-gray-300{% endif %}">
+                                {{ match.away_name or 'TBD' }}
+                            </span>
+                        </div>
+                        {% if match.court_label %}
+                        <div class="text-gray-600 text-xs mt-1">Court {{ match.court_label }}</div>
+                        {% endif %}
+                    </div>
+                    <!-- Chevron -->
+                    <svg id="chevron-{{ loop.index }}" class="chevron w-4 h-4 text-gray-500 flex-shrink-0"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <!-- Expanded: team rosters side by side -->
+                <div id="match-details-{{ loop.index }}" class="match-details px-5 pb-4">
+                    <div class="border-t border-[#2A2A2A] pt-4 grid grid-cols-2 gap-4">
+
+                        <!-- Home team roster -->
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0"
+                                      style="background-color: {{ match.home_color or '#6B7280' }}"></span>
+                                <span class="text-xs font-bold uppercase tracking-wide
+                                             {% if match.team_home_id == player_team_id %}text-accent{% else %}text-gray-400{% endif %}">
+                                    {{ match.home_name or 'TBD' }}
+                                </span>
+                            </div>
+                            {% if match.team_home_id and match.team_home_id in team_rosters %}
+                            {% for p in team_rosters[match.team_home_id].players %}
+                            <div class="flex items-center justify-between py-0.5">
+                                <span class="text-xs {% if match.team_home_id == player_team_id %}text-white{% else %}text-gray-500{% endif %}">
+                                    {{ p.name }}
+                                </span>
+                                {% if p.position_1 %}
+                                <span class="text-xs text-gray-600 font-mono">{{ p.position_1 }}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-xs text-gray-600">—</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Away team roster -->
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0"
+                                      style="background-color: {{ match.away_color or '#6B7280' }}"></span>
+                                <span class="text-xs font-bold uppercase tracking-wide
+                                             {% if match.team_away_id == player_team_id %}text-accent{% else %}text-gray-400{% endif %}">
+                                    {{ match.away_name or 'TBD' }}
+                                </span>
+                            </div>
+                            {% if match.team_away_id and match.team_away_id in team_rosters %}
+                            {% for p in team_rosters[match.team_away_id].players %}
+                            <div class="flex items-center justify-between py-0.5">
+                                <span class="text-xs {% if match.team_away_id == player_team_id %}text-white{% else %}text-gray-500{% endif %}">
+                                    {{ p.name }}
+                                </span>
+                                {% if p.position_1 %}
+                                <span class="text-xs text-gray-600 font-mono">{{ p.position_1 }}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-xs text-gray-600">—</p>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-6 text-center">
+                <p class="text-gray-500 text-sm">Schedule not available yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <p class="text-center text-gray-700 text-xs mt-10">Impera Basketball Community</p>
+    </div>
+
+    <script>
+        function toggleMatch(idx) {
+            const details = document.getElementById('match-details-' + idx);
+            const chevron = document.getElementById('chevron-' + idx);
+            const isOpen = details.classList.contains('open');
+            // Close all
+            document.querySelectorAll('.match-details').forEach(el => el.classList.remove('open'));
+            document.querySelectorAll('.chevron').forEach(el => el.classList.remove('open'));
+            // Open this one if it was closed
+            if (!isOpen) {
+                details.classList.add('open');
+                chevron.classList.add('open');
+            }
+        }
+
+        // Auto-open first match that involves player's team
+        document.addEventListener('DOMContentLoaded', () => {
+            const myTeamId = {{ player_team_id or 'null' }};
+            if (!myTeamId) return;
+            // Find first match with player's team (marked with border-accent class on parent)
+            const firstMine = document.querySelector('.border-accent\\/50');
+            if (firstMine) {
+                const btn = firstMine.querySelector('button');
+                if (btn) btn.click();
+            }
+        });
+    </script>
+</body>
+</html>
