@@ -2521,21 +2521,30 @@ def generate_group_knockout(teams: list) -> list:
 
 
 def generate_king_of_court(teams: list) -> list:
-    """Sequential queue - winner stays, loser goes to queue end."""
+    """King of Court - first match only, rest TBD."""
     matches = []
     team_ids = [t["id"] for t in teams]
 
-    # Queue mode: just create sequential matches
-    # Each match is: current winner vs next in queue
-    for i in range(len(team_ids) * 2):  # Double rotation
-        home = team_ids[i % len(team_ids)]
-        away = team_ids[(i + 1) % len(team_ids)]
+    if len(team_ids) < 2:
+        return []
+
+    # First match: team 0 vs team 1
+    matches.append({
+        "team_home_id": team_ids[0],
+        "team_away_id": team_ids[1],
+        "round_number": 1,
+        "bracket_slot": None,
+        "is_tbd": 0
+    })
+
+    # Add TBD placeholders for more matches
+    for i in range(2):
         matches.append({
-            "team_home_id": home,
-            "team_away_id": away,
+            "team_home_id": None,
+            "team_away_id": None,
             "round_number": 1,
             "bracket_slot": None,
-            "is_tbd": 0
+            "is_tbd": 1
         })
 
     return matches
