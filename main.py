@@ -2006,8 +2006,13 @@ def generate_balanced_teams(attendees, groups, num_teams, players_per_team, valu
     value_scores: {attendee_id: score} from compute_player_values — used to sort solos
     Returns: list of lists — team_assignments[team_idx] = [attendee_id, ...]
     """
-    attendee_by_id = {a["id"]: a for a in attendees}
-    attendee_skill = {a["id"]: (a.get("skill_level") or 3) for a in attendees}
+    # Filter out unassigned players (those with no team_id) - they stay in "No Team"
+    attendees_with_teams = [a for a in attendees if a.get("team_id") is not None]
+    if not attendees_with_teams:
+        return []
+
+    attendee_by_id = {a["id"]: a for a in attendees_with_teams}
+    attendee_skill = {a["id"]: (a.get("skill_level") or 3) for a in attendees_with_teams}
 
     # Build set of attendee ids already in a group
     grouped_ids = set()
@@ -2016,7 +2021,7 @@ def generate_balanced_teams(attendees, groups, num_teams, players_per_team, valu
             if aid in attendee_by_id:
                 grouped_ids.add(aid)
 
-    solo_attendees = [a for a in attendees if a["id"] not in grouped_ids]
+    solo_attendees = [a for a in attendees_with_teams if a["id"] not in grouped_ids]
     if value_scores:
         solo_attendees.sort(key=lambda a: -value_scores.get(a["id"], 0))
     else:
@@ -2777,15 +2782,20 @@ async def delete_team(request: Request, game_id: int, team_id: int):
 
 
 @app.post("/manage/games/{game_id}/attendees/{attendee_id}/assign-team")
-async def assign_team(request: Request, game_id: int, attendee_id: int, team_id: int = Form(...)):
+async def assign_team(request: Request, game_id: int, attendee_id: int, team_id: str = Form("")):
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
-                  (team_id, attendee_id, game_id))
+    # If team_id is empty, remove team assignment (set to NULL)
+    if team_id:
+        cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+                      (int(team_id), attendee_id, game_id))
+    else:
+        cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE id = ? AND game_id = ?",
+                      (attendee_id, game_id))
     conn.commit()
     conn.close()
 
@@ -3008,15 +3018,15 @@ async def randomize_teams(request: Request, game_id: int):
     if not teams:
         conn.close()
         return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
-    # Get locked attendees (keep their current team)
-    cursor.execute("SELECT id, team_id FROM game_attendee WHERE game_id = ? AND locked = 1", (game_id,))
+    # Get locked attendees (keep their current team) - only those with a team assigned
+    cursor.execute("SELECT id, team_id FROM game_attendee WHERE game_id = ? AND locked = 1 AND team_id IS NOT NULL", (game_id,))
     locked_attendees = {row[0]: row[1] for row in cursor.fetchall()}
     # Count locked players per team
     locked_per_team = {}
     for team_id in locked_attendees.values():
         locked_per_team[team_id] = locked_per_team.get(team_id, 0) + 1
-    # Get unlocked attendees
-    cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND (locked != 1 OR locked IS NULL)", (game_id,))
+    # Get unlocked attendees - only those with a team assigned (skip unassigned)
+    cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND (locked != 1 OR locked IS NULL) AND team_id IS NOT NULL", (game_id,))
     unlocked = [row[0] for row in cursor.fetchall()]
     if not unlocked:
         conn.close()
