@@ -193,6 +193,10 @@ def init_db():
     player_columns = {row[1] for row in cursor.fetchall()}
     if 'status' not in player_columns:
         cursor.execute("ALTER TABLE player ADD COLUMN status INTEGER DEFAULT 1")
+    if 'notes' not in player_columns:
+        cursor.execute("ALTER TABLE player ADD COLUMN notes TEXT DEFAULT ''")
+    if 'join_source' not in player_columns:
+        cursor.execute("ALTER TABLE player ADD COLUMN join_source TEXT DEFAULT ''")
 
     # === GAME EXPANSION MIGRATIONS ===
     # game: add new columns

@@ -377,7 +377,7 @@ async def list_players(request: Request):
 
     # Build dynamic query
     query = """
-        SELECT p.id, p.name, p.nickname, p.position_1, p.position_2, p.skill_level, p.contact_no, p.instagram, p.reclub, p.join_date, p.created_at, p.status,
+        SELECT p.id, p.name, p.nickname, p.position_1, p.position_2, p.skill_level, p.contact_no, p.instagram, p.reclub, p.join_date, p.created_at, p.status, p.notes, p.join_source,
                (SELECT MAX(g.datetime) FROM game_attendee ga JOIN game g ON ga.game_id = g.id WHERE ga.player_id = p.id) as last_played
         FROM player p
         WHERE 1=1
@@ -512,7 +512,9 @@ async def create_player(
     contact_no: str = Form(""),
     instagram: str = Form(""),
     reclub: str = Form(""),
-    status: int = Form(1)
+    status: int = Form(1),
+    notes: str = Form(""),
+    join_source: str = Form("")
 ):
     user = get_current_user(request)
     if not user:
@@ -528,9 +530,9 @@ async def create_player(
 
     # Create player
     cursor.execute("""
-        INSERT INTO player (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?)
-    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, status))
+        INSERT INTO player (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date, status, notes, join_source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), ?, ?, ?)
+    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, status, notes, join_source))
 
     conn.commit()
     conn.close()
@@ -597,6 +599,8 @@ async def update_player(
     reclub: str = Form(""),
     join_date: str = Form(""),
     status: int = Form(1),
+    notes: str = Form(""),
+    join_source: str = Form(""),
     page: int = Form(1),
     sort: str = Form("name"),
     order: str = Form("asc"),
@@ -617,9 +621,9 @@ async def update_player(
     cursor = conn.cursor()
 
     cursor.execute("""
-        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?, contact_no = ?, instagram = ?, reclub = ?, join_date = ?, status = ?, notes = ?, join_source = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date or None, status, player_id))
+    """, (name, nickname, position_1, position_2, skill_level, contact_no, instagram, reclub, join_date or None, status, notes, join_source, player_id))
     conn.commit()
     conn.close()
 
