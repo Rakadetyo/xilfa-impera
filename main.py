@@ -912,8 +912,15 @@ async def members_page(request: Request):
     member_period = f"{months[filter_month - 1]} {filter_year}"
 
     # Get members for selected period
+    # Calculate period start/end dates for game counting
+    period_start = f"{filter_year}-{filter_month:02d}-01"
+    if filter_month == 12:
+        period_end = f"{filter_year + 1}-01-01"
+    else:
+        period_end = f"{filter_year}-{filter_month + 1:02d}-01"
+
     cursor.execute("""
-        SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price, m.member_period,
+        SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price, m.member_period, m.games_played,
                p.name, p.nickname,
                (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id) as n_members,
                (SELECT m2.member_period FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_period < m.member_period ORDER BY m2.member_period DESC LIMIT 1) as last_member_period
@@ -924,6 +931,20 @@ async def members_page(request: Request):
     """, (member_period,))
 
     members = cursor.fetchall()
+
+    # Update games_played for each member in this period
+    for m in members:
+        cursor.execute("""
+            UPDATE member SET games_played = (
+                SELECT COUNT(DISTINCT ga.game_id) FROM game_attendee ga
+                JOIN game g ON ga.game_id = g.id
+                WHERE ga.player_id = ?
+                AND ga.is_attend = 1
+                AND g.datetime >= ?
+                AND g.datetime < ?
+            ) WHERE id = ?
+        """, (m["player_id"], period_start, period_end, m["id"]))
+    conn.commit()
 
     # Get all players for the dropdown
     cursor.execute("SELECT id, name, nickname FROM player ORDER BY name")
@@ -949,8 +970,13 @@ async def members_page(request: Request):
     unpaid_count = (paid_stats["cnt"] or 0) - paid_count
     total_income = paid_stats["total_income"] or 0
 
-    # 3. New members this period (count of members with this period)
-    new_this_month = active_this_month
+    # 3. New members this period (members where this is their first membership)
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM member m
+        WHERE m.member_period = ?
+        AND (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id) = 1
+    """, (member_period,))
+    new_this_month = cursor.fetchone()["cnt"]
 
     # Retention Rate (members who were also active in previous period)
     prev_month = filter_month - 1
