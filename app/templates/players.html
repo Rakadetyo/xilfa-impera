@@ -152,6 +152,14 @@
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reclub</label>
                             <input type="text" name="reclub" placeholder="Reclub ID" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Join Source</label>
+                            <input type="text" name="join_source" placeholder="e.g. Instagram, Friend, Event" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div class="col-span-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
+                            <textarea name="notes" placeholder="Free text notes" rows="2" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent"></textarea>
+                        </div>
                         <div class="col-span-4 flex items-center gap-4">
                             <select name="status" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                                 <option value="1">Active</option>
@@ -263,7 +271,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             {% for p in players %}
-                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="openPlayerModal({{ p.id }}, '{{ p.name }}', '{{ p.nickname or '' }}', '{{ p.position_1 or '' }}', '{{ p.position_2 or '' }}', {{ p.skill_level }}, '{{ p.contact_no or '' }}', '{{ p.instagram or '' }}', '{{ p.reclub or '' }}', '{{ p.join_date or '' }}', {{ p.status if p.status is not none else 1 }})">
+                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="openPlayerModal({{ p.id }}, '{{ p.name }}', '{{ p.nickname or '' }}', '{{ p.position_1 or '' }}', '{{ p.position_2 or '' }}', {{ p.skill_level }}, '{{ p.contact_no or '' }}', '{{ p.instagram or '' }}', '{{ p.reclub or '' }}', '{{ p.join_date or '' }}', {{ p.status if p.status is not none else 1 }}, '{{ p.notes or '' | replace("'", "\\'") }}', '{{ p.join_source or '' }}')">
                                 <td class="p-4 font-bold">{{ p.name }}</td>
                                 <td class="p-4 text-gray-600">{{ p.nickname or '-' }}</td>
                                 <td class="p-4">
@@ -336,7 +344,7 @@
         }
 
         // Modal
-        function openPlayerModal(id, name, nickname, pos1, pos2, skill, contact, instagram, reclub, joinDate, status = 1) {
+        function openPlayerModal(id, name, nickname, pos1, pos2, skill, contact, instagram, reclub, joinDate, status = 1, notes = '', joinSource = '') {
             document.getElementById('modalPlayerId').value = id;
             document.getElementById('modalName').value = name;
             document.getElementById('modalNickname').value = nickname;
@@ -348,6 +356,8 @@
             document.getElementById('modalReclub').value = reclub;
             document.getElementById('modalJoinDate').value = joinDate ? joinDate.substring(0, 10) : '';
             document.getElementById('modalStatus').value = status !== undefined && status !== null ? status : 1;
+            document.getElementById('modalNotes').value = notes || '';
+            document.getElementById('modalJoinSource').value = joinSource || '';
             document.getElementById('playerModal').classList.remove('hidden');
         }
 
@@ -543,6 +553,14 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reclub</label>
                             <input type="text" id="modalReclub" name="reclub" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Join Source</label>
+                            <input type="text" id="modalJoinSource" name="join_source" placeholder="e.g. Instagram, Friend, Event" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
+                            <textarea id="modalNotes" name="notes" rows="2" placeholder="Free text notes" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent"></textarea>
                         </div>
                     </div>
                     <div class="pt-2">
