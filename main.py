@@ -923,7 +923,7 @@ async def members_page(request: Request):
         SELECT m.id, m.player_id, m.member_start_date, m.member_end_date, m.is_paid, m.membership_price, m.member_period, m.games_played,
                p.name, p.nickname,
                (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id) as n_members,
-               (SELECT m2.member_period FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_period < m.member_period ORDER BY m2.member_period DESC LIMIT 1) as last_member_period
+               (SELECT m2.member_period FROM member m2 WHERE m2.player_id = m.player_id AND m2.member_start_date < m.member_start_date ORDER BY m2.member_start_date DESC LIMIT 1) as last_member_period
         FROM member m
         JOIN player p ON m.player_id = p.id
         WHERE m.member_period = ?
