@@ -1617,6 +1617,21 @@ async def toggle_partner_payment(request: Request, game_id: int, game_partner_id
 
     return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
 
+# --- Delete Game Partner ---
+@app.post("/manage/games/{game_id}/partners/{game_partner_id}/delete")
+async def delete_game_partner(request: Request, game_id: int, game_partner_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_partner WHERE id = ? AND game_id = ?", (game_partner_id, game_id))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=general", status_code=302)
+
 # --- Update Add Partner Route (for master partner lookup) ---
 @app.post("/manage/games/{game_id}/partners/new")
 async def add_partner(
@@ -1649,10 +1664,12 @@ async def add_partner(
 
     conn = get_db()
     cursor = conn.cursor()
+    # Use type (singular) for the required column
+    partner_type = types if types else "partner"
     cursor.execute("""
-        INSERT INTO game_partner (game_id, partner_id, name, types, contact, fee, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (game_id, resolved_partner_id, resolved_name, types, contact, fee, notes))
+        INSERT INTO game_partner (game_id, partner_id, name, type, types, contact, fee, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (game_id, resolved_partner_id, resolved_name, partner_type, types, contact, fee, notes))
     conn.commit()
     conn.close()
 
@@ -2268,6 +2285,10 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     cursor.execute("SELECT * FROM game_partner WHERE game_id = ?", (game_id,))
     partners = cursor.fetchall()
 
+    # Get all active partners for dropdown
+    cursor.execute("SELECT * FROM partner WHERE is_active = 1 ORDER BY name")
+    all_partners = cursor.fetchall()
+
     # Get teams
     cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game_id,))
     teams = cursor.fetchall()
@@ -2453,6 +2474,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "game_datetime": game_dict.get("datetime", ""),
         "attendees": attendees,
         "partners": partners,
+        "all_partners": all_partners,
         "teams": teams,
         "matches": matches,
         "all_players": all_players,

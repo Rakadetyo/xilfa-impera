@@ -591,18 +591,33 @@ Klik link untuk lihat info tim kamu
                 <form method="POST" action="/manage/games/{{ game.id }}/partners/new" class="border-t border-gray-200 pt-4">
                     <h4 class="text-sm font-medium text-gray-500 mb-3">Add Partner</h4>
                     <div class="flex flex-wrap gap-2 mb-3">
-                        <!-- Name with auto-lookup -->
-                        <div class="flex-1 min-w-48 relative">
-                            <input type="text" id="partner-name-input" placeholder="Name (type to search)" autocomplete="off" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                            <input type="hidden" name="partner_id" id="partner-id-hidden">
-                            <input type="hidden" name="partner_name" id="partner-name-hidden">
-                            <div id="partner-suggestions" class="hidden absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20"></div>
-                        </div>
+                        <select name="partner_id" id="partner-select" onchange="fillPartnerFields()" class="flex-1 min-w-48 px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="">-- Select Partner --</option>
+                            {% for p in all_partners %}
+                            <option value="{{ p.id }}" data-name="{{ p.name }}" data-types="{{ p.types or '' }}" data-fee="{{ p.default_fee or 0 }}">{{ p.name }} ({{ p.types or 'no type' }})</option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="partner_name" id="partner-name-hidden">
                         <input type="text" name="types" id="partner-types-input" placeholder="Types (e.g. referee)" class="w-40 px-4 py-2 border border-gray-300 rounded-lg">
                         <input type="number" name="fee" id="partner-fee-input" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
                         <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
                     </div>
                 </form>
+                <script>
+                function fillPartnerFields() {
+                    const select = document.getElementById('partner-select');
+                    const option = select.options[select.selectedIndex];
+                    if (option.value) {
+                        document.getElementById('partner-name-hidden').value = option.getAttribute('data-name');
+                        document.getElementById('partner-types-input').value = option.getAttribute('data-types') || '';
+                        document.getElementById('partner-fee-input').value = option.getAttribute('data-fee') || 0;
+                    } else {
+                        document.getElementById('partner-name-hidden').value = '';
+                        document.getElementById('partner-types-input').value = '';
+                        document.getElementById('partner-fee-input').value = '';
+                    }
+                }
+                </script>
 
                 <!-- Partner List -->
                 <div class="mt-4 space-y-2">
@@ -641,43 +656,6 @@ Klik link untuk lihat info tim kamu
             <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')" class="mt-6">
                 <button type="submit" class="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium">Delete Game</button>
             </form>
-
-            <script>
-                function searchPartners(q) {
-                    const suggestBox = document.getElementById('partner-suggestions');
-                    if (q.length < 2) { suggestBox.classList.add('hidden'); return; }
-
-                    fetch(`/api/partners/search?q=${encodeURIComponent(q)}`)
-                        .then(r => r.json())
-                        .then(data => {
-                            if (!data.results.length) { suggestBox.classList.add('hidden'); return; }
-                            suggestBox.innerHTML = data.results.map(p => `
-                                <div class="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
-                                     onclick="selectPartner(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.types}', ${p.default_fee})">
-                                    <div class="font-medium">${p.name}</div>
-                                    <div class="text-xs text-gray-400">${p.types.replace(/,/g, ' · ')} · Rp${Number(p.default_fee).toLocaleString()}</div>
-                                </div>
-                            `).join('');
-                            suggestBox.classList.remove('hidden');
-                        });
-                }
-
-                function selectPartner(id, name, types, fee) {
-                    document.getElementById('partner-id-hidden').value = id;
-                    document.getElementById('partner-name-hidden').value = name;
-                    document.getElementById('partner-name-input').value = name;
-                    document.getElementById('partner-types-input').value = types;
-                    document.getElementById('partner-fee-input').value = fee;
-                    document.getElementById('partner-suggestions').classList.add('hidden');
-                }
-
-                document.getElementById('partner-name-input').addEventListener('input', e => searchPartners(e.target.value));
-
-                document.addEventListener('click', e => {
-                    if (!document.getElementById('partner-name-input').parentElement.contains(e.target))
-                        document.getElementById('partner-suggestions').classList.add('hidden');
-                });
-            </script>
 
             {% elif tab == 'players' %}
             <div class="space-y-6">
