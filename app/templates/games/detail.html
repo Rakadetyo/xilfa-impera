@@ -1104,30 +1104,35 @@ Klik link untuk lihat info tim kamu
                     {% set team_avg_value = team_value_total.total / team_members|length if team_members|length > 0 else 0 %}
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                         <div class="px-4 py-3 border-b border-gray-100" style="border-left: 4px solid {{ team.team_color or '#6B7280' }}">
-                            <div class="flex justify-between items-center">
-                                <form method="post" action="/manage/games/{{ game.id }}/teams/{{ team.id }}/edit" class="flex items-center gap-2">
-                                    <input type="text" name="team_name" value="{{ team.team_name }}" class="font-semibold border border-transparent hover:border-gray-300 rounded px-1 py-0.5 text-sm focus:border-accent focus:outline-none" style="color: {{ team.team_color or '#6B7280' }}">
-                                    <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="updateColorName(this)">
-                                        <option value="#E74C3C" {% if team.team_color == '#E74C3C' %}selected{% endif %}>Red</option>
-                                        <option value="#3498DB" {% if team.team_color == '#3498DB' %}selected{% endif %}>Blue</option>
-                                        <option value="#2ECC71" {% if team.team_color == '#2ECC71' %}selected{% endif %}>Green</option>
-                                        <option value="#F39C12" {% if team.team_color == '#F39C12' %}selected{% endif %}>Orange</option>
-                                        <option value="#9B59B6" {% if team.team_color == '#9B59B6' %}selected{% endif %}>Purple</option>
-                                        <option value="#E91E63" {% if team.team_color == '#E91E63' %}selected{% endif %}>Pink</option>
-                                        <option value="#000000" {% if team.team_color == '#000000' %}selected{% endif %}>Black</option>
-                                        <option value="#9CA3AF" {% if team.team_color == '#9CA3AF' %}selected{% endif %}>Gray / White</option>
-                                    </select>
-                                    <input type="hidden" name="team_color_name" id="team_color_name_{{ team.id }}" value="{{ team.team_color_name or team.team_color }}">
-                                </form>
-                                <script>
-                                function updateColorName(select) {
-                                    const form = select.closest('form');
-                                    const hiddenInput = form.querySelector('input[name="team_color_name"]');
-                                    hiddenInput.value = select.options[select.selectedIndex].text;
-                                    form.submit();
-                                }
-                                </script>
-                                <span class="text-sm font-semibold text-accent">{{ "%.0f"|format(team_avg_value) }} Team Rating</span>
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <form method="post" action="/manage/games/{{ game.id }}/teams/{{ team.id }}/edit">
+                                        <input type="text" name="team_name" value="{{ team.team_name }}" class="font-semibold border border-transparent hover:border-gray-300 rounded px-1 py-0.5 text-sm w-full focus:border-accent focus:outline-none" style="color: {{ team.team_color or '#6B7280' }}">
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="updateColorName(this)">
+                                                <option value="#E74C3C" {% if team.team_color == '#E74C3C' %}selected{% endif %}>Red</option>
+                                                <option value="#3498DB" {% if team.team_color == '#3498DB' %}selected{% endif %}>Blue</option>
+                                                <option value="#2ECC71" {% if team.team_color == '#2ECC71' %}selected{% endif %}>Green</option>
+                                                <option value="#F39C12" {% if team.team_color == '#F39C12' %}selected{% endif %}>Orange</option>
+                                                <option value="#F1C40F" {% if team.team_color == '#F1C40F' %}selected{% endif %}>Yellow</option>
+                                                <option value="#9B59B6" {% if team.team_color == '#9B59B6' %}selected{% endif %}>Purple</option>
+                                                <option value="#E91E63" {% if team.team_color == '#E91E63' %}selected{% endif %}>Pink</option>
+                                                <option value="#000000" {% if team.team_color == '#000000' %}selected{% endif %}>Black</option>
+                                                <option value="#9CA3AF" {% if team.team_color == '#9CA3AF' %}selected{% endif %}>Gray / White</option>
+                                            </select>
+                                            <input type="hidden" name="team_color_name" id="team_color_name_{{ team.id }}" value="{{ team.team_color_name or team.team_color }}">
+                                        </div>
+                                    </form>
+                                    <script>
+                                    function updateColorName(select) {
+                                        const form = select.closest('form');
+                                        const hiddenInput = form.querySelector('input[name="team_color_name"]');
+                                        hiddenInput.value = select.options[select.selectedIndex].text;
+                                        form.submit();
+                                    }
+                                    </script>
+                                </div>
+                                <span class="text-sm font-semibold text-accent ml-2">{{ "%.0f"|format(team_avg_value) }} Rating</span>
                             </div>
                             <div class="flex gap-1 mt-1.5">
                                 {% for pos in ['C', 'PF', 'SF', 'SG', 'PG'] %}

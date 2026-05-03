@@ -2967,13 +2967,12 @@ async def generate_teams_route(
     team_assignments = generate_balanced_teams(attendees, groups, num_teams, players_per_team, value_scores)
 
     # Create teams
-    _TEAM_NAMES = ["Team A", "Team B", "Team C", "Team D", "Team E", "Team F", "Team G", "Team H"]
-    _TEAM_COLORS = ["#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6", "#1ABC9C", "#E67E22", "#E91E63"]
+    _TEAM_COLORS = ["#000000", "#9CA3AF", "#9B59B6", "#3498DB", "#E74C3C", "#2ECC71", "#F1C40F", "#E91E63", "#F39C12"]
     team_ids = []
     for i in range(num_teams):
         cursor.execute(
             "INSERT INTO game_team (game_id, team_name, team_color) VALUES (?, ?, ?)",
-            (game_id, _TEAM_NAMES[i % len(_TEAM_NAMES)], _TEAM_COLORS[i % len(_TEAM_COLORS)])
+            (game_id, f"Team {i+1}", _TEAM_COLORS[i % len(_TEAM_COLORS)])
         )
         team_ids.append(cursor.lastrowid)
 
