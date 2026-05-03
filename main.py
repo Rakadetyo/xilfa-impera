@@ -970,8 +970,13 @@ async def members_page(request: Request):
     unpaid_count = (paid_stats["cnt"] or 0) - paid_count
     total_income = paid_stats["total_income"] or 0
 
-    # 3. New members this period (count of members with this period)
-    new_this_month = active_this_month
+    # 3. New members this period (members where this is their first membership)
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM member m
+        WHERE m.member_period = ?
+        AND (SELECT COUNT(*) FROM member m2 WHERE m2.player_id = m.player_id) = 1
+    """, (member_period,))
+    new_this_month = cursor.fetchone()["cnt"]
 
     # Retention Rate (members who were also active in previous period)
     prev_month = filter_month - 1
