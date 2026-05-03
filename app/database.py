@@ -176,6 +176,10 @@ def init_db():
     if 'member_period' not in member_columns:
         cursor.execute("ALTER TABLE member ADD COLUMN member_period TEXT")
 
+    # Add games_played column if not exists
+    if 'games_played' not in member_columns:
+        cursor.execute("ALTER TABLE member ADD COLUMN games_played INTEGER DEFAULT 0")
+
     # Migrate member_period from "YYYY-MM" format to "Month Year" format
     cursor.execute("""
         UPDATE member SET member_period =
