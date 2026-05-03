@@ -1104,30 +1104,35 @@ Klik link untuk lihat info tim kamu
                     {% set team_avg_value = team_value_total.total / team_members|length if team_members|length > 0 else 0 %}
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                         <div class="px-4 py-3 border-b border-gray-100" style="border-left: 4px solid {{ team.team_color or '#6B7280' }}">
-                            <div class="flex justify-between items-center">
-                                <form method="post" action="/manage/games/{{ game.id }}/teams/{{ team.id }}/edit" class="flex items-center gap-2">
-                                    <input type="text" name="team_name" value="{{ team.team_name }}" class="font-semibold border border-transparent hover:border-gray-300 rounded px-1 py-0.5 text-sm focus:border-accent focus:outline-none" style="color: {{ team.team_color or '#6B7280' }}">
-                                    <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="updateColorName(this)">
-                                        <option value="#E74C3C" {% if team.team_color == '#E74C3C' %}selected{% endif %}>Red</option>
-                                        <option value="#3498DB" {% if team.team_color == '#3498DB' %}selected{% endif %}>Blue</option>
-                                        <option value="#2ECC71" {% if team.team_color == '#2ECC71' %}selected{% endif %}>Green</option>
-                                        <option value="#F39C12" {% if team.team_color == '#F39C12' %}selected{% endif %}>Orange</option>
-                                        <option value="#9B59B6" {% if team.team_color == '#9B59B6' %}selected{% endif %}>Purple</option>
-                                        <option value="#E91E63" {% if team.team_color == '#E91E63' %}selected{% endif %}>Pink</option>
-                                        <option value="#000000" {% if team.team_color == '#000000' %}selected{% endif %}>Black</option>
-                                        <option value="#9CA3AF" {% if team.team_color == '#9CA3AF' %}selected{% endif %}>Gray / White</option>
-                                    </select>
-                                    <input type="hidden" name="team_color_name" id="team_color_name_{{ team.id }}" value="{{ team.team_color_name or team.team_color }}">
-                                </form>
-                                <script>
-                                function updateColorName(select) {
-                                    const form = select.closest('form');
-                                    const hiddenInput = form.querySelector('input[name="team_color_name"]');
-                                    hiddenInput.value = select.options[select.selectedIndex].text;
-                                    form.submit();
-                                }
-                                </script>
-                                <span class="text-sm font-semibold text-accent">{{ "%.0f"|format(team_avg_value) }} Team Rating</span>
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <form method="post" action="/manage/games/{{ game.id }}/teams/{{ team.id }}/edit">
+                                        <input type="text" name="team_name" value="{{ team.team_name }}" class="font-semibold border border-transparent hover:border-gray-300 rounded px-1 py-0.5 text-sm w-full focus:border-accent focus:outline-none" style="color: {{ team.team_color or '#6B7280' }}">
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <select name="team_color" class="text-xs border border-gray-200 rounded px-1 py-0.5" onchange="updateColorName(this)">
+                                                <option value="#E74C3C" {% if team.team_color == '#E74C3C' %}selected{% endif %}>Red</option>
+                                                <option value="#3498DB" {% if team.team_color == '#3498DB' %}selected{% endif %}>Blue</option>
+                                                <option value="#2ECC71" {% if team.team_color == '#2ECC71' %}selected{% endif %}>Green</option>
+                                                <option value="#F39C12" {% if team.team_color == '#F39C12' %}selected{% endif %}>Orange</option>
+                                                <option value="#F1C40F" {% if team.team_color == '#F1C40F' %}selected{% endif %}>Yellow</option>
+                                                <option value="#9B59B6" {% if team.team_color == '#9B59B6' %}selected{% endif %}>Purple</option>
+                                                <option value="#E91E63" {% if team.team_color == '#E91E63' %}selected{% endif %}>Pink</option>
+                                                <option value="#000000" {% if team.team_color == '#000000' %}selected{% endif %}>Black</option>
+                                                <option value="#9CA3AF" {% if team.team_color == '#9CA3AF' %}selected{% endif %}>Gray / White</option>
+                                            </select>
+                                            <input type="hidden" name="team_color_name" id="team_color_name_{{ team.id }}" value="{{ team.team_color_name or team.team_color }}">
+                                        </div>
+                                    </form>
+                                    <script>
+                                    function updateColorName(select) {
+                                        const form = select.closest('form');
+                                        const hiddenInput = form.querySelector('input[name="team_color_name"]');
+                                        hiddenInput.value = select.options[select.selectedIndex].text;
+                                        form.submit();
+                                    }
+                                    </script>
+                                </div>
+                                <span class="text-sm font-semibold text-accent ml-2">{{ "%.0f"|format(team_avg_value) }} Rating</span>
                             </div>
                             <div class="flex gap-1 mt-1.5">
                                 {% for pos in ['C', 'PF', 'SF', 'SG', 'PG'] %}
@@ -1176,6 +1181,39 @@ Klik link untuk lihat info tim kamu
                         </div>
                     </div>
                     {% endfor %}
+
+                    <!-- No Team Card (unassigned players) -->
+                    {% set no_team_members = [] %}
+                    {% for a in attendees %}{% if not a.team_id %}{% set _ = no_team_members.append(a) %}{% endif %}{% endfor %}
+                    <div class="bg-white rounded-xl border-2 border-dashed border-gray-300 shadow-sm overflow-hidden">
+                        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-500">No Team ({{ no_team_members|length }})</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Drag players here to unassign from teams</p>
+                        </div>
+                        <div class="team-list p-2 space-y-1 min-h-20" data-team-id="">
+                            {% for a in no_team_members %}
+                            {% set val = player_values.get(a.id, 0) %}
+                            <div class="player-card flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-grab active:cursor-grabbing hover:bg-gray-100 transition select-none"
+                                 data-attendee-id="{{ a.id }}"
+                                 data-skill="{{ a.skill_level or 3 }}"
+                                 data-value="{{ val }}">
+                                <span class="text-gray-300 text-sm">⠿</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium text-sm truncate">{{ a.name }}</div>
+                                    <div class="text-xs text-gray-400">{{ a.position_1 or '?' }}{% if a.position_2 %}/{{ a.position_2 }}{% endif %} · {{ skill_labels.get(a.skill_level, 'Intermediate') }}</div>
+                                </div>
+                                <span class="value-badge text-xs px-1.5 py-0.5 rounded font-mono font-medium bg-gray-100 text-gray-500">
+                                    {{ val | int }}
+                                </span>
+                                {% if a.player_id in grouped_player_ids %}
+                                <span class="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium">G</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
 
                 {% endif %}
@@ -1541,7 +1579,7 @@ Klik link untuk lihat info tim kamu
                     console.log('Drag ended:', evt.from.dataset.teamId, '->', evt.to.dataset.teamId);
                     const attendeeId = evt.item.dataset.attendeeId;
                     const newTeamId = evt.to.dataset.teamId;
-                    if (!newTeamId || !attendeeId) {
+                    if (newTeamId === undefined || !attendeeId) {
                         console.log('Missing data:', newTeamId, attendeeId);
                         return;
                     }
