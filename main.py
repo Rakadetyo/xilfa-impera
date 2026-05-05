@@ -3637,6 +3637,16 @@ async def invite_landing(request: Request, token: str):
         ORDER BY p.name
     """, (game["id"],))
     attendees = cursor.fetchall()
+
+    # Get partners
+    cursor.execute("""
+        SELECT gp.*, p.name as partner_name, p.contact as partner_contact
+        FROM game_partner gp
+        LEFT JOIN partner p ON gp.partner_id = p.id
+        WHERE gp.game_id = ?
+        ORDER BY gp.type
+    """, (game["id"],))
+    partners = cursor.fetchall()
     conn.close()
 
     from datetime import datetime as dt, timedelta
@@ -3661,6 +3671,7 @@ async def invite_landing(request: Request, token: str):
         "start_fmt": start_fmt,
         "end_fmt": end_fmt,
         "date_fmt": date_fmt,
+        "partners": [dict(p) for p in partners],
     })
 
 

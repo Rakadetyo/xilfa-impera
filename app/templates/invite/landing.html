@@ -68,6 +68,33 @@
             </div>
         </div>
 
+        {% if partners %}
+        <div class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-5 mb-6">
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Partners</p>
+            <div class="space-y-2">
+                {% for p in partners %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        {% if p.type == 'referee' %}
+                        <span class="text-accent">👨‍⚖️</span>
+                        {% elif p.type == 'videographer' %}
+                        <span class="text-accent">🎥</span>
+                        {% elif p.type == 'photographer' %}
+                        <span class="text-accent">📷</span>
+                        {% elif p.type == 'sponsor' %}
+                        <span class="text-accent">🏢</span>
+                        {% else %}
+                        <span class="text-accent">🤝</span>
+                        {% endif %}
+                        <span class="text-white text-sm">{{ p.partner_name or p.name or p.type|title }}</span>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ p.type|title }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Name selection form -->
         <form method="post" action="/invite/{{ token }}/identify">
             <label class="block text-xs text-gray-400 uppercase tracking-widest mb-2">Who are you?</label>
