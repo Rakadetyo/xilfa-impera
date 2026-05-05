@@ -125,22 +125,54 @@
 
                     <!-- Position Distribution -->
                     <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                        <h3 class="font-medium text-sm text-gray-500 mb-3">Positions</h3>
-                        {% set max_pos_count = position_counts.values() | max if position_counts.values() else 1 %}
-                        <div class="space-y-2">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-medium text-sm text-gray-500">Positions</h3>
+                            <div class="flex gap-1 text-xs">
+                                <button onclick="setPosModeAll()" id="pos-btn-all" class="px-2 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-gray-200">All</button>
+                                <button onclick="setPosModeP1()" id="pos-btn-p1" class="px-2 py-0.5 rounded bg-accent text-white">P1</button>
+                                <button onclick="setPosModeP2()" id="pos-btn-p2" class="px-2 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-gray-200">P2</button>
+                            </div>
+                        </div>
+                        <div id="pos-bars" class="space-y-2">
                             {% for pos in ['PG', 'SG', 'SF', 'PF', 'C'] %}
-                            {% set count = position_counts.get(pos, 0) %}
-                            {% set pct = (count / max_pos_count * 100) if max_pos_count > 0 else 0 %}
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2" data-pos="{{ pos }}">
                                 <span class="w-8 text-xs font-medium text-gray-500">{{ pos }}</span>
                                 <div class="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-accent rounded-full" style="width: {{ pct }}%"></div>
+                                    <div class="pos-bar h-full bg-accent rounded-full" style="width: 0%"></div>
                                 </div>
-                                <span class="w-6 text-xs text-right font-medium">{{ count }}</span>
+                                <span class="pos-count w-6 text-xs text-right font-medium">0</span>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
+                    <script>
+                    const posData = {
+                        all: {{ position_counts | tojson }},
+                        p1: {{ position_counts_primary | tojson }},
+                        p2: {{ position_counts_secondary | tojson }}
+                    };
+                    function renderPosBars(data) {
+                        const max = Math.max(...Object.values(data), 1);
+                        document.querySelectorAll('#pos-bars [data-pos]').forEach(row => {
+                            const pos = row.dataset.pos;
+                            const count = data[pos] || 0;
+                            row.querySelector('.pos-bar').style.width = (count / max * 100) + '%';
+                            row.querySelector('.pos-count').textContent = count;
+                        });
+                    }
+                    function setPosModeAll() { renderPosBars(posData.all); setActivePosBtn('all'); }
+                    function setPosModeP1()  { renderPosBars(posData.p1);  setActivePosBtn('p1'); }
+                    function setPosModeP2()  { renderPosBars(posData.p2);  setActivePosBtn('p2'); }
+                    function setActivePosBtn(mode) {
+                        ['all','p1','p2'].forEach(m => {
+                            const btn = document.getElementById('pos-btn-' + m);
+                            btn.className = m === mode
+                                ? 'px-2 py-0.5 rounded bg-accent text-white'
+                                : 'px-2 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-gray-200';
+                        });
+                    }
+                    setPosModeP1();
+                    </script>
 
                     <!-- Share & Invite -->
                     <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">

@@ -2436,14 +2436,18 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
 
     # Analytics: Position counts
     position_counts = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
+    position_counts_primary = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
+    position_counts_secondary = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
     for a in attendees:
         a_dict = dict(a)
         pos1 = a_dict.get("position_1")
         pos2 = a_dict.get("position_2")
         if pos1:
             position_counts[pos1] = position_counts.get(pos1, 0) + 1
+            position_counts_primary[pos1] = position_counts_primary.get(pos1, 0) + 1
         if pos2:
             position_counts[pos2] = position_counts.get(pos2, 0) + 1
+            position_counts_secondary[pos2] = position_counts_secondary.get(pos2, 0) + 1
 
     # Step completion
     step_general = bool(game_dict.get("arena_id") and game_dict.get("datetime"))
@@ -2536,6 +2540,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "avg_skill": avg_skill,
         "avg_skill_label": avg_skill_label,
         "position_counts": position_counts,
+        "position_counts_primary": position_counts_primary,
+        "position_counts_secondary": position_counts_secondary,
         "active": "games"
     })
 
