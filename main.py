@@ -2344,9 +2344,11 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     # Get all players for adding attendees - current members first
     cursor.execute("""
         SELECT p.*,
-               CASE WHEN m.id IS NOT NULL AND m.member_start_date <= date('now') AND m.member_end_date >= date('now') THEN 1 ELSE 0 END as is_current_member
+               CASE WHEN EXISTS (
+                   SELECT 1 FROM member m WHERE m.player_id = p.id
+                   AND m.member_start_date <= date('now') AND m.member_end_date >= date('now')
+               ) THEN 1 ELSE 0 END as is_current_member
         FROM player p
-        LEFT JOIN member m ON p.id = m.player_id
         WHERE p.status = 1
         ORDER BY is_current_member DESC, p.name
     """)
