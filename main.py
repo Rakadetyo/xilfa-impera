@@ -3789,6 +3789,58 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     })
 
 
+@app.get("/invite/{token}/{attendee_id}/teams")
+async def invite_teams(request: Request, token: str, attendee_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM game WHERE invite_token = ?", (token,))
+    game = cursor.fetchone()
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    # Get all teams with players
+    cursor.execute("""
+        SELECT gt.id as team_id, gt.team_name, gt.team_color,
+               ga.id as attendee_id, p.name, p.position_1, p.position_2
+        FROM game_team gt
+        LEFT JOIN game_attendee ga ON ga.team_id = gt.id AND ga.game_id = gt.game_id
+        LEFT JOIN player p ON ga.player_id = p.id
+        WHERE gt.game_id = ?
+        ORDER BY gt.id, p.name
+    """, (game["id"],))
+
+    rows = cursor.fetchall()
+
+    # Group by team
+    teams = {}
+    for row in rows:
+        tid = row["team_id"]
+        if tid not in teams:
+            teams[tid] = {
+                "team_id": tid,
+                "team_name": row["team_name"],
+                "team_color": row["team_color"],
+                "players": []
+            }
+        if row["name"]:
+            teams[tid]["players"].append({
+                "attendee_id": row["attendee_id"],
+                "name": row["name"],
+                "position_1": row["position_1"],
+                "position_2": row["position_2"]
+            })
+
+    conn.close()
+
+    return templates.TemplateResponse(request, "invite/teams.html", {
+        "token": token,
+        "attendee_id": attendee_id,
+        "teams": list(teams.values()),
+    })
+
+
 @app.get("/invite/{token}/{attendee_id}/schedule")
 async def invite_schedule(request: Request, token: str, attendee_id: int):
     conn = get_db()
