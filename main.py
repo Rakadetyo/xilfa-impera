@@ -577,7 +577,7 @@ async def add_player_to_game(
     # Add to game as attendee
     cursor.execute("""
         INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
-        VALUES (?, ?, 0, 0)
+        VALUES (?, ?, 0, 1)
     """, (game_id, player_id))
 
     conn.commit()
@@ -2295,7 +2295,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         # Only insert players not already in game
         cursor.execute("""
             INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
-            SELECT ?, p.id, 0, 0
+            SELECT ?, p.id, 1, 1
             FROM player p
             JOIN member m ON p.id = m.player_id
             WHERE p.status = 1
@@ -2635,7 +2635,7 @@ async def add_attendee(request: Request, game_id: int, player_id: int):
         conn.close()
         return JSONResponse({"error": "Player already added"}, status_code=400)
 
-    cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, player_id))
+    cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend) VALUES (?, ?, 1)", (game_id, player_id))
     conn.commit()
     conn.close()
 
@@ -2657,7 +2657,7 @@ async def add_attendees_bulk(request: Request, game_id: int):
     for player_id in player_ids:
         cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND player_id = ?", (game_id, int(player_id)))
         if not cursor.fetchone():
-            cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, int(player_id)))
+            cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend) VALUES (?, ?, 1)", (game_id, int(player_id)))
 
     conn.commit()
     conn.close()
