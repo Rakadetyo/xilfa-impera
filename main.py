@@ -3707,7 +3707,8 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         raise HTTPException(status_code=404)
 
     cursor.execute("""
-        SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2
+        SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2, p.join_date,
+               (SELECT COUNT(*) FROM game_attendee WHERE player_id = p.id AND is_attend = 1) as games_played
         FROM game_attendee ga
         JOIN player p ON ga.player_id = p.id
         WHERE ga.id = ? AND ga.game_id = ?
@@ -3759,6 +3760,71 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     is_member_slot = True if attendee["slot_type"] == "member" else False
     price = game_dict.get("price_per_member") if (is_member or is_member_slot) else game_dict.get("price_per_person")
 
+    # Member label logic
+    member_label = None
+    if is_member:
+        cursor.execute("""
+            SELECT member_start_date FROM member
+            WHERE player_id = ?
+            ORDER BY member_start_date ASC
+        """, (attendee["player_id"],))
+        all_memberships = cursor.fetchall()
+        cursor.execute("""
+            SELECT member_start_date, member_end_date FROM member
+            WHERE player_id = ? AND member_start_date <= date('now') AND member_end_date >= date('now')
+            ORDER BY member_start_date ASC LIMIT 1
+        """, (attendee["player_id"],))
+        current_membership = cursor.fetchone()
+
+        if current_membership:
+            current_start = current_membership["member_start_date"]
+            # Check if there's a gap before current membership
+            cursor.execute("""
+                SELECT member_end_date FROM member
+                WHERE player_id = ? AND member_end_date < ?
+                ORDER BY member_end_date DESC LIMIT 1
+            """, (attendee["player_id"], current_start))
+            prev = cursor.fetchone()
+            if prev:
+                # Gap exists — rejoined
+                try:
+                    rejoined_dt = dt.strptime(current_start, "%Y-%m-%d")
+                    member_label = f"Rejoined {rejoined_dt.strftime('%b %Y')}"
+                except Exception:
+                    member_label = "Rejoined"
+            else:
+                # No gap — member since first record
+                first_start = all_memberships[0]["member_start_date"] if all_memberships else current_start
+                try:
+                    since_dt = dt.strptime(first_start, "%Y-%m-%d")
+                    member_label = f"Member Since {since_dt.strftime('%b %Y')}"
+                except Exception:
+                    member_label = "Member Since"
+    else:
+        join_date = dict(attendee).get("join_date")
+        if join_date:
+            try:
+                join_dt = dt.strptime(join_date, "%Y-%m-%d")
+                member_label = f"Playing Since {join_dt.strftime('%b %Y')}"
+            except Exception:
+                member_label = "Playing Since"
+
+    # Attendance streak — count consecutive attended games up to and including this game
+    cursor.execute("""
+        SELECT COALESCE(ga.is_attend, 0) as attended
+        FROM game g
+        LEFT JOIN game_attendee ga ON g.id = ga.game_id AND ga.player_id = ?
+        WHERE g.datetime <= (SELECT datetime FROM game WHERE id = ?)
+        AND g.datetime IS NOT NULL
+        ORDER BY g.datetime DESC
+    """, (dict(attendee)["player_id"], game["id"]))
+    streak = 0
+    for row in cursor.fetchall():
+        if row["attended"] == 1:
+            streak += 1
+        else:
+            break
+
     conn.close()
 
     start_fmt, end_fmt, date_fmt = "", "", ""
@@ -3786,6 +3852,9 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         "price": price or 0,
         "partners": [dict(p) for p in partners],
         "arena_map_url": game_dict.get("arena_map_url"),
+        "is_member": is_member,
+        "member_label": member_label,
+        "streak": streak,
     })
 
 
