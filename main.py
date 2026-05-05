@@ -3618,7 +3618,7 @@ async def invite_landing(request: Request, token: str):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT g.*, a.location_name as arena_name, a.address as arena_address
+        SELECT g.*, a.location_name as arena_name, a.address as arena_address, a.map_url as arena_map_url
         FROM game g
         LEFT JOIN arena a ON g.arena_id = a.id
         WHERE g.invite_token = ?
@@ -3672,6 +3672,7 @@ async def invite_landing(request: Request, token: str):
         "end_fmt": end_fmt,
         "date_fmt": date_fmt,
         "partners": [dict(p) for p in partners],
+        "arena_map_url": game_dict.get("arena_map_url"),
     })
 
 

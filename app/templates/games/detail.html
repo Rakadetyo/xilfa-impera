@@ -184,7 +184,7 @@
                                 <span class="text-xs text-gray-500 flex-1 truncate font-mono">
                                     {{ request.url.scheme }}://{{ request.url.netloc }}/invite/{{ game.invite_token }}
                                 </span>
-                                <button onclick="copyInviteLink()"
+                                <button onclick="copyInviteLink(this)"
                                         class="text-xs text-accent font-medium hover:underline flex-shrink-0">
                                     Copy
                                 </button>
@@ -223,13 +223,47 @@
                     </div>
 
                     <script>
-                        function copyInviteLink() {
-                            const url = '{{ request.url.scheme }}://{{ request.url.netloc }}/invite/{{ game.invite_token }}';
-                            navigator.clipboard.writeText(url).then(() => {
-                                const btn = event.target;
-                                btn.textContent = 'Copied!';
-                                setTimeout(() => btn.textContent = 'Copy', 2000);
-                            });
+                        function showCopyToast(msg, anchor) {
+                            let toast = document.getElementById('copy-toast');
+                            if (!toast) {
+                                toast = document.createElement('div');
+                                toast.id = 'copy-toast';
+                                toast.style.cssText = 'position:fixed;background:#1f2937;color:#fff;font-size:12px;padding:4px 10px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:9999;transition:opacity 0.3s;pointer-events:none';
+                                document.body.appendChild(toast);
+                            }
+                            toast.textContent = msg;
+                            toast.style.opacity = '1';
+                            if (anchor) {
+                                const r = anchor.getBoundingClientRect();
+                                toast.style.top = (r.top - 32 + window.scrollY) + 'px';
+                                toast.style.left = (r.left + r.width / 2) + 'px';
+                                toast.style.transform = 'translateX(-50%)';
+                            }
+                            clearTimeout(toast._hideTimer);
+                            toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+                        }
+
+                        function copyText(text, anchor) {
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(text).then(() => showCopyToast('Copied!', anchor)).catch(() => fallbackCopy(text, anchor));
+                            } else {
+                                fallbackCopy(text, anchor);
+                            }
+                        }
+
+                        function fallbackCopy(text, anchor) {
+                            const ta = document.createElement('textarea');
+                            ta.value = text;
+                            ta.style.cssText = 'position:fixed;opacity:0';
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(ta);
+                            showCopyToast('Copied!', anchor);
+                        }
+
+                        function copyInviteLink(btn) {
+                            copyText('{{ request.url.scheme }}://{{ request.url.netloc }}/invite/{{ game.invite_token }}', btn);
                         }
 
                         function showShareModal() {
@@ -240,13 +274,8 @@
                             document.getElementById('shareModal').classList.add('hidden');
                         }
 
-                        function copyShareText() {
-                            const text = document.getElementById('shareText').innerText;
-                            navigator.clipboard.writeText(text).then(() => {
-                                const btn = document.getElementById('copyShareBtn');
-                                btn.textContent = 'Copied!';
-                                setTimeout(() => btn.textContent = 'Copy', 2000);
-                            });
+                        function copyShareText(btn) {
+                            copyText(document.getElementById('shareText').innerText, btn);
                         }
                     </script>
                 </div>
@@ -275,7 +304,7 @@ Klik link untuk lihat info tim kamu
 {{ request.url.scheme }}://{{ request.url.netloc }}/invite/{{ game.invite_token }}</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="copyShareText()" id="copyShareBtn"
+                            <button onclick="copyShareText(this)" id="copyShareBtn"
                                     class="flex-1 px-4 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accent/90">
                                 Copy
                             </button>

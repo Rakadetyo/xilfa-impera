@@ -35,9 +35,35 @@
         </a>
 
         <!-- Greeting -->
-        <div class="mb-8">
+        <div class="mb-6">
             <p class="text-gray-400 text-sm mb-1">You're in! 🎉</p>
             <h1 class="text-4xl font-display tracking-wide text-white">{{ attendee.name }}</h1>
+        </div>
+
+        <!-- Game summary -->
+        <div class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-4 mb-6">
+            <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="text-accent">📅</span>
+                    <span class="text-white">{{ date_fmt }}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-accent">⏰</span>
+                    <span class="text-white">{{ start_fmt }}{% if end_fmt %} – {{ end_fmt }}{% endif %}</span>
+                </div>
+                {% if game.arena_name %}
+                <div class="flex items-center gap-3">
+                    <span class="text-accent">📍</span>
+                    <span class="text-white">{{ game.arena_name }}</span>
+                </div>
+                {% endif %}
+                {% if price %}
+                <div class="flex items-center gap-3">
+                    <span class="text-accent">💰</span>
+                    <span class="text-white">Rp{{ "{:,.0f}".format(price) }}</span>
+                </div>
+                {% endif %}
+            </div>
         </div>
 
         {% if team %}
