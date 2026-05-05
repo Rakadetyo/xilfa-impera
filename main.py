@@ -577,7 +577,7 @@ async def add_player_to_game(
     # Add to game as attendee
     cursor.execute("""
         INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
-        VALUES (?, ?, 0, 0)
+        VALUES (?, ?, 0, 1)
     """, (game_id, player_id))
 
     conn.commit()
@@ -2295,7 +2295,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         # Only insert players not already in game
         cursor.execute("""
             INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
-            SELECT ?, p.id, 0, 0
+            SELECT ?, p.id, 1, 1
             FROM player p
             JOIN member m ON p.id = m.player_id
             WHERE p.status = 1
@@ -2344,9 +2344,11 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     # Get all players for adding attendees - current members first
     cursor.execute("""
         SELECT p.*,
-               CASE WHEN m.id IS NOT NULL AND m.member_start_date <= date('now') AND m.member_end_date >= date('now') THEN 1 ELSE 0 END as is_current_member
+               CASE WHEN EXISTS (
+                   SELECT 1 FROM member m WHERE m.player_id = p.id
+                   AND m.member_start_date <= date('now') AND m.member_end_date >= date('now')
+               ) THEN 1 ELSE 0 END as is_current_member
         FROM player p
-        LEFT JOIN member m ON p.id = m.player_id
         WHERE p.status = 1
         ORDER BY is_current_member DESC, p.name
     """)
@@ -2434,14 +2436,18 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
 
     # Analytics: Position counts
     position_counts = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
+    position_counts_primary = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
+    position_counts_secondary = {"PG": 0, "SG": 0, "SF": 0, "PF": 0, "C": 0}
     for a in attendees:
         a_dict = dict(a)
         pos1 = a_dict.get("position_1")
         pos2 = a_dict.get("position_2")
         if pos1:
             position_counts[pos1] = position_counts.get(pos1, 0) + 1
+            position_counts_primary[pos1] = position_counts_primary.get(pos1, 0) + 1
         if pos2:
             position_counts[pos2] = position_counts.get(pos2, 0) + 1
+            position_counts_secondary[pos2] = position_counts_secondary.get(pos2, 0) + 1
 
     # Step completion
     step_general = bool(game_dict.get("arena_id") and game_dict.get("datetime"))
@@ -2534,6 +2540,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "avg_skill": avg_skill,
         "avg_skill_label": avg_skill_label,
         "position_counts": position_counts,
+        "position_counts_primary": position_counts_primary,
+        "position_counts_secondary": position_counts_secondary,
         "active": "games"
     })
 
@@ -2633,7 +2641,7 @@ async def add_attendee(request: Request, game_id: int, player_id: int):
         conn.close()
         return JSONResponse({"error": "Player already added"}, status_code=400)
 
-    cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, player_id))
+    cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend) VALUES (?, ?, 1)", (game_id, player_id))
     conn.commit()
     conn.close()
 
@@ -2655,7 +2663,7 @@ async def add_attendees_bulk(request: Request, game_id: int):
     for player_id in player_ids:
         cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND player_id = ?", (game_id, int(player_id)))
         if not cursor.fetchone():
-            cursor.execute("INSERT INTO game_attendee (game_id, player_id) VALUES (?, ?)", (game_id, int(player_id)))
+            cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend) VALUES (?, ?, 1)", (game_id, int(player_id)))
 
     conn.commit()
     conn.close()
@@ -3610,7 +3618,7 @@ async def invite_landing(request: Request, token: str):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT g.*, a.location_name as arena_name, a.address as arena_address
+        SELECT g.*, a.location_name as arena_name, a.address as arena_address, a.map_url as arena_map_url
         FROM game g
         LEFT JOIN arena a ON g.arena_id = a.id
         WHERE g.invite_token = ?
@@ -3629,6 +3637,16 @@ async def invite_landing(request: Request, token: str):
         ORDER BY p.name
     """, (game["id"],))
     attendees = cursor.fetchall()
+
+    # Get partners
+    cursor.execute("""
+        SELECT gp.*, p.name as partner_name, p.contact as partner_contact
+        FROM game_partner gp
+        LEFT JOIN partner p ON gp.partner_id = p.id
+        WHERE gp.game_id = ?
+        ORDER BY gp.type
+    """, (game["id"],))
+    partners = cursor.fetchall()
     conn.close()
 
     from datetime import datetime as dt, timedelta
@@ -3653,6 +3671,8 @@ async def invite_landing(request: Request, token: str):
         "start_fmt": start_fmt,
         "end_fmt": end_fmt,
         "date_fmt": date_fmt,
+        "partners": [dict(p) for p in partners],
+        "arena_map_url": game_dict.get("arena_map_url"),
     })
 
 
