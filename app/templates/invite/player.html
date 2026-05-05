@@ -79,8 +79,8 @@
                 <div>
                     <div class="font-display text-2xl tracking-wide text-white">{{ team.team_name }}</div>
                     {% set color_map = {'#E74C3C': 'Red', '#3498DB': 'Blue', '#2ECC71': 'Green', '#F39C12': 'Orange', '#9B59B6': 'Purple', '#E91E63': 'Pink', '#000000': 'Black', '#9CA3AF': 'Gray / White'} %}
-                    {% set jersey_name = color_map.get(team.team_color, 'Jersey color') %}
-                    <div class="text-xs text-gray-500">Jersey color: {{ jersey_name }}</div>
+                    {% set jersey_name = color_map.get(team.team_color, '') %}
+                    <div class="text-xs text-gray-500">Jersey color: <span style="color: {{ team.team_color or '#C9A84C' }}">{{ jersey_name }}</span></div>
                 </div>
             </div>
 
