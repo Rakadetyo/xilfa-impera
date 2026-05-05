@@ -433,6 +433,15 @@ async def list_players(request: Request):
     cursor.execute("SELECT COUNT(*) as total FROM player")
     total_players = cursor.fetchone()["total"]
 
+    cursor.execute("SELECT COUNT(*) as cnt FROM player WHERE status = 1")
+    active_players = cursor.fetchone()["cnt"]
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT player_id) as cnt FROM member
+        WHERE member_start_date <= date('now') AND member_end_date >= date('now')
+    """)
+    member_players = cursor.fetchone()["cnt"]
+
     cursor.execute("SELECT AVG(skill_level) as avg_skill FROM player")
     avg_skill = cursor.fetchone()["avg_skill"] or 0
 
@@ -492,6 +501,9 @@ async def list_players(request: Request):
         },
         "stats": {
             "total": total_players,
+            "active": active_players,
+            "inactive": total_players - active_players,
+            "members": member_players,
             "avg_skill": round(avg_skill, 1),
             "positions": position_dict,
             "positions_1": position_dict_1,
