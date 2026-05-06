@@ -52,8 +52,13 @@ def load_csv(path: str) -> list[dict]:
 
 
 def build_player_map(cursor) -> dict[str, int]:
-    cursor.execute("SELECT id, name FROM player WHERE status = 1")
-    return {row["name"].lower(): row["id"] for row in cursor.fetchall()}
+    cursor.execute("SELECT id, name, nickname FROM player WHERE status = 1")
+    player_map = {}
+    for row in cursor.fetchall():
+        player_map[row["name"].lower()] = row["id"]
+        if row["nickname"]:
+            player_map[row["nickname"].lower()] = row["id"]
+    return player_map
 
 
 def run(csv_path: str, dry_run: bool = False):

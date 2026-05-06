@@ -2287,7 +2287,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
 
     # Get attendees with player info
     cursor.execute("""
-        SELECT ga.*, p.name, p.nickname, p.position_1, p.position_2, p.skill_level,
+        SELECT ga.id, ga.player_id, ga.team_id, ga.is_paid, ga.is_attend, ga.locked, ga.slot_type,
+               p.name, p.nickname, p.position_1, p.position_2, p.skill_level,
                gt.team_name as team_name_assigned, gt.team_color
         FROM game_attendee ga
         JOIN player p ON ga.player_id = p.id
