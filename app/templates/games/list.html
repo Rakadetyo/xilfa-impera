@@ -291,6 +291,12 @@
             {% endfor %}
         ];
 
+        const allGamesData = [
+            {% for game in all_games %}
+            { id: {{ game.id }}, datetime: "{{ game.datetime }}", name: "{{ game.arena_name or 'No arena' }}", status: "{{ game.status }}" },
+            {% endfor %}
+        ];
+
         // Find closest upcoming game from today
         let currentIndex = 0;
         const now = new Date();
@@ -373,7 +379,7 @@
         }
 
         function renderDayCell(day, month, year, today) {
-            const gamesOnDay = gamesData.filter(g => {
+            const gamesOnDay = allGamesData.filter(g => {
                 try {
                     const gameDate = new Date(g.datetime);
                     return gameDate.getDate() === day && gameDate.getMonth() === month && gameDate.getFullYear() === year;

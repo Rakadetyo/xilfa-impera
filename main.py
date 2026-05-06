@@ -2196,6 +2196,7 @@ async def list_games(request: Request):
     return templates.TemplateResponse(request, "games/list.html", {
         "user": user,
         "games": games,
+        "all_games": [dict(g) for g in games_list],
         "arenas": arenas,
         "active": "games"
     })
