@@ -3123,7 +3123,7 @@ async def clear_teams(request: Request, game_id: int):
 
 # --- Schedule Generators ---
 def generate_round_robin(teams: list) -> list:
-    """Circle method round robin - even split, no back-to-back."""
+    """Generate all unique pairing combinations."""
     matches = []
     team_ids = [t["id"] for t in teams]
     n = len(team_ids)
@@ -3131,26 +3131,19 @@ def generate_round_robin(teams: list) -> list:
     if n < 2:
         return []
 
-    # For odd number of teams, add a "bye"
-    if n % 2 == 1:
-        team_ids.append(None)  # None = bye
+    # Generate all unique pairs
+    seen = set()
+    round_num = 1
 
-    n = len(team_ids)
-    rounds = n - 1  # Each team plays n-1 matches
-    matches_per_round = n // 2
-
-    # Circle method: keep first team fixed, rotate others
-    for round_num in range(1, rounds + 1):
-        for i in range(matches_per_round):
-            home_idx = i
-            away_idx = n - 1 - i
-
-            home = team_ids[home_idx]
-            away = team_ids[away_idx]
-
-            # Skip if either is a bye
-            if home is None or away is None:
+    # For each team, pair with all other teams once
+    for i in range(n):
+        for j in range(i + 1, n):
+            home = team_ids[i]
+            away = team_ids[j]
+            pair = tuple(sorted([home, away]))
+            if pair in seen:
                 continue
+            seen.add(pair)
 
             matches.append({
                 "team_home_id": home,
@@ -3160,9 +3153,7 @@ def generate_round_robin(teams: list) -> list:
                 "next_match_id": None,
                 "is_tbd": 0
             })
-
-        # Rotate: move last element to second position
-        team_ids = [team_ids[0]] + [team_ids[-1]] + team_ids[1:-1]
+            round_num += 1
 
     return matches
 
