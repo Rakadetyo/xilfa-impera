@@ -85,9 +85,15 @@
                     <span class="text-white">{{ start_fmt }}{% if end_fmt %} – {{ end_fmt }}{% endif %}</span>
                 </div>
                 {% if game.arena_name %}
-                <div class="flex items-center gap-3">
-                    <span class="text-accent">📍</span>
-                    <span class="text-white">{{ game.arena_name }}</span>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-accent">📍</span>
+                        <span class="text-white">{{ game.arena_name }}</span>
+                    </div>
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ game.arena_name|urlencode }}" target="_blank" rel="noopener"
+                       class="text-xs text-accent hover:underline flex items-center gap-1">
+                        Open in Map ↗
+                    </a>
                 </div>
                 {% endif %}
                 {% if price %}
@@ -136,7 +142,7 @@
                             </span>
                         </div>
                         {% if t.position_1 %}
-                        <span class="text-xs text-gray-500 font-mono">{{ t.position_1 }}</span>
+                        <span class="text-xs text-gray-500 font-mono">{{ t.position_1 }}{% if t.position_2 %} / {{ t.position_2 }}{% endif %}</span>
                         {% endif %}
                     </div>
                     {% endfor %}
