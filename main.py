@@ -3122,40 +3122,55 @@ async def clear_teams(request: Request, game_id: int):
 
 
 # --- Schedule Generators ---
+def _rr_modular(ids: list, n: int) -> list[tuple]:
+    """Odd n: cyclic-diff phases. d=1 uses step=n//2, others step=1. Zero back-to-back."""
+    pairs = []
+    for d in range(1, n // 2 + 1):
+        step = n // 2 if d == 1 else 1
+        start = 0
+        for _ in range(n):
+            a, b = start % n, (start + d) % n
+            pairs.append((ids[min(a, b)], ids[max(a, b)]))
+            start = (start + step) % n
+    return pairs
+
+
+def _rr_greedy(ids: list) -> list[tuple]:
+    """Even n: greedy, prefer no back-to-back, fall back when unavoidable."""
+    from itertools import combinations
+    remaining = list(combinations(ids, 2))
+    result = [remaining.pop(0)]
+    while remaining:
+        prev = set(result[-1])
+        non_conflict = [m for m in remaining if not (set(m) & prev)]
+        pick = non_conflict[0] if non_conflict else remaining[0]
+        result.append(pick)
+        remaining.remove(pick)
+    return result
+
+
 def generate_round_robin(teams: list) -> list:
-    """Generate all unique pairing combinations."""
-    matches = []
-    team_ids = [t["id"] for t in teams]
-    n = len(team_ids)
+    """Round robin with rest-optimised ordering. Starts 1v2, minimises back-to-back games."""
+    from itertools import combinations
+    ids = sorted([t["id"] for t in teams])
+    n = len(ids)
 
     if n < 2:
         return []
 
-    # Generate all unique pairs
-    seen = set()
-    round_num = 1
+    pairs = _rr_modular(ids, n) if n % 2 == 1 else _rr_greedy(ids)
 
-    # For each team, pair with all other teams once
-    for i in range(n):
-        for j in range(i + 1, n):
-            home = team_ids[i]
-            away = team_ids[j]
-            pair = tuple(sorted([home, away]))
-            if pair in seen:
-                continue
-            seen.add(pair)
-
-            matches.append({
-                "team_home_id": home,
-                "team_away_id": away,
-                "round_number": round_num,
-                "bracket_slot": None,
-                "next_match_id": None,
-                "is_tbd": 0
-            })
-            round_num += 1
-
-    return matches
+    return [
+        {
+            "team_home_id": home,
+            "team_away_id": away,
+            "round_number": i + 1,
+            "bracket_slot": None,
+            "next_match_id": None,
+            "is_tbd": 0,
+        }
+        for i, (home, away) in enumerate(pairs)
+    ]
 
 
 def generate_single_elimination(teams: list) -> list:
