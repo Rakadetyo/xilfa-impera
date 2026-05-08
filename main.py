@@ -2023,16 +2023,22 @@ def compute_player_values(attendees, skill_weight=0.6):
     min_s, max_s = min(skills), max(skills)
     skill_range = (max_s - min_s) or 1
     pos_counts = {}
+    total_slots = 0
     for a in attendees:
-        pos = a.get("position_1") or "?"
-        pos_counts[pos] = pos_counts.get(pos, 0) + 1
-    total = len(attendees)
+        for key in ("position_1", "position_2"):
+            pos = a.get(key)
+            if pos and pos != "?":
+                pos_counts[pos] = pos_counts.get(pos, 0) + 1
+                total_slots += 1
     result = {}
     for a in attendees:
         skill_pct = ((a.get("skill_level") or 3) - min_s) / skill_range
-        pos = a.get("position_1") or "?"
-        # "?" players counted in pool (hurts real position scarcity) but get 0 scarcity themselves
-        pos_scarcity = (1.0 - (pos_counts[pos] / total)) if pos != "?" else 0.0
+        scarcities = []
+        for key in ("position_1", "position_2"):
+            pos = a.get(key)
+            if pos and pos != "?" and total_slots > 0:
+                scarcities.append(1.0 - pos_counts[pos] / total_slots)
+        pos_scarcity = max(scarcities) if scarcities else 0.0
         result[a["id"]] = round((skill_pct * skill_weight + pos_scarcity * position_weight) * 100, 1)
     return result
 
