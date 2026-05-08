@@ -3389,13 +3389,20 @@ async def generate_schedule(
     else:
         matches = generate_round_robin(teams)
 
-    # Insert matches
+    # Insert matches with scheduled_start calculated
+    from datetime import datetime as dt, timedelta
+    game_start_dt = dt.strptime(new_datetime, "%Y-%m-%dT%H:%M:%S")
+    match_duration = duration + break_time
+
     for i, m in enumerate(matches):
+        match_start_dt = game_start_dt + timedelta(minutes=i * match_duration)
+        scheduled_start = match_start_dt.strftime("%H:%M")
+
         cursor.execute("""
             INSERT INTO game_match (
                 game_id, round_number, match_order, team_home_id, team_away_id,
-                type, bracket_slot, next_match_id, is_tbd
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                type, bracket_slot, next_match_id, is_tbd, scheduled_start
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             game_id,
             m.get("round_number", 1),
@@ -3405,7 +3412,8 @@ async def generate_schedule(
             format,
             m.get("bracket_slot"),
             m.get("next_match_id"),
-            m.get("is_tbd", 0)
+            m.get("is_tbd", 0),
+            scheduled_start
         ))
 
     conn.commit()
@@ -3429,11 +3437,27 @@ async def reorder_matches(request: Request, game_id: int):
     conn = get_db()
     cursor = conn.cursor()
 
-    for order, match_id in enumerate(match_ids):
-        cursor.execute(
-            "UPDATE game_match SET match_order = ? WHERE id = ? AND game_id = ?",
-            (order + 1, match_id, game_id)
-        )
+    # Get game datetime and durations
+    cursor.execute("SELECT datetime, duration_per_game, break_time FROM game WHERE id = ?", (game_id,))
+    game = cursor.fetchone()
+    if game and game["datetime"]:
+        from datetime import datetime as dt, timedelta
+        game_start_dt = dt.strptime(game["datetime"].replace("T", " "), "%Y-%m-%d %H:%M:%S")
+        match_duration = int(game.get("duration_per_game") or 8) + int(game.get("break_time") or 0)
+
+        for order, match_id in enumerate(match_ids):
+            match_start_dt = game_start_dt + timedelta(minutes=order * match_duration)
+            scheduled_start = match_start_dt.strftime("%H:%M")
+            cursor.execute(
+                "UPDATE game_match SET match_order = ?, scheduled_start = ? WHERE id = ? AND game_id = ?",
+                (order + 1, scheduled_start, match_id, game_id)
+            )
+    else:
+        for order, match_id in enumerate(match_ids):
+            cursor.execute(
+                "UPDATE game_match SET match_order = ? WHERE id = ? AND game_id = ?",
+                (order + 1, match_id, game_id)
+            )
 
     conn.commit()
     conn.close()
@@ -3991,7 +4015,8 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
             raw += ":00"
         start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
         session_duration = int(game_dict.get("session_duration") or 120)
-        match_duration = int(game_dict.get("duration_per_game") or 8)
+        break_time = int(game_dict.get("break_time") or 0)
+        match_duration = int(game_dict.get("duration_per_game") or 8) + break_time
         end_dt = start_dt + timedelta(minutes=session_duration)
         start_fmt = start_dt.strftime("%H:%M")
         end_fmt = end_dt.strftime("%H:%M")
@@ -4000,10 +4025,11 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
         pass
 
     # Calculate each match's start and end time
+    game_duration = int(game_dict.get("duration_per_game") or 8)
     for i, match in enumerate(all_matches):
         if match.get("match_order"):
             match_start = start_dt + timedelta(minutes=(match["match_order"] - 1) * match_duration)
-            match_end = match_start + timedelta(minutes=match_duration)
+            match_end = match_start + timedelta(minutes=game_duration)
             match["match_start"] = match_start.strftime("%H:%M")
             match["match_end"] = match_end.strftime("%H:%M")
 
@@ -4021,4 +4047,5 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
         "date_fmt": date_fmt,
         "duration": session_duration,
         "match_duration": match_duration,
+        "break_time": break_time,
     })

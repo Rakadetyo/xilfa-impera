@@ -59,7 +59,7 @@
                         class="w-full text-left px-5 py-4 flex items-center justify-between">
                     <div>
                         {% if match.match_start %}
-                        <div class="text-white font-mono text-sm font-bold mb-1">{{ match.match_start }} - {{ match.match_end }} ({{ match_duration }} min)</div>
+                        <div class="text-white font-mono text-sm font-bold mb-1">{{ match.match_start }} - {{ match.match_end }} ({{ game.duration_per_game }} min)</div>
                         {% elif match.scheduled_start %}
                         <div class="text-white font-mono text-sm font-bold mb-1">{{ match.scheduled_start }}</div>
                         {% endif %}
@@ -109,7 +109,7 @@
                                     {{ p.name }}
                                 </span>
                                 {% if p.position_1 %}
-                                <span class="text-xs text-gray-600 font-mono">{{ p.position_1 }}</span>
+                                <span class="text-xs text-gray-600 font-mono">{{ p.position_1 }}{% if p.position_2 %} / {{ p.position_2 }}{% endif %}</span>
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -135,7 +135,7 @@
                                     {{ p.name }}
                                 </span>
                                 {% if p.position_1 %}
-                                <span class="text-xs text-gray-600 font-mono">{{ p.position_1 }}</span>
+                                <span class="text-xs text-gray-600 font-mono">{{ p.position_1 }}{% if p.position_2 %} / {{ p.position_2 }}{% endif %}</span>
                                 {% endif %}
                             </div>
                             {% endfor %}
