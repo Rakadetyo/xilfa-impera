@@ -1427,6 +1427,49 @@ Klik link untuk lihat info tim kamu
             {% if tab == 'schedule' %}
             <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
             <script>
+                // Game timing from template
+                const gameDateTime = "{{ game_datetime }}";
+                const gameDuration = {{ game.duration_per_game or 8 }};
+                const breakTime = {{ game.break_time or 0 }};
+                const slotDuration = gameDuration + breakTime;
+
+                // Parse game start time (e.g., "2026-05-02 19:00" or "2026-05-02T19:00:00")
+                let gameStartMinutes = null;
+                if (gameDateTime) {
+                    const dt = gameDateTime.replace('T', ' ');
+                    const parts = dt.split(' ');
+                    if (parts.length >= 2) {
+                        const timeParts = parts[1].split(':');
+                        const hours = parseInt(timeParts[0]) || 0;
+                        const mins = parseInt(timeParts[1]) || 0;
+                        gameStartMinutes = hours * 60 + mins;
+                    }
+                }
+
+                function formatTime(minutes) {
+                    const h = Math.floor(minutes / 60);
+                    const m = minutes % 60;
+                    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                }
+
+                function updateMatchNumbers() {
+                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    rows.forEach((row, idx) => {
+                        const numCell = row.querySelector('.match-num');
+                        if (numCell) numCell.textContent = idx + 1;
+
+                        // Recalculate time
+                        const timeCell = row.querySelector('td:nth-child(3)');
+                        if (timeCell && gameStartMinutes !== null) {
+                            const startMins = gameStartMinutes + (idx * slotDuration);
+                            const endMins = startMins + gameDuration;
+                            const startStr = formatTime(startMins);
+                            const endStr = formatTime(endMins);
+                            timeCell.textContent = `${startStr} - ${endStr}`;
+                        }
+                    });
+                }
+
                 const matchTableBody = document.getElementById('matchTableBody');
                 if (matchTableBody) {
                     new Sortable(matchTableBody, {
@@ -1436,14 +1479,6 @@ Klik link untuk lihat info tim kamu
                         onEnd: function(evt) {
                             updateMatchNumbers();
                         }
-                    });
-                }
-
-                function updateMatchNumbers() {
-                    const rows = document.querySelectorAll('#matchTableBody tr');
-                    rows.forEach((row, idx) => {
-                        const numCell = row.querySelector('.match-num');
-                        if (numCell) numCell.textContent = idx + 1;
                     });
                 }
 
