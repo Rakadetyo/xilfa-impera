@@ -2860,6 +2860,34 @@ async def assign_team(request: Request, game_id: int, attendee_id: int, team_id:
     return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
+@app.post("/manage/games/{game_id}/attendees/bulk-assign-team")
+async def bulk_assign_team(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    assignments = data.get("assignments", [])
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    for a in assignments:
+        attendee_id = a.get("attendeeId")
+        team_id = a.get("teamId")
+        if team_id is None:
+            cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE id = ? AND game_id = ?",
+                          (attendee_id, game_id))
+        else:
+            cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+                          (team_id, attendee_id, game_id))
+
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"ok": True})
+
+
 # --- Player Groups ---
 @app.post("/manage/games/{game_id}/groups")
 async def create_group(request: Request, game_id: int, name: str = Form(...)):

@@ -1254,7 +1254,7 @@ Klik link untuk lihat info tim kamu
                             </div>
                             <p class="text-xs text-gray-400 mt-1">Drag players here to unassign from teams</p>
                         </div>
-                        <div class="team-list p-2 space-y-1 min-h-20" data-team-id="">
+                        <div id="unassigned-players" class="team-list p-2 space-y-1 min-h-20" data-team-id="">
                             {% for a in no_team_members %}
                             {% set val = player_values.get(a.id, 0) %}
                             <div class="player-card flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-grab active:cursor-grabbing hover:bg-gray-100 transition select-none"
@@ -1275,6 +1275,11 @@ Klik link untuk lihat info tim kamu
                             </div>
                             {% endfor %}
                         </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" onclick="saveTeamAssignments()" class="px-6 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Save Team Assignments</button>
                     </div>
                 </div>
 
@@ -1673,31 +1678,45 @@ Klik link untuk lihat info tim kamu
                 ghostClass: 'opacity-40',
                 chosenClass: 'ring-accent',
                 onEnd: function(evt) {
-                    console.log('Drag ended:', evt.from.dataset.teamId, '->', evt.to.dataset.teamId);
-                    const attendeeId = evt.item.dataset.attendeeId;
-                    const newTeamId = evt.to.dataset.teamId;
-                    if (newTeamId === undefined || !attendeeId) {
-                        console.log('Missing data:', newTeamId, attendeeId);
-                        return;
-                    }
-
-                    fetch(`/manage/games/${gameId}/attendees/${attendeeId}/assign-team`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'fetch'
-                        },
-                        body: `team_id=${newTeamId}`
-                    }).then(r => {
-                        if (!r.ok) {
-                            console.error('Failed to assign team');
-                            return;
-                        }
-                        updateAllTeamHeaders();
-                    });
+                    // Just update UI, no auto-save
+                    updateAllTeamHeaders();
                 }
             });
         });
+
+        function saveTeamAssignments() {
+            const assignments = [];
+            document.querySelectorAll('.team-list').forEach(list => {
+                const teamId = list.dataset.teamId;
+                if (teamId === undefined) return;
+                list.querySelectorAll('.player-card').forEach(card => {
+                    const attendeeId = card.dataset.attendeeId;
+                    if (attendeeId) {
+                        assignments.push({ attendeeId: parseInt(attendeeId), teamId: parseInt(teamId) });
+                    }
+                });
+            });
+
+            // Also get unassigned players (no team)
+            document.querySelectorAll('#unassigned-players .player-card').forEach(card => {
+                const attendeeId = card.dataset.attendeeId;
+                if (attendeeId) {
+                    assignments.push({ attendeeId: parseInt(attendeeId), teamId: null });
+                }
+            });
+
+            fetch(`/manage/games/${gameId}/attendees/bulk-assign-team`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assignments: assignments })
+            }).then(r => {
+                if (r.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to save team assignments');
+                }
+            });
+        }
 
         function updateAllTeamHeaders() {
             document.querySelectorAll('.team-list').forEach(list => {
