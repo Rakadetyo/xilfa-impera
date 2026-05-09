@@ -2860,6 +2860,34 @@ async def assign_team(request: Request, game_id: int, attendee_id: int, team_id:
     return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
 
 
+@app.post("/manage/games/{game_id}/attendees/bulk-assign-team")
+async def bulk_assign_team(request: Request, game_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = await request.json()
+    assignments = data.get("assignments", [])
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    for a in assignments:
+        attendee_id = a.get("attendeeId")
+        team_id = a.get("teamId")
+        if team_id is None:
+            cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE id = ? AND game_id = ?",
+                          (attendee_id, game_id))
+        else:
+            cursor.execute("UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+                          (team_id, attendee_id, game_id))
+
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"ok": True})
+
+
 # --- Player Groups ---
 @app.post("/manage/games/{game_id}/groups")
 async def create_group(request: Request, game_id: int, name: str = Form(...)):
@@ -3364,15 +3392,22 @@ async def generate_schedule(
         conn.close()
         return JSONResponse({"error": "Need at least 2 teams"}, status_code=400)
 
-    # Update game schedule_format, duration, break_time, and datetime
+    # Get current datetime for calculating match times (don't update game.datetime)
     cursor.execute("SELECT datetime FROM game WHERE id = ?", (game_id,))
     game = cursor.fetchone()
-    current_date = game["datetime"].split("T")[0] if game and game["datetime"] else "2025-01-01"
-    new_datetime = f"{current_date}T{start_time}:00"
+    current_datetime = game["datetime"] if game and game["datetime"] else None
 
+    # Use start_time from form for schedule calculation, but don't save to game.datetime
+    if current_datetime:
+        current_date = current_datetime.split("T")[0]
+        new_datetime = f"{current_date}T{start_time}:00"
+    else:
+        new_datetime = f"2025-01-01T{start_time}:00"
+
+    # Update only schedule settings, NOT datetime
     cursor.execute(
-        "UPDATE game SET schedule_format = ?, duration_per_game = ?, break_time = ?, datetime = ? WHERE id = ?",
-        (format, duration, break_time, new_datetime, game_id)
+        "UPDATE game SET schedule_format = ?, duration_per_game = ?, break_time = ? WHERE id = ?",
+        (format, duration, break_time, game_id)
     )
 
     # Clear existing matches
@@ -3454,7 +3489,10 @@ async def reorder_matches(request: Request, game_id: int):
     game = cursor.fetchone()
     if game and game["datetime"]:
         from datetime import datetime as dt, timedelta
-        game_start_dt = dt.strptime(game["datetime"].replace("T", " "), "%Y-%m-%d %H:%M:%S")
+        raw = game["datetime"].replace("T", " ")
+        if len(raw) == 16:
+            raw += ":00"
+        game_start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
         match_duration = int(game["duration_per_game"] or 8) + int(game["break_time"] or 0)
 
         for order, match_id in enumerate(match_ids):
@@ -3716,6 +3754,10 @@ async def invite_landing(request: Request, token: str):
     except Exception:
         pass
 
+    # Build og:image URL
+    base_url = str(request.base_url).rstrip("/")
+    og_image = f"{base_url}/assets/short deck impera-04.jpg"
+
     return templates.TemplateResponse(request, "invite/landing.html", {
         "token": token,
         "game": game_dict,
@@ -3725,6 +3767,7 @@ async def invite_landing(request: Request, token: str):
         "date_fmt": date_fmt,
         "partners": [dict(p) for p in partners],
         "arena_map_url": game_dict.get("arena_map_url"),
+        "og_image": og_image,
     })
 
 

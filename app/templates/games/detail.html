@@ -74,7 +74,7 @@
                 <div class="flex items-center gap-2 mb-2">
                     <h1 class="text-3xl font-display tracking-wide">{{ game.title }}</h1>
                     <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')">
-                        <button type="submit" class="p-2 text-gray-400 hover:text-red-600 transition">
+                        <button type="button" class="p-2 text-gray-400 hover:text-red-600 transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
@@ -201,7 +201,7 @@
                             </button>
                             <form method="post" action="/manage/games/{{ game.id }}/invite/regenerate"
                                   onsubmit="return confirm('Regenerate link? Old link will stop working.')">
-                                <button type="submit"
+                                <button type="button"
                                         class="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">
                                     🔄 Regenerate Link
                                 </button>
@@ -211,7 +211,7 @@
                         {% else %}
                         <p class="text-sm text-gray-400 mb-3">Generate a unique invite link to share with players.</p>
                         <form method="post" action="/manage/games/{{ game.id }}/invite/generate">
-                            <button type="submit"
+                            <button type="button"
                                     class="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm font-medium">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -627,7 +627,7 @@ Klik link untuk lihat info tim kamu
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end gap-3">
-                    <button type="submit" class="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Save Changes</button>
+                    <button type="button" class="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Save Changes</button>
                 </div>
             </form>
 
@@ -662,7 +662,7 @@ Klik link untuk lihat info tim kamu
                         <input type="hidden" name="partner_name" id="partner-name-hidden">
                         <input type="text" name="types" id="partner-types-input" placeholder="Types (e.g. referee)" class="w-40 px-4 py-2 border border-gray-300 rounded-lg">
                         <input type="number" name="fee" id="partner-fee-input" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
-                        <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
+                        <button type="button" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
                     </div>
                 </form>
                 <script>
@@ -699,12 +699,12 @@ Klik link untuk lihat info tim kamu
                         <div class="flex items-center gap-3">
                             <span class="text-gray-600 text-sm">Rp{{ "{:,.0f}".format(p.fee) }}</span>
                             <form method="post" action="/manage/games/{{ game.id }}/partners/{{ p.id }}/pay">
-                                <button type="submit" class="px-2 py-0.5 rounded text-xs font-medium {% if p.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                <button type="button" class="px-2 py-0.5 rounded text-xs font-medium {% if p.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
                                     {{ 'Paid' if p.is_paid else 'Unpaid' }}
                                 </button>
                             </form>
                             <form method="post" action="/manage/games/{{ game.id }}/partners/{{ p.id }}/delete">
-                                <button type="submit" class="text-red-500 text-sm hover:text-red-700">Delete</button>
+                                <button type="button" class="text-red-500 text-sm hover:text-red-700">Delete</button>
                             </form>
                         </div>
                     </div>
@@ -716,7 +716,7 @@ Klik link untuk lihat info tim kamu
 
             <!-- Delete Game Button (outside form) -->
             <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')" class="mt-6">
-                <button type="submit" class="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium">Delete Game</button>
+                <button type="button" class="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium">Delete Game</button>
             </form>
 
             {% elif tab == 'players' %}
@@ -801,7 +801,7 @@ Klik link untuk lihat info tim kamu
                             </div>
                             <div class="flex justify-end gap-3 pt-2">
                                 <button type="button" onclick="document.getElementById('new-player-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg text-sm">Create Player</button>
+                                <button type="button" class="px-4 py-2 bg-accent text-white rounded-lg text-sm">Create Player</button>
                             </div>
                         </form>
                     </div>
@@ -859,7 +859,7 @@ Klik link untuk lihat info tim kamu
                                 <td class="px-6 py-4">
                                     {% if a %}
                                     <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/pay">
-                                        <button type="submit" class="px-2 py-1 rounded text-sm font-medium
+                                        <button type="button" class="px-2 py-1 rounded text-sm font-medium
                                             {% if a.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
                                             {{ 'Paid' if a.is_paid else 'Unpaid' }}
                                         </button>
@@ -871,7 +871,7 @@ Klik link untuk lihat info tim kamu
                                 <td class="px-6 py-4">
                                     {% if a %}
                                     <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/attend">
-                                        <button type="submit" class="px-2 py-1 rounded text-sm font-medium
+                                        <button type="button" class="px-2 py-1 rounded text-sm font-medium
                                             {% if a.is_attend %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
                                             {{ 'Yes' if a.is_attend else 'No' }}
                                         </button>
@@ -887,7 +887,7 @@ Klik link untuk lihat info tim kamu
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                         <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
-                                            <button type="submit" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded" title="Remove">
+                                            <button type="button" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded" title="Remove">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             </button>
                                         </form>
@@ -957,7 +957,7 @@ Klik link untuk lihat info tim kamu
                             </div>
                             <div class="flex justify-end gap-3 pt-2">
                                 <button type="button" onclick="document.getElementById('edit-player-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg text-sm">Save Changes</button>
+                                <button type="button" class="px-4 py-2 bg-accent text-white rounded-lg text-sm">Save Changes</button>
                             </div>
                         </form>
                     </div>
@@ -1067,7 +1067,7 @@ Klik link untuk lihat info tim kamu
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <button type="submit" class="px-5 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Generate Teams</button>
+                            <button type="button" class="px-5 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Generate Teams</button>
                             {% if teams %}
                             <button type="button" onclick="document.getElementById('clear-form').submit()" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Clear & Reset</button>
                             {% endif %}
@@ -1076,7 +1076,7 @@ Klik link untuk lihat info tim kamu
 
                     {% if teams %}
                     <form method="post" action="/manage/games/{{ game.id }}/teams/randomize">
-                        <button type="submit" class="mt-3 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Randomize</button>
+                        <button type="button" class="mt-3 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Randomize</button>
                     </form>
                     {% endif %}
 
@@ -1092,7 +1092,7 @@ Klik link untuk lihat info tim kamu
                                 <div class="flex justify-between items-center mb-2">
                                     <span class="font-medium text-sm">{{ group.name }}</span>
                                     <form method="post" action="/manage/games/{{ game.id }}/groups/{{ group.id }}/delete" onsubmit="return confirm('Delete group {{ group.name }}?')">
-                                        <button type="submit" class="text-red-500 text-xs hover:text-red-700">Delete</button>
+                                        <button type="button" class="text-red-500 text-xs hover:text-red-700">Delete</button>
                                     </form>
                                 </div>
                                 <div class="flex flex-wrap gap-2 items-center">
@@ -1100,7 +1100,7 @@ Klik link untuk lihat info tim kamu
                                     <span class="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded text-sm">
                                         {{ m.name }}
                                         <form method="post" action="/manage/games/{{ game.id }}/groups/{{ group.id }}/members/{{ m.player_id }}/delete" class="inline">
-                                            <button type="submit" class="hover:text-red-600 ml-0.5">&times;</button>
+                                            <button type="button" class="hover:text-red-600 ml-0.5">&times;</button>
                                         </form>
                                     </span>
                                     {% endfor %}
@@ -1124,7 +1124,7 @@ Klik link untuk lihat info tim kamu
 
                         <form method="post" action="/manage/games/{{ game.id }}/groups" class="flex gap-2">
                             <input type="text" name="name" placeholder="New group name" required class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-44">
-                            <button type="submit" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">+ Add Group</button>
+                            <button type="button" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">+ Add Group</button>
                         </form>
                     </div>
 
@@ -1229,7 +1229,7 @@ Klik link untuk lihat info tim kamu
                                 {% if a.player_id in grouped_player_ids %}
                                 <span class="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium">G</span>
                                 {% endif %}
-                                <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/toggle-lock" class="inline">
+                                <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/toggle-lock" class="inline" onsubmit="event.preventDefault(); fetch(this.action, {method: 'POST', headers: {'X-Requested-With': 'fetch'}}).then(() => window.location.reload());">
                                     <button type="submit" class="ml-1 p-1 rounded {% if a.locked %}bg-red-100 text-red-600{% else %}bg-gray-100 text-gray-400 hover:bg-gray-200{% endif %}" title="{% if a.locked %}Unlock{% else %}Lock{% endif %}">
                                         {% if a.locked %}
                                         <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
@@ -1254,7 +1254,7 @@ Klik link untuk lihat info tim kamu
                             </div>
                             <p class="text-xs text-gray-400 mt-1">Drag players here to unassign from teams</p>
                         </div>
-                        <div class="team-list p-2 space-y-1 min-h-20" data-team-id="">
+                        <div id="unassigned-players" class="team-list p-2 space-y-1 min-h-20" data-team-id="">
                             {% for a in no_team_members %}
                             {% set val = player_values.get(a.id, 0) %}
                             <div class="player-card flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-grab active:cursor-grabbing hover:bg-gray-100 transition select-none"
@@ -1275,6 +1275,11 @@ Klik link untuk lihat info tim kamu
                             </div>
                             {% endfor %}
                         </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" onclick="saveTeamAssignments()" class="px-6 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Save Team Assignments</button>
                     </div>
                 </div>
 
@@ -1328,11 +1333,11 @@ Klik link untuk lihat info tim kamu
                             </div>
                         </div>
                         <div class="flex gap-2 mt-4">
-                            <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Generate Schedule</button>
+                            <button type="button" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Generate Schedule</button>
                         </div>
                     </form>
                     <form method="post" action="/manage/games/{{ game.id }}/schedule/clear" class="mt-2">
-                        <button type="submit" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Clear</button>
+                        <button type="button" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Clear</button>
                     </form>
                     {% endif %}
                 </div>
@@ -1362,17 +1367,17 @@ Klik link untuk lihat info tim kamu
                                 <td class="py-2 text-gray-400">⋮⋮</td>
                                 <td class="py-2 match-num">{{ loop.index }}</td>
                                 <td class="py-2">
-                                    {% if game_datetime %}
+                                    {% if m.scheduled_start %}
                                         {% set duration = game.duration_per_game or 8 %}
                                         {% set break_time = game.break_time or 0 %}
                                         {% set slot_duration = duration + break_time %}
-                                        {% set start_min = (loop.index0 * slot_duration) %}
-                                        {% set end_min = (loop.index0 * slot_duration + duration) %}
-                                        {% set start_h = (game_datetime.split('T')[1].split(':')[0]|int + start_min // 60) %}
-                                        {% set start_m = (game_datetime.split('T')[1].split(':')[1]|int + start_min % 60) %}
-                                        {% set end_h = (game_datetime.split('T')[1].split(':')[0]|int + end_min // 60) %}
-                                        {% set end_m = (game_datetime.split('T')[1].split(':')[1]|int + end_min % 60) %}
-                                        {% if start_h < 24 %}{{ '%02d:%02d' | format(start_h, start_m) }}{% else %}--:--{% endif %} - {% if end_h < 24 %}{{ '%02d:%02d' | format(end_h, end_m) }}{% else %}--:--{% endif %}
+                                        {% set start_parts = m.scheduled_start.split(':') %}
+                                        {% set start_h = start_parts[0]|int %}
+                                        {% set start_m = start_parts[1]|int %}
+                                        {% set end_min = start_h * 60 + start_m + duration %}
+                                        {% set end_h = end_min // 60 %}
+                                        {% set end_m = end_min % 60 %}
+                                        {{ '%02d:%02d' | format(start_h, start_m) }} - {{ '%02d:%02d' | format(end_h, end_m) }}
                                     {% else %}--:--{% endif %}
                                 </td>
                                 <td class="py-2">
@@ -1398,12 +1403,12 @@ Klik link untuk lihat info tim kamu
                                         <input type="number" name="score_home" value="{{ m.score_home or 0 }}" min="0" class="w-12 px-1 py-1 border rounded text-center text-sm">
                                         <span>-</span>
                                         <input type="number" name="score_away" value="{{ m.score_away or 0 }}" min="0" class="w-12 px-1 py-1 border rounded text-center text-sm">
-                                        <button type="submit" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-xs">Save</button>
+                                        <button type="button" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-xs">Save</button>
                                     </form>
                                 </td>
                                 <td class="py-2">
                                     <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/delete" class="inline">
-                                        <button type="submit" class="text-red-600 text-sm hover:underline">Delete</button>
+                                        <button type="button" class="text-red-600 text-sm hover:underline">Delete</button>
                                     </form>
                                 </td>
                             </tr>
@@ -1414,7 +1419,7 @@ Klik link untuk lihat info tim kamu
                         <button type="button" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
                         {% if game.schedule_format in ['round_robin', 'king_of_court', 'custom'] %}
                         <form method="post" action="/manage/games/{{ game.id }}/schedule/add">
-                            <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">+ Add Match</button>
+                            <button type="button" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">+ Add Match</button>
                         </form>
                         {% endif %}
                     </div>
@@ -1427,6 +1432,49 @@ Klik link untuk lihat info tim kamu
             {% if tab == 'schedule' %}
             <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
             <script>
+                // Game timing from template
+                const gameDateTime = "{{ game_datetime }}";
+                const gameDuration = {{ game.duration_per_game or 8 }};
+                const breakTime = {{ game.break_time or 0 }};
+                const slotDuration = gameDuration + breakTime;
+
+                // Parse game start time (e.g., "2026-05-02 19:00" or "2026-05-02T19:00:00")
+                let gameStartMinutes = null;
+                if (gameDateTime) {
+                    const dt = gameDateTime.replace('T', ' ');
+                    const parts = dt.split(' ');
+                    if (parts.length >= 2) {
+                        const timeParts = parts[1].split(':');
+                        const hours = parseInt(timeParts[0]) || 0;
+                        const mins = parseInt(timeParts[1]) || 0;
+                        gameStartMinutes = hours * 60 + mins;
+                    }
+                }
+
+                function formatTime(minutes) {
+                    const h = Math.floor(minutes / 60);
+                    const m = minutes % 60;
+                    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                }
+
+                function updateMatchNumbers() {
+                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    rows.forEach((row, idx) => {
+                        const numCell = row.querySelector('.match-num');
+                        if (numCell) numCell.textContent = idx + 1;
+
+                        // Recalculate time
+                        const timeCell = row.querySelector('td:nth-child(3)');
+                        if (timeCell && gameStartMinutes !== null) {
+                            const startMins = gameStartMinutes + (idx * slotDuration);
+                            const endMins = startMins + gameDuration;
+                            const startStr = formatTime(startMins);
+                            const endStr = formatTime(endMins);
+                            timeCell.textContent = `${startStr} - ${endStr}`;
+                        }
+                    });
+                }
+
                 const matchTableBody = document.getElementById('matchTableBody');
                 if (matchTableBody) {
                     new Sortable(matchTableBody, {
@@ -1436,14 +1484,6 @@ Klik link untuk lihat info tim kamu
                         onEnd: function(evt) {
                             updateMatchNumbers();
                         }
-                    });
-                }
-
-                function updateMatchNumbers() {
-                    const rows = document.querySelectorAll('#matchTableBody tr');
-                    rows.forEach((row, idx) => {
-                        const numCell = row.querySelector('.match-num');
-                        if (numCell) numCell.textContent = idx + 1;
                     });
                 }
 
@@ -1638,31 +1678,45 @@ Klik link untuk lihat info tim kamu
                 ghostClass: 'opacity-40',
                 chosenClass: 'ring-accent',
                 onEnd: function(evt) {
-                    console.log('Drag ended:', evt.from.dataset.teamId, '->', evt.to.dataset.teamId);
-                    const attendeeId = evt.item.dataset.attendeeId;
-                    const newTeamId = evt.to.dataset.teamId;
-                    if (newTeamId === undefined || !attendeeId) {
-                        console.log('Missing data:', newTeamId, attendeeId);
-                        return;
-                    }
-
-                    fetch(`/manage/games/${gameId}/attendees/${attendeeId}/assign-team`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'fetch'
-                        },
-                        body: `team_id=${newTeamId}`
-                    }).then(r => {
-                        if (!r.ok) {
-                            console.error('Failed to assign team');
-                            return;
-                        }
-                        updateAllTeamHeaders();
-                    });
+                    // Just update UI, no auto-save
+                    updateAllTeamHeaders();
                 }
             });
         });
+
+        function saveTeamAssignments() {
+            const assignments = [];
+            document.querySelectorAll('.team-list').forEach(list => {
+                const teamId = list.dataset.teamId;
+                if (teamId === undefined) return;
+                list.querySelectorAll('.player-card').forEach(card => {
+                    const attendeeId = card.dataset.attendeeId;
+                    if (attendeeId) {
+                        assignments.push({ attendeeId: parseInt(attendeeId), teamId: parseInt(teamId) });
+                    }
+                });
+            });
+
+            // Also get unassigned players (no team)
+            document.querySelectorAll('#unassigned-players .player-card').forEach(card => {
+                const attendeeId = card.dataset.attendeeId;
+                if (attendeeId) {
+                    assignments.push({ attendeeId: parseInt(attendeeId), teamId: null });
+                }
+            });
+
+            fetch(`/manage/games/${gameId}/attendees/bulk-assign-team`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assignments: assignments })
+            }).then(r => {
+                if (r.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to save team assignments');
+                }
+            });
+        }
 
         function updateAllTeamHeaders() {
             document.querySelectorAll('.team-list').forEach(list => {
@@ -1677,8 +1731,6 @@ Klik link untuk lihat info tim kamu
                     header.textContent = `${avgValue} Team Rating`;
                 }
             });
-            // Reload page to update balance score
-            window.location.reload();
         }
     </script>
     {% endif %}
