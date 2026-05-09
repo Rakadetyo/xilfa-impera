@@ -3723,6 +3723,10 @@ async def invite_landing(request: Request, token: str):
     except Exception:
         pass
 
+    # Build og:image URL
+    base_url = str(request.base_url).rstrip("/")
+    og_image = f"{base_url}/assets/short deck impera-04.jpg"
+
     return templates.TemplateResponse(request, "invite/landing.html", {
         "token": token,
         "game": game_dict,
@@ -3732,6 +3736,7 @@ async def invite_landing(request: Request, token: str):
         "date_fmt": date_fmt,
         "partners": [dict(p) for p in partners],
         "arena_map_url": game_dict.get("arena_map_url"),
+        "og_image": og_image,
     })
 
 
