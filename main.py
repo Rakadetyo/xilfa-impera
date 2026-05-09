@@ -2286,7 +2286,10 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     # Format title
     from datetime import datetime
     game_dict = dict(game)
-    dt_str = game_dict["datetime"].replace("T", " ")
+    # Ensure datetime is string (handle potential list type from SQLite quirk)
+    if isinstance(game_dict.get("datetime"), list):
+        game_dict["datetime"] = game_dict["datetime"][0] if game_dict["datetime"] else ""
+    dt_str = str(game_dict["datetime"]).replace("T", " ")
     if len(dt_str) == 16:
         dt_str += ":00"
     dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
