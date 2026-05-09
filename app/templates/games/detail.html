@@ -1362,17 +1362,17 @@ Klik link untuk lihat info tim kamu
                                 <td class="py-2 text-gray-400">⋮⋮</td>
                                 <td class="py-2 match-num">{{ loop.index }}</td>
                                 <td class="py-2">
-                                    {% if game_datetime %}
+                                    {% if m.scheduled_start %}
                                         {% set duration = game.duration_per_game or 8 %}
                                         {% set break_time = game.break_time or 0 %}
                                         {% set slot_duration = duration + break_time %}
-                                        {% set start_min = (loop.index0 * slot_duration) %}
-                                        {% set end_min = (loop.index0 * slot_duration + duration) %}
-                                        {% set start_h = (game_datetime.split('T')[1].split(':')[0]|int + start_min // 60) %}
-                                        {% set start_m = (game_datetime.split('T')[1].split(':')[1]|int + start_min % 60) %}
-                                        {% set end_h = (game_datetime.split('T')[1].split(':')[0]|int + end_min // 60) %}
-                                        {% set end_m = (game_datetime.split('T')[1].split(':')[1]|int + end_min % 60) %}
-                                        {% if start_h < 24 %}{{ '%02d:%02d' | format(start_h, start_m) }}{% else %}--:--{% endif %} - {% if end_h < 24 %}{{ '%02d:%02d' | format(end_h, end_m) }}{% else %}--:--{% endif %}
+                                        {% set start_parts = m.scheduled_start.split(':') %}
+                                        {% set start_h = start_parts[0]|int %}
+                                        {% set start_m = start_parts[1]|int %}
+                                        {% set end_min = start_h * 60 + start_m + duration %}
+                                        {% set end_h = end_min // 60 %}
+                                        {% set end_m = end_min % 60 %}
+                                        {{ '%02d:%02d' | format(start_h, start_m) }} - {{ '%02d:%02d' | format(end_h, end_m) }}
                                     {% else %}--:--{% endif %}
                                 </td>
                                 <td class="py-2">
