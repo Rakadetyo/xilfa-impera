@@ -74,7 +74,7 @@
                 <div class="flex items-center gap-2 mb-2">
                     <h1 class="text-3xl font-display tracking-wide">{{ game.title }}</h1>
                     <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')">
-                        <button type="button" class="p-2 text-gray-400 hover:text-red-600 transition">
+                        <button type="submit" class="p-2 text-gray-400 hover:text-red-600 transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
@@ -1313,7 +1313,7 @@ Klik link untuk lihat info tim kamu
                         <div class="flex flex-wrap gap-4 items-center">
                             <div>
                                 <label class="block text-sm text-gray-500 mb-1">Game start at</label>
-                                <input type="time" name="start_time" value="{{ game.datetime.split('T')[1][:5] if game.datetime else '18:00' }}" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <input type="time" name="start_time" value="{{ game_datetime.split('T')[1][:5] if game_datetime else '18:00' }}" class="px-4 py-2 border border-gray-300 rounded-lg">
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-500 mb-1">Game duration (min)</label>
@@ -1419,7 +1419,7 @@ Klik link untuk lihat info tim kamu
                         <button type="button" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
                         {% if game.schedule_format in ['round_robin', 'king_of_court', 'custom'] %}
                         <form method="post" action="/manage/games/{{ game.id }}/schedule/add">
-                            <button type="button" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">+ Add Match</button>
+                            <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">+ Add Match</button>
                         </form>
                         {% endif %}
                     </div>
