@@ -3461,7 +3461,10 @@ async def reorder_matches(request: Request, game_id: int):
     game = cursor.fetchone()
     if game and game["datetime"]:
         from datetime import datetime as dt, timedelta
-        game_start_dt = dt.strptime(game["datetime"].replace("T", " "), "%Y-%m-%d %H:%M:%S")
+        raw = game["datetime"].replace("T", " ")
+        if len(raw) == 16:
+            raw += ":00"
+        game_start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
         match_duration = int(game["duration_per_game"] or 8) + int(game["break_time"] or 0)
 
         for order, match_id in enumerate(match_ids):
