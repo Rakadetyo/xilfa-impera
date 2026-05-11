@@ -399,6 +399,27 @@ def init_db():
         )
     """)
 
+    # game_rating: player ratings per game session
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_rating (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            game_attendee_id INTEGER,
+            player_id INTEGER NOT NULL,
+            is_anonymous INTEGER DEFAULT 0,
+            rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+            great_things TEXT DEFAULT '',
+            could_be_improved TEXT DEFAULT '',
+            feedback TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE,
+            FOREIGN KEY (game_attendee_id) REFERENCES game_attendee(id) ON DELETE SET NULL,
+            FOREIGN KEY (player_id) REFERENCES player(id),
+            UNIQUE (game_attendee_id),
+            UNIQUE (game_id, player_id)
+        )
+    """)
+
     # game_finance_entry: manual income/expense lines per game
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS game_finance_entry (
