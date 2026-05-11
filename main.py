@@ -159,6 +159,17 @@ async def get_post(post_id: int):
     images = cursor.fetchall()
     conn.close()
 
+    cursor.execute("""
+        SELECT COALESCE(
+            (SELECT filename FROM post_images WHERE id = ?),
+            (SELECT filename FROM post_images WHERE post_id = ? AND is_video = 0 ORDER BY display_order LIMIT 1)
+        ) as cover_image
+    """, (post["cover_image_id"], post_id))
+    cover_row = cursor.fetchone()
+    cover_image = cover_row["cover_image"] if cover_row else None
+
+    conn.close()
+
     return JSONResponse({
         "id": post["id"],
         "title": post["title"],
@@ -169,6 +180,7 @@ async def get_post(post_id: int):
         "author": post["username"],
         "created_at": post["created_at"],
         "updated_at": post["updated_at"],
+        "cover_image": cover_image,
         "images": [{"id": img["id"], "filename": img["filename"], "is_video": img["is_video"] if "is_video" in img.keys() else 0} for img in images]
     })
 

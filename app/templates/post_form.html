@@ -385,8 +385,16 @@
                     document.getElementById('previewBodyMiddle').innerHTML = paragraphs.slice(0, half).join('<br><br>');
                     document.getElementById('previewBodyBottom').innerHTML = paragraphs.slice(half).join('<br><br>');
 
+                    // Show cover image first, then rest of images
+                    let mediaHtml = '';
+                    if (post.cover_image) {
+                        mediaHtml += `<div class="break-inside-avoid mb-4">
+                            <div class="text-xs font-bold text-gray-500 mb-1 uppercase">Cover</div>
+                            <img src="/static/img/comics/${post.cover_image}" class="w-full border-2 border-black cursor-zoom-in" alt="" style="box-shadow: 2px 2px 0px #000;" onclick="openLightbox('/static/img/comics/${post.cover_image}')">
+                        </div>`;
+                    }
                     if (post.images && post.images.length > 0) {
-                        mediaEl.innerHTML = post.images.map(img => {
+                        mediaHtml += post.images.map(img => {
                             if (img.is_video) {
                                 return `<div class="break-inside-avoid mb-2">
                                     <video src="/static/img/comics/${img.filename}" class="w-full border-2 border-black" controls style="box-shadow: 2px 2px 0px #000;"></video>
@@ -396,9 +404,8 @@
                                 <img src="/static/img/comics/${img.filename}" class="w-full border-2 border-black cursor-zoom-in" alt="" style="box-shadow: 2px 2px 0px #000;" onclick="openLightbox('/static/img/comics/${img.filename}')">
                             </div>`;
                         }).join('');
-                    } else {
-                        mediaEl.innerHTML = '<div class="text-gray-500">No media</div>';
                     }
+                    mediaEl.innerHTML = mediaHtml || '<div class="text-gray-500">No media</div>';
                 })
                 .catch(e => {
                     mediaEl.innerHTML = '<div class="text-red-500">Error loading preview</div>';
