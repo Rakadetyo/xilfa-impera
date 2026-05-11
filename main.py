@@ -843,7 +843,7 @@ async def edit_post_page(request: Request, post_id: int):
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM posts WHERE id = ?", (post_id,))
+    cursor.execute("SELECT id, title, body, summary, post_type, status, created_at, updated_at, cover_image_id FROM posts WHERE id = ?", (post_id,))
     post = cursor.fetchone()
 
     if not post:
@@ -863,17 +863,27 @@ async def edit_post_page(request: Request, post_id: int):
     })
 
 @app.post("/manage/posts/{post_id}")
-async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
+async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft"), created_date: str = Form(""), created_time: str = Form("")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Update post fields
     cursor.execute(
         "UPDATE posts SET title = ?, body = ?, summary = ?, post_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (title, body, summary, post_type, status, post_id)
     )
+
+    # Update created_at if provided
+    if created_date and created_time:
+        cursor.execute(
+            "UPDATE posts SET created_at = ? WHERE id = ?",
+            (f"{created_date} {created_time}", post_id)
+        )
+
     conn.commit()
     conn.close()
 
