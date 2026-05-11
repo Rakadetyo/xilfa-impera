@@ -140,7 +140,7 @@ async def get_post(post_id: int):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT p.id, p.title, p.body, p.summary, p.post_type, p.status, p.created_at, p.updated_at, u.username
+        SELECT p.id, p.title, p.body, p.summary, p.post_type, p.status, p.created_at, p.updated_at, p.cover_image_id, u.username
         FROM posts p
         JOIN users u ON p.author_id = u.id
         WHERE p.id = ?
@@ -157,6 +157,16 @@ async def get_post(post_id: int):
         ORDER BY display_order
     """, (post_id,))
     images = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT COALESCE(
+            (SELECT filename FROM post_images WHERE id = ?),
+            (SELECT filename FROM post_images WHERE post_id = ? AND is_video = 0 ORDER BY display_order LIMIT 1)
+        ) as cover_image
+    """, (post["cover_image_id"], post_id))
+    cover_row = cursor.fetchone()
+    cover_image = cover_row["cover_image"] if cover_row else None
+
     conn.close()
 
     return JSONResponse({
@@ -169,6 +179,7 @@ async def get_post(post_id: int):
         "author": post["username"],
         "created_at": post["created_at"],
         "updated_at": post["updated_at"],
+        "cover_image": cover_image,
         "images": [{"id": img["id"], "filename": img["filename"], "is_video": img["is_video"] if "is_video" in img.keys() else 0} for img in images]
     })
 
@@ -832,7 +843,7 @@ async def edit_post_page(request: Request, post_id: int):
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM posts WHERE id = ?", (post_id,))
+    cursor.execute("SELECT id, title, body, summary, post_type, status, created_at, updated_at, cover_image_id FROM posts WHERE id = ?", (post_id,))
     post = cursor.fetchone()
 
     if not post:
@@ -852,17 +863,27 @@ async def edit_post_page(request: Request, post_id: int):
     })
 
 @app.post("/manage/posts/{post_id}")
-async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
+async def update_post(request: Request, post_id: int, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft"), created_date: str = Form(""), created_time: str = Form("")):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Update post fields
     cursor.execute(
         "UPDATE posts SET title = ?, body = ?, summary = ?, post_type = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (title, body, summary, post_type, status, post_id)
     )
+
+    # Update created_at if provided
+    if created_date and created_time:
+        cursor.execute(
+            "UPDATE posts SET created_at = ? WHERE id = ?",
+            (f"{created_date} {created_time}", post_id)
+        )
+
     conn.commit()
     conn.close()
 
