@@ -246,7 +246,7 @@ def init_db():
     cursor.execute("PRAGMA table_info(game_attendee)")
     attendee_columns = {row[1] for row in cursor.fetchall()}
     if 'slot_type' not in attendee_columns:
-        cursor.execute("ALTER TABLE game_attendee ADD COLUMN slot_type TEXT DEFAULT 'regular'")
+        cursor.execute("ALTER TABLE game_attendee ADD COLUMN slot_type TEXT DEFAULT 'non-member'")
     if 'is_paid' not in attendee_columns:
         cursor.execute("ALTER TABLE game_attendee ADD COLUMN is_paid INTEGER DEFAULT 0")
     if 'amount_paid' not in attendee_columns:
