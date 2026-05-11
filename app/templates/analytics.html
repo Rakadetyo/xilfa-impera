@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="/assets/impera-logo-only-white.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent': ['Permanent Marker', 'cursive'],
+                        'body': ['Inter', 'sans-serif'],
+                    },
+                    borderWidth: { '3': '3px' }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-btn.active { background-color: #C9A84C; color: #000; font-weight: 700; }
+        .tab-btn { transition: background 0.15s; }
+        .heatmap-cell { position: relative; }
+        .heatmap-cell .tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111;
+            color: #fff;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 50;
+            pointer-events: none;
+        }
+        .heatmap-cell:hover .tip { display: block; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+<div class="flex min-h-screen">
+    {% include '_sidebar.html' %}
+
+    <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <h1 class="text-lg font-display">Analytics</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
+                <form method="POST" action="/manage/logout">
+                    <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
+                </form>
+            </div>
+        </header>
+
+        <div class="p-6 md:p-8">
+
+            <!-- Tab nav -->
+            <div class="flex gap-1 mb-8">
+                <button class="tab-btn active px-5 py-2 rounded-lg text-sm" onclick="showTab('overview')">Overview</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('players')">Players</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('finance')">Finance</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('quality')">Quality</button>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: OVERVIEW                                  -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-overview">
+                <!-- Summary cards -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-display text-accent">{{ game_activity.total_games }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Games</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-display text-accent">{{ game_activity.avg_players_per_game }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Players / Game</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm col-span-2 md:col-span-1">
+                        <p class="text-3xl font-display text-accent">{{ game_activity.avg_fill_rate }}%</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Fill Rate</p>
+                    </div>
+                </div>
+
+                <!-- Most / least packed + momentum -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    {% if game_activity.most_packed %}
+                    <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Most Packed</span>
+                        </div>
+                        <p class="text-2xl font-display text-green-600">{{ game_activity.most_packed.month }}</p>
+                        <div class="mt-3 space-y-1">
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.most_packed.total_players }}</span> <span class="text-gray-400">total players</span></p>
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.most_packed.avg_players }}</span> <span class="text-gray-400">avg per game</span></p>
+                            <p class="text-xs text-gray-400">{{ game_activity.most_packed.game_count }} game{{ 's' if game_activity.most_packed.game_count != 1 }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if game_activity.least_packed %}
+                    <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Least Packed</span>
+                        </div>
+                        <p class="text-2xl font-display text-red-400">{{ game_activity.least_packed.month }}</p>
+                        <div class="mt-3 space-y-1">
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.least_packed.total_players }}</span> <span class="text-gray-400">total players</span></p>
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.least_packed.avg_players }}</span> <span class="text-gray-400">avg per game</span></p>
+                            <p class="text-xs text-gray-400">{{ game_activity.least_packed.game_count }} game{{ 's' if game_activity.least_packed.game_count != 1 }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if game_activity.momentum_pct is not none %}
+                    <div class="bg-white border-2 {% if game_activity.momentum_pct >= 0 %}border-green-200{% else %}border-red-100{% endif %} rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs {% if game_activity.momentum_pct >= 0 %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-500{% endif %} px-2 py-0.5 rounded uppercase tracking-wider font-bold">Momentum</span>
+                        </div>
+                        <p class="text-2xl font-display {% if game_activity.momentum_pct >= 0 %}text-green-600{% else %}text-red-400{% endif %}">
+                            {{ '+' if game_activity.momentum_pct >= 0 else '' }}{{ game_activity.momentum_pct }}%
+                        </p>
+                        <div class="mt-3 space-y-1">
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.momentum_recent_avg }}</span> <span class="text-gray-400">avg last 8 games</span></p>
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.momentum_prev_avg }}</span> <span class="text-gray-400">avg prev 8 games</span></p>
+                            <p class="text-xs text-gray-400">Player count trend</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-white border-2 border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-center">
+                        <p class="text-xs text-gray-400 text-center">Need 16+ games<br>for momentum data</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Heatmap -->
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wider">Game Activity</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Each cell = one game. Color = fill rate (players / max).</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-gray-400 shrink-0">
+                            <span>Low</span>
+                            <div class="flex gap-1">
+                                <div class="w-3 h-3 rounded-sm" style="background:#f3f4f6"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#fef3c7"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#fde68a"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#fbbf24"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#d97706"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#92400e"></div>
+                            </div>
+                            <span>High</span>
+                        </div>
+                    </div>
+                    <div id="heatmap">
+                        {% if not game_activity.games %}
+                        <p class="text-sm text-gray-400">No game data yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Monthly charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Games per Month</p>
+                        <canvas id="chartGamesPerMonth" height="200"></canvas>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Avg Players per Month</p>
+                        <canvas id="chartAvgPlayers" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: PLAYERS                                   -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-players" class="hidden">
+                <!-- Charts row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">New vs Returning (per Month)</p>
+                        <canvas id="chartNewVsReturning" height="220"></canvas>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Attendance Frequency</p>
+                        <canvas id="chartFrequency" height="220"></canvas>
+                    </div>
+                </div>
+
+                <!-- Loyalty leaderboard -->
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Loyalty Leaderboard — Top 15</p>
+                    {% if player_stats.leaderboard %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                                    <th class="text-left pb-2 font-medium">#</th>
+                                    <th class="text-left pb-2 font-medium">Player</th>
+                                    <th class="text-left pb-2 font-medium">Status</th>
+                                    <th class="text-right pb-2 font-medium">Games</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in player_stats.leaderboard %}
+                                <tr class="border-b border-gray-50 hover:bg-gray-50">
+                                    <td class="py-2 font-display text-gray-400 text-base">{{ loop.index }}</td>
+                                    <td class="py-2">
+                                        <span class="font-medium">{{ p.name }}</span>
+                                        {% if p.nickname %}<span class="text-gray-400 text-xs ml-1">"{{ p.nickname }}"</span>{% endif %}
+                                    </td>
+                                    <td class="py-2">
+                                        {% if p.is_member %}
+                                        <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">Member</span>
+                                        {% else %}
+                                        <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Guest</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-2 text-right font-display text-lg text-accent">{{ p.games_attended }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-400">No attendance data yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Potential members + Dropout watch -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Potential members -->
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider">Potential Members</p>
+                            <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded font-bold">{{ player_stats.potential_member_count }}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-4">Non-members with 5+ games attended.</p>
+                        {% if player_stats.potential_members %}
+                        <div class="space-y-2">
+                            {% for p in player_stats.potential_members %}
+                            <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                                <div>
+                                    <span class="font-medium text-sm">{{ p.name }}</span>
+                                    {% if p.nickname %}<span class="text-gray-400 text-xs ml-1">"{{ p.nickname }}"</span>{% endif %}
+                                    {% if p.contact_no %}<span class="text-gray-400 text-xs block">{{ p.contact_no }}</span>{% endif %}
+                                </div>
+                                <span class="font-display text-accent text-lg">{{ p.games_attended }}x</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No candidates at this time.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Dropout watch -->
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider">Dropout Watch</p>
+                            <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded font-bold">{{ player_stats.dropout_watch | length }}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-4">Regulars (3+ games) not seen in 60+ days.</p>
+                        {% if player_stats.dropout_watch %}
+                        <div class="space-y-2">
+                            {% for p in player_stats.dropout_watch %}
+                            <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                                <div>
+                                    <span class="font-medium text-sm">{{ p.name }}</span>
+                                    {% if p.nickname %}<span class="text-gray-400 text-xs ml-1">"{{ p.nickname }}"</span>{% endif %}
+                                    <span class="text-gray-400 text-xs block">{{ p.total_games }} games total</span>
+                                </div>
+                                <span class="text-xs text-red-400 font-medium">{{ p.days_since }}d ago</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No dropouts detected.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: FINANCE                                   -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-finance" class="hidden">
+                <!-- Summary cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-2xl font-display text-accent">Rp {{ "{:,.0f}".format(finance_stats.total_revenue) }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Revenue</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-2xl font-display text-gray-500">Rp {{ "{:,.0f}".format(finance_stats.total_expense) }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Expense</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-2xl font-display {% if finance_stats.total_profit >= 0 %}text-green-600{% else %}text-red-500{% endif %}">Rp {{ "{:,.0f}".format(finance_stats.total_profit) }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Net Profit</p>
+                    </div>
+                    <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                        <p class="text-2xl font-display text-red-400">{{ finance_stats.unpaid_count }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Unpaid Slots</p>
+                        <p class="text-xs text-red-300 mt-1">~Rp {{ "{:,.0f}".format(finance_stats.unpaid_estimated) }}</p>
+                    </div>
+                </div>
+
+                <!-- Per-game P&L chart -->
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Revenue vs Expense per Game</p>
+                    {% if finance_stats.game_revenue %}
+                    <canvas id="chartPnL" height="160"></canvas>
+                    {% else %}
+                    <p class="text-sm text-gray-400">No financial data yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: QUALITY                                   -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-quality" class="hidden">
+                <!-- Summary cards -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-display text-accent">{{ quality_stats.overall_avg or '—' }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Rating</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-display text-accent">{{ quality_stats.total_ratings }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Ratings</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-display text-accent">{{ quality_stats.games_with_ratings }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Games Rated</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Rating Trend</p>
+                        {% if quality_stats.ratings_per_game %}
+                        <canvas id="chartRatingTrend" height="220"></canvas>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No ratings yet.</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Rating Distribution</p>
+                        {% if quality_stats.total_ratings > 0 %}
+                        <canvas id="chartRatingDist" height="220"></canvas>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No ratings yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">What Worked Well</p>
+                        {% if quality_stats.great_tags %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for tag, count in quality_stats.great_tags %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-accent/10 text-accent border border-accent/20">
+                                {{ tag }}
+                                <span class="text-xs font-bold">{{ count }}</span>
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No feedback tags yet.</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Could Be Improved</p>
+                        {% if quality_stats.improve_tags %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for tag, count in quality_stats.improve_tags %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600 border border-gray-200">
+                                {{ tag }}
+                                <span class="text-xs font-bold">{{ count }}</span>
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No feedback tags yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /p-8 -->
+    </main>
+</div>
+
+<script>
+// ── Data from backend ──────────────────────────────────────────
+const gameActivity  = {{ game_activity  | tojson }};
+const playerStats   = {{ player_stats   | tojson }};
+const financeStats  = {{ finance_stats  | tojson }};
+const qualityStats  = {{ quality_stats  | tojson }};
+
+// ── Helpers ────────────────────────────────────────────────────
+function fmtDate(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function fmtMonth(s) {
+    // s = "YYYY-MM"
+    const [y, m] = s.split('-');
+    const d = new Date(y, parseInt(m) - 1, 1);
+    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+}
+function getFillColor(rate) {
+    if (!rate || rate === 0) return '#f3f4f6';
+    if (rate < 30) return '#fef3c7';
+    if (rate < 50) return '#fde68a';
+    if (rate < 70) return '#fbbf24';
+    if (rate < 90) return '#d97706';
+    return '#92400e';
+}
+
+// ── Chart.js defaults ──────────────────────────────────────────
+Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#9ca3af';
+
+const ACCENT   = '#C9A84C';
+const ACCENT20 = 'rgba(201,168,76,0.2)';
+const GRAY     = '#e5e7eb';
+
+// ── Tab switching ──────────────────────────────────────────────
+const TABS = ['overview', 'players', 'finance', 'quality'];
+function showTab(name) {
+    TABS.forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+    });
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', TABS[i] === name);
+        if (TABS[i] !== name) {
+            btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+        } else {
+            btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+        }
+    });
+}
+
+// ── Heatmap ────────────────────────────────────────────────────
+function getWeekOfYear(date) {
+    const start = new Date(date.getFullYear(), 0, 1);
+    return Math.min(Math.floor((date - start) / (7 * 24 * 60 * 60 * 1000)), 51);
+}
+
+function renderHeatmap() {
+    const container = document.getElementById('heatmap');
+    if (!gameActivity.games || gameActivity.games.length === 0) return;
+
+    // Group by year → week index (0–51)
+    const byYearWeek = {};
+    gameActivity.games.forEach(g => {
+        const dt = new Date(g.datetime);
+        const year = dt.getFullYear();
+        const week = getWeekOfYear(dt);
+        if (!byYearWeek[year]) byYearWeek[year] = {};
+        byYearWeek[year][week] = g;
+    });
+
+    const years = Object.keys(byYearWeek).sort();
+    const CELL   = 13;
+    const GAP    = 2;
+    const STEP   = CELL + GAP;
+    const YEAR_W = 36;
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'overflow-x-auto pb-2';
+
+    const inner = document.createElement('div');
+    inner.style.minWidth = `${YEAR_W + 52 * STEP}px`;
+
+    years.forEach((year, yi) => {
+        const yearInt = parseInt(year);
+        const weekMap = byYearWeek[year];
+        const block   = document.createElement('div');
+        block.className = yi === 0 ? 'mb-4' : 'mb-4';
+
+        // Month label row — shown once above the first year
+        if (yi === 0) {
+            const monthRow = document.createElement('div');
+            monthRow.className = 'relative mb-1';
+            monthRow.style.height = '16px';
+            monthRow.style.paddingLeft = `${YEAR_W}px`;
+
+            MONTHS.forEach((name, m) => {
+                const week = getWeekOfYear(new Date(yearInt, m, 1));
+                const lbl  = document.createElement('span');
+                lbl.className = 'absolute text-xs text-gray-400';
+                lbl.style.left = `${YEAR_W + week * STEP}px`;
+                lbl.textContent = name;
+                monthRow.appendChild(lbl);
+            });
+            block.appendChild(monthRow);
+        }
+
+        // Year label + 52 week cells
+        const cellRow = document.createElement('div');
+        cellRow.className = 'flex items-center';
+        cellRow.style.gap = `${GAP}px`;
+
+        const yearLbl = document.createElement('span');
+        yearLbl.className = 'text-xs text-gray-400 shrink-0 text-right pr-2';
+        yearLbl.style.width = `${YEAR_W}px`;
+        yearLbl.textContent = year;
+        cellRow.appendChild(yearLbl);
+
+        for (let w = 0; w < 52; w++) {
+            const game = weekMap[w];
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell shrink-0 rounded-sm';
+            cell.style.width  = `${CELL}px`;
+            cell.style.height = `${CELL}px`;
+            cell.style.backgroundColor = game ? getFillColor(game.fill_rate) : '#f3f4f6';
+
+            if (game) {
+                const tip = document.createElement('div');
+                tip.className = 'tip';
+                tip.textContent = `${fmtDate(game.datetime)} · ${game.attendee_count} players · ${game.fill_rate}% full`;
+                cell.appendChild(tip);
+            }
+
+            cellRow.appendChild(cell);
+        }
+
+        block.appendChild(cellRow);
+        inner.appendChild(block);
+    });
+
+    wrapper.appendChild(inner);
+    container.appendChild(wrapper);
+}
+
+// ── Charts ─────────────────────────────────────────────────────
+function initOverviewCharts() {
+    const monthly = gameActivity.monthly || [];
+    const labels = monthly.map(m => fmtMonth(m.month));
+
+    new Chart(document.getElementById('chartGamesPerMonth'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Games',
+                data: monthly.map(m => m.game_count),
+                backgroundColor: ACCENT,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    new Chart(document.getElementById('chartAvgPlayers'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Avg Players',
+                data: monthly.map(m => m.avg_players),
+                borderColor: ACCENT,
+                backgroundColor: ACCENT20,
+                borderWidth: 2,
+                pointBackgroundColor: ACCENT,
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function initPlayerCharts() {
+    const nvr = playerStats.new_vs_returning || [];
+    const labels = nvr.map(m => fmtMonth(m.month));
+
+    new Chart(document.getElementById('chartNewVsReturning'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'New',
+                    data: nvr.map(m => m.new_players),
+                    backgroundColor: ACCENT,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Returning',
+                    data: nvr.map(m => m.returning_players),
+                    backgroundColor: GRAY,
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            plugins: { legend: { position: 'top' } },
+            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+        }
+    });
+
+    const buckets = playerStats.frequency_buckets || {};
+    new Chart(document.getElementById('chartFrequency'), {
+        type: 'doughnut',
+        data: {
+            labels: ['1 game', '2–5 games', '6–10 games', '11+ games'],
+            datasets: [{
+                data: [buckets['1']||0, buckets['2-5']||0, buckets['6-10']||0, buckets['11+']||0],
+                backgroundColor: ['#f3f4f6', '#fde68a', '#f59e0b', ACCENT],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom' } },
+            cutout: '60%',
+        }
+    });
+}
+
+function initFinanceCharts() {
+    const games = financeStats.game_revenue || [];
+    if (!games.length) return;
+
+    const labels = games.map(g => fmtDate(g.datetime));
+    new Chart(document.getElementById('chartPnL'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Revenue',
+                    data: games.map(g => g.total_revenue),
+                    backgroundColor: ACCENT,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Expense',
+                    data: games.map(g => g.total_expense),
+                    backgroundColor: '#fca5a5',
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function initQualityCharts() {
+    const rpg = qualityStats.ratings_per_game || [];
+    if (rpg.length) {
+        new Chart(document.getElementById('chartRatingTrend'), {
+            type: 'line',
+            data: {
+                labels: rpg.map(g => fmtDate(g.datetime)),
+                datasets: [{
+                    label: 'Avg Rating',
+                    data: rpg.map(g => g.avg_rating),
+                    borderColor: ACCENT,
+                    backgroundColor: ACCENT20,
+                    borderWidth: 2,
+                    pointBackgroundColor: ACCENT,
+                    fill: true,
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 1, max: 5 } }
+            }
+        });
+    }
+
+    const dist = qualityStats.distribution || {};
+    if (qualityStats.total_ratings > 0) {
+        new Chart(document.getElementById('chartRatingDist'), {
+            type: 'bar',
+            data: {
+                labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
+                datasets: [{
+                    data: [dist['1']||0, dist['2']||0, dist['3']||0, dist['4']||0, dist['5']||0],
+                    backgroundColor: ['#fca5a5', '#fdba74', '#fde68a', '#86efac', ACCENT],
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    }
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+renderHeatmap();
+initOverviewCharts();
+initPlayerCharts();
+initFinanceCharts();
+initQualityCharts();
+</script>
+</body>
+</html>
