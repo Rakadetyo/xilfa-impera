@@ -42,9 +42,16 @@ def init_db():
             post_id INTEGER NOT NULL,
             filename TEXT NOT NULL,
             display_order INTEGER DEFAULT 0,
+            is_video INTEGER DEFAULT 0,
             FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
         )
     """)
+
+    # Add is_video column if not exists
+    cursor.execute("PRAGMA table_info(post_images)")
+    post_img_cols = [row[1] for row in cursor.fetchall()]
+    if "is_video" not in post_img_cols:
+        cursor.execute("ALTER TABLE post_images ADD COLUMN is_video INTEGER DEFAULT 0")
 
     # Add summary column if not exists (renamed from abstract)
     cursor.execute("PRAGMA table_info(posts)")
@@ -57,6 +64,10 @@ def init_db():
     # Add post_type column if not exists
     if 'post_type' not in columns:
         cursor.execute("ALTER TABLE posts ADD COLUMN post_type TEXT DEFAULT 'HIGHLIGHT'")
+
+    # Add cover_image_id column if not exists
+    if 'cover_image_id' not in columns:
+        cursor.execute("ALTER TABLE posts ADD COLUMN cover_image_id INTEGER")
 
     # New tables for arena/game/player/member system
 
@@ -370,6 +381,34 @@ def init_db():
             FOREIGN KEY (team_home_id) REFERENCES game_team(id),
             FOREIGN KEY (team_away_id) REFERENCES game_team(id),
             FOREIGN KEY (winner_team_id) REFERENCES game_team(id)
+        )
+    """)
+
+    # game_asset: video/photo/doc links per game, optionally attributed to a partner
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_asset (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            game_partner_id INTEGER,
+            type TEXT NOT NULL DEFAULT 'video',
+            url TEXT NOT NULL,
+            label TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE,
+            FOREIGN KEY (game_partner_id) REFERENCES game_partner(id) ON DELETE SET NULL
+        )
+    """)
+
+    # game_finance_entry: manual income/expense lines per game
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_finance_entry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+            label TEXT NOT NULL,
+            amount REAL NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE
         )
     """)
 
