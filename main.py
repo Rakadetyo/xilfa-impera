@@ -4366,6 +4366,22 @@ async def post_game_submit(
     return RedirectResponse(f"/invite/{token}/{attendee_id}/post-game", status_code=302)
 
 
+@app.post("/invite/{token}/{attendee_id}/post-game/reset-rating")
+async def reset_rating(request: Request, token: str, attendee_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM game WHERE invite_token = ?", (token,))
+    game = cursor.fetchone()
+    if game:
+        cursor.execute("SELECT player_id FROM game_attendee WHERE id = ? AND game_id = ?", (attendee_id, game["id"]))
+        attendee = cursor.fetchone()
+        if attendee:
+            cursor.execute("DELETE FROM game_rating WHERE game_id = ? AND player_id = ?", (game["id"], attendee["player_id"]))
+            conn.commit()
+    conn.close()
+    return RedirectResponse(f"/invite/{token}/{attendee_id}/post-game", status_code=302)
+
+
 @app.get("/invite/{token}/{attendee_id}/teams")
 async def invite_teams(request: Request, token: str, attendee_id: int):
     conn = get_db()
