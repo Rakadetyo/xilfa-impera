@@ -97,22 +97,83 @@ def get_game_activity(conn) -> dict:
 def get_player_stats(conn) -> dict:
     cursor = conn.cursor()
 
+    current_period = datetime.now().strftime("%B %Y")
+
     # Loyalty leaderboard: top 15 by games attended
+    # is_member = has active member record for current period
     cursor.execute("""
         SELECT
             p.id,
             p.name,
             p.nickname,
-            p.is_member,
+            CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END as is_member,
             COUNT(ga.id) as games_attended
         FROM player p
         JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
+        LEFT JOIN member m ON m.player_id = p.id AND m.member_period = ?
         WHERE p.status = 1
         GROUP BY p.id
         ORDER BY games_attended DESC
         LIMIT 15
-    """)
+    """, (current_period,))
     leaderboard = [dict(r) for r in cursor.fetchall()]
+
+    # Streak leaderboard: consecutive weeks attended (most recent first)
+    # Group games by ISO week — attending ANY game in a week = attended that week
+    cursor.execute("SELECT id, datetime FROM game WHERE datetime <= datetime('now') ORDER BY datetime DESC")
+    past_games = cursor.fetchall()
+
+    def _week_key(dt_str: str):
+        try:
+            # fromisoformat handles both "2026-05-10T08:00" and "2026-05-10 08:00:00"
+            return datetime.fromisoformat(dt_str).isocalendar()[:2]
+        except Exception:
+            return None
+
+    # Ordered unique weeks, most recent first
+    seen_weeks: list = []
+    week_to_game_ids: dict = {}
+    for r in past_games:
+        wk = _week_key(r["datetime"])
+        if wk is None:
+            continue
+        if wk not in week_to_game_ids:
+            seen_weeks.append(wk)
+            week_to_game_ids[wk] = set()
+        week_to_game_ids[wk].add(r["id"])
+
+    cursor.execute("SELECT player_id, game_id FROM game_attendee WHERE is_attend = 1")
+    attended_map: dict[int, set] = {}
+    for r in cursor.fetchall():
+        attended_map.setdefault(r["player_id"], set()).add(r["game_id"])
+
+    cursor.execute("SELECT id, name, nickname FROM player WHERE status = 1")
+    players_info = {r["id"]: dict(r) for r in cursor.fetchall()}
+
+    cursor.execute("SELECT player_id FROM member WHERE member_period = ?", (current_period,))
+    current_members = {r["player_id"] for r in cursor.fetchall()}
+
+    streak_rows = []
+    for player_id, game_set in attended_map.items():
+        if player_id not in players_info:
+            continue
+        streak = 0
+        for wk in seen_weeks:
+            if game_set & week_to_game_ids[wk]:  # attended any game this week
+                streak += 1
+            else:
+                break
+        if streak > 0:
+            p = players_info[player_id]
+            streak_rows.append({
+                "id": player_id,
+                "name": p["name"],
+                "nickname": p["nickname"],
+                "is_member": 1 if player_id in current_members else 0,
+                "streak": streak,
+            })
+
+    streak_leaderboard = sorted(streak_rows, key=lambda x: -x["streak"])[:10]
 
     # Attendance frequency buckets
     cursor.execute("""
@@ -156,7 +217,7 @@ def get_player_stats(conn) -> dict:
     """)
     new_vs_returning = [dict(r) for r in cursor.fetchall()]
 
-    # Potential members: non-member active players with 5+ games
+    # Potential members: no active membership this period, 5+ games attended
     cursor.execute("""
         SELECT
             p.id,
@@ -166,11 +227,12 @@ def get_player_stats(conn) -> dict:
             COUNT(ga.id) as games_attended
         FROM player p
         JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
-        WHERE p.is_member = 0 AND p.status = 1
+        LEFT JOIN member m ON m.player_id = p.id AND m.member_period = ?
+        WHERE p.status = 1 AND m.id IS NULL
         GROUP BY p.id
         HAVING games_attended >= 5
         ORDER BY games_attended DESC
-    """)
+    """, (current_period,))
     potential_members = [dict(r) for r in cursor.fetchall()]
 
     # Dropout: players who attended 3+ games but last game > 60 days ago
@@ -189,12 +251,12 @@ def get_player_stats(conn) -> dict:
         GROUP BY p.id
         HAVING total_games >= 3 AND days_since > 60
         ORDER BY days_since DESC
-        LIMIT 10
     """)
     dropouts = [dict(r) for r in cursor.fetchall()]
 
     return {
         "leaderboard": leaderboard,
+        "streak_leaderboard": streak_leaderboard,
         "frequency_buckets": frequency_buckets,
         "new_vs_returning": new_vs_returning,
         "potential_members": potential_members,
@@ -326,12 +388,43 @@ def get_quality_stats(conn) -> dict:
     cursor.execute("SELECT ROUND(AVG(rating), 2) as avg, COUNT(*) as total FROM game_rating")
     overall = dict(cursor.fetchone())
 
+    # Recent feedback (non-empty feedback text, most recent first)
+    cursor.execute("""
+        SELECT
+            gr.id,
+            gr.rating,
+            gr.feedback,
+            gr.great_things,
+            gr.could_be_improved,
+            gr.is_anonymous,
+            gr.created_at,
+            p.name as player_name,
+            g.datetime as game_datetime
+        FROM game_rating gr
+        JOIN player p ON p.id = gr.player_id
+        JOIN game g ON g.id = gr.game_id
+        WHERE gr.feedback IS NOT NULL AND TRIM(gr.feedback) != ''
+        ORDER BY gr.created_at DESC
+        LIMIT 100
+    """)
+    recent_feedback = [dict(r) for r in cursor.fetchall()]
+
+    # All unique tags for filter UI
+    all_tags = sorted(set(
+        list(great_counter.keys()) + list(improve_counter.keys())
+    ))
+
+    max_dist = max(distribution.values()) if distribution else 1
+
     return {
         "ratings_per_game": ratings_per_game,
         "distribution": distribution,
+        "max_dist": max_dist,
         "great_tags": great_counter.most_common(10),
         "improve_tags": improve_counter.most_common(10),
         "overall_avg": overall["avg"] or 0,
         "total_ratings": overall["total"],
         "games_with_ratings": len(ratings_per_game),
+        "recent_feedback": recent_feedback,
+        "all_tags": all_tags,
     }

@@ -20,13 +20,14 @@
                         'display': ['Bangers', 'sans-serif'],
                         'accent': ['Permanent Marker', 'cursive'],
                         'body': ['Inter', 'sans-serif'],
+                        'stat': ['Oswald', 'sans-serif'],
                     },
                     borderWidth: { '3': '3px' }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .tab-btn.active { background-color: #C9A84C; color: #000; font-weight: 700; }
@@ -83,15 +84,15 @@
                 <!-- Summary cards -->
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-3xl font-display text-accent">{{ game_activity.total_games }}</p>
+                        <p class="text-3xl font-stat text-accent">{{ game_activity.total_games }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Games</p>
                     </div>
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-3xl font-display text-accent">{{ game_activity.avg_players_per_game }}</p>
+                        <p class="text-3xl font-stat text-accent">{{ game_activity.avg_players_per_game }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Players / Game</p>
                     </div>
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm col-span-2 md:col-span-1">
-                        <p class="text-3xl font-display text-accent">{{ game_activity.avg_fill_rate }}%</p>
+                        <p class="text-3xl font-stat text-accent">{{ game_activity.avg_fill_rate }}%</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Fill Rate</p>
                     </div>
                 </div>
@@ -103,7 +104,7 @@
                         <div class="flex items-center gap-2 mb-3">
                             <span class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Most Packed</span>
                         </div>
-                        <p class="text-2xl font-display text-green-600">{{ game_activity.most_packed.month }}</p>
+                        <p class="text-2xl font-stat text-green-600">{{ game_activity.most_packed.month }}</p>
                         <div class="mt-3 space-y-1">
                             <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.most_packed.total_players }}</span> <span class="text-gray-400">total players</span></p>
                             <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.most_packed.avg_players }}</span> <span class="text-gray-400">avg per game</span></p>
@@ -117,7 +118,7 @@
                         <div class="flex items-center gap-2 mb-3">
                             <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Least Packed</span>
                         </div>
-                        <p class="text-2xl font-display text-red-400">{{ game_activity.least_packed.month }}</p>
+                        <p class="text-2xl font-stat text-red-400">{{ game_activity.least_packed.month }}</p>
                         <div class="mt-3 space-y-1">
                             <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.least_packed.total_players }}</span> <span class="text-gray-400">total players</span></p>
                             <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.least_packed.avg_players }}</span> <span class="text-gray-400">avg per game</span></p>
@@ -131,7 +132,7 @@
                         <div class="flex items-center gap-2 mb-3">
                             <span class="text-xs {% if game_activity.momentum_pct >= 0 %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-500{% endif %} px-2 py-0.5 rounded uppercase tracking-wider font-bold">Momentum</span>
                         </div>
-                        <p class="text-2xl font-display {% if game_activity.momentum_pct >= 0 %}text-green-600{% else %}text-red-400{% endif %}">
+                        <p class="text-2xl font-stat {% if game_activity.momentum_pct >= 0 %}text-green-600{% else %}text-red-400{% endif %}">
                             {{ '+' if game_activity.momentum_pct >= 0 else '' }}{{ game_activity.momentum_pct }}%
                         </p>
                         <div class="mt-3 space-y-1">
@@ -191,23 +192,13 @@
             <!-- TAB: PLAYERS                                   -->
             <!-- ══════════════════════════════════════════════ -->
             <div id="tab-players" class="hidden">
-                <!-- Charts row -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">New vs Returning (per Month)</p>
-                        <canvas id="chartNewVsReturning" height="220"></canvas>
-                    </div>
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Attendance Frequency</p>
-                        <canvas id="chartFrequency" height="220"></canvas>
-                    </div>
-                </div>
 
-                <!-- Loyalty leaderboard -->
-                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
-                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Loyalty Leaderboard — Top 15</p>
-                    {% if player_stats.leaderboard %}
-                    <div class="overflow-x-auto">
+                <!-- Row 1: Most Games (hero 60%) + Frequency donut + Streak (right col) -->
+                <div class="grid grid-cols-5 gap-6 mb-6">
+                    <!-- Most Games — hero -->
+                    <div class="col-span-5 md:col-span-3 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Most Games — Top 15</p>
+                        {% if player_stats.leaderboard %}
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
@@ -220,30 +211,73 @@
                             <tbody>
                                 {% for p in player_stats.leaderboard %}
                                 <tr class="border-b border-gray-50 hover:bg-gray-50">
-                                    <td class="py-2 font-display text-gray-400 text-base">{{ loop.index }}</td>
-                                    <td class="py-2">
+                                    <td class="py-2.5 font-stat text-gray-300 text-2xl w-8">{{ loop.index }}</td>
+                                    <td class="py-2.5">
                                         <span class="font-medium">{{ p.name }}</span>
                                         {% if p.nickname %}<span class="text-gray-400 text-xs ml-1">"{{ p.nickname }}"</span>{% endif %}
                                     </td>
-                                    <td class="py-2">
-                                        {% if p.is_member %}
-                                        <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">Member</span>
-                                        {% else %}
-                                        <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Guest</span>
-                                        {% endif %}
+                                    <td class="py-2.5">
+                                        {% if p.is_member %}<span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">Member</span>
+                                        {% else %}<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Regular</span>{% endif %}
                                     </td>
-                                    <td class="py-2 text-right font-display text-lg text-accent">{{ p.games_attended }}</td>
+                                    <td class="py-2.5 text-right font-stat text-2xl text-accent">{{ p.games_attended }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No attendance data yet.</p>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <p class="text-sm text-gray-400">No attendance data yet.</p>
-                    {% endif %}
+
+                    <!-- Right col: Frequency donut on top, Streak below -->
+                    <div class="col-span-5 md:col-span-2 flex flex-col gap-6">
+                        <!-- Frequency donut -->
+                        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Attendance Frequency</p>
+                            <canvas id="chartFrequency" height="200"></canvas>
+                        </div>
+
+                        <!-- Streak leaderboard -->
+                        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm flex-1">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current Streak — Top 10</p>
+                            <p class="text-xs text-gray-400 mb-4">Consecutive weeks attended.</p>
+                            {% if player_stats.streak_leaderboard %}
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                                        <th class="text-left pb-2 font-medium">#</th>
+                                        <th class="text-left pb-2 font-medium">Player</th>
+                                        <th class="text-right pb-2 font-medium">Streak</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in player_stats.streak_leaderboard %}
+                                    <tr class="border-b border-gray-50 hover:bg-gray-50">
+                                        <td class="py-2 font-stat text-gray-300 text-lg w-6">{{ loop.index }}</td>
+                                        <td class="py-2">
+                                            <span class="font-medium text-sm">{{ p.name }}</span>
+                                            {% if p.is_member %}<span class="text-xs bg-accent/20 text-accent px-1.5 py-0.5 rounded ml-1">M</span>{% endif %}
+                                        </td>
+                                        <td class="py-2 text-right font-stat text-lg text-accent">{{ p.streak }} 🔥</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <p class="text-sm text-gray-400">No streak data yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Potential members + Dropout watch -->
+                <!-- Row 2: New vs Returning — full width -->
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">New vs Returning Players (per Month)</p>
+                    <canvas id="chartNewVsReturning" height="120"></canvas>
+                </div>
+
+                <!-- Row 3: Potential members + Dropout watch -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Potential members -->
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
@@ -251,19 +285,15 @@
                             <p class="text-xs text-gray-500 uppercase tracking-wider">Potential Members</p>
                             <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded font-bold">{{ player_stats.potential_member_count }}</span>
                         </div>
-                        <p class="text-xs text-gray-400 mb-4">Non-members with 5+ games attended.</p>
+                        <p class="text-xs text-gray-400 mb-3">No active membership this period · 5+ games attended.</p>
                         {% if player_stats.potential_members %}
-                        <div class="space-y-2">
-                            {% for p in player_stats.potential_members %}
-                            <div class="flex items-center justify-between py-2 border-b border-gray-50">
-                                <div>
-                                    <span class="font-medium text-sm">{{ p.name }}</span>
-                                    {% if p.nickname %}<span class="text-gray-400 text-xs ml-1">"{{ p.nickname }}"</span>{% endif %}
-                                    {% if p.contact_no %}<span class="text-gray-400 text-xs block">{{ p.contact_no }}</span>{% endif %}
-                                </div>
-                                <span class="font-display text-accent text-lg">{{ p.games_attended }}x</span>
+                        <div id="pm-list" class="space-y-2 mb-3"></div>
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <span id="pm-info" class="text-xs text-gray-400"></span>
+                            <div class="flex gap-1">
+                                <button id="pm-prev" onclick="pmPage(-1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">←</button>
+                                <button id="pm-next" onclick="pmPage(+1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">→</button>
                             </div>
-                            {% endfor %}
                         </div>
                         {% else %}
                         <p class="text-sm text-gray-400">No candidates at this time.</p>
@@ -276,19 +306,15 @@
                             <p class="text-xs text-gray-500 uppercase tracking-wider">Dropout Watch</p>
                             <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded font-bold">{{ player_stats.dropout_watch | length }}</span>
                         </div>
-                        <p class="text-xs text-gray-400 mb-4">Regulars (3+ games) not seen in 60+ days.</p>
+                        <p class="text-xs text-gray-400 mb-3">Regulars (3+ games) not seen in 60+ days.</p>
                         {% if player_stats.dropout_watch %}
-                        <div class="space-y-2">
-                            {% for p in player_stats.dropout_watch %}
-                            <div class="flex items-center justify-between py-2 border-b border-gray-50">
-                                <div>
-                                    <span class="font-medium text-sm">{{ p.name }}</span>
-                                    {% if p.nickname %}<span class="text-gray-400 text-xs ml-1">"{{ p.nickname }}"</span>{% endif %}
-                                    <span class="text-gray-400 text-xs block">{{ p.total_games }} games total</span>
-                                </div>
-                                <span class="text-xs text-red-400 font-medium">{{ p.days_since }}d ago</span>
+                        <div id="dw-list" class="space-y-2 mb-3"></div>
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <span id="dw-info" class="text-xs text-gray-400"></span>
+                            <div class="flex gap-1">
+                                <button id="dw-prev" onclick="dwPage(-1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">←</button>
+                                <button id="dw-next" onclick="dwPage(+1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">→</button>
                             </div>
-                            {% endfor %}
                         </div>
                         {% else %}
                         <p class="text-sm text-gray-400">No dropouts detected.</p>
@@ -304,19 +330,19 @@
                 <!-- Summary cards -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-2xl font-display text-accent">Rp {{ "{:,.0f}".format(finance_stats.total_revenue) }}</p>
+                        <p class="text-2xl font-stat text-accent">Rp {{ "{:,.0f}".format(finance_stats.total_revenue) }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Revenue</p>
                     </div>
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-2xl font-display text-gray-500">Rp {{ "{:,.0f}".format(finance_stats.total_expense) }}</p>
+                        <p class="text-2xl font-stat text-gray-500">Rp {{ "{:,.0f}".format(finance_stats.total_expense) }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Expense</p>
                     </div>
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-2xl font-display {% if finance_stats.total_profit >= 0 %}text-green-600{% else %}text-red-500{% endif %}">Rp {{ "{:,.0f}".format(finance_stats.total_profit) }}</p>
+                        <p class="text-2xl font-stat {% if finance_stats.total_profit >= 0 %}text-green-600{% else %}text-red-500{% endif %}">Rp {{ "{:,.0f}".format(finance_stats.total_profit) }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Net Profit</p>
                     </div>
                     <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
-                        <p class="text-2xl font-display text-red-400">{{ finance_stats.unpaid_count }}</p>
+                        <p class="text-2xl font-stat text-red-400">{{ finance_stats.unpaid_count }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Unpaid Slots</p>
                         <p class="text-xs text-red-300 mt-1">~Rp {{ "{:,.0f}".format(finance_stats.unpaid_estimated) }}</p>
                     </div>
@@ -340,72 +366,103 @@
                 <!-- Summary cards -->
                 <div class="grid grid-cols-3 gap-4 mb-8">
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-3xl font-display text-accent">{{ quality_stats.overall_avg or '—' }}</p>
+                        <p class="text-3xl font-stat text-accent">{{ quality_stats.overall_avg or '—' }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Rating</p>
                     </div>
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-3xl font-display text-accent">{{ quality_stats.total_ratings }}</p>
+                        <p class="text-3xl font-stat text-accent">{{ quality_stats.total_ratings }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Ratings</p>
                     </div>
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-3xl font-display text-accent">{{ quality_stats.games_with_ratings }}</p>
+                        <p class="text-3xl font-stat text-accent">{{ quality_stats.games_with_ratings }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Games Rated</p>
                     </div>
                 </div>
 
-                <!-- Charts -->
+                <!-- Radar charts — hero -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">What Worked Well</p>
+                        <p class="text-xs text-gray-400 mb-4">Top tags from player feedback.</p>
+                        {% if quality_stats.great_tags %}
+                        <canvas id="chartGreatRadar"></canvas>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No feedback tags yet.</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Could Be Improved</p>
+                        <p class="text-xs text-gray-400 mb-4">Top tags from player feedback.</p>
+                        {% if quality_stats.improve_tags %}
+                        <canvas id="chartImproveRadar"></canvas>
+                        {% else %}
+                        <p class="text-sm text-gray-400">No feedback tags yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Rating Trend (3/5) + Distribution horizontal bars (2/5) -->
+                <div class="grid grid-cols-5 gap-6 mb-6">
+                    <div class="col-span-5 md:col-span-3 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
                         <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Rating Trend</p>
                         {% if quality_stats.ratings_per_game %}
-                        <canvas id="chartRatingTrend" height="220"></canvas>
+                        <canvas id="chartRatingTrend" height="200"></canvas>
                         {% else %}
                         <p class="text-sm text-gray-400">No ratings yet.</p>
                         {% endif %}
                     </div>
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Rating Distribution</p>
+                    <div class="col-span-5 md:col-span-2 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-6">Distribution</p>
                         {% if quality_stats.total_ratings > 0 %}
-                        <canvas id="chartRatingDist" height="220"></canvas>
+                        <div class="space-y-3" id="dist-bars">
+                            {% for star, label, color in [(5,'5 ★','bg-accent'),(4,'4 ★','bg-amber-300'),(3,'3 ★','bg-gray-300'),(2,'2 ★','bg-red-300'),(1,'1 ★','bg-red-400')] %}
+                            {% set count = quality_stats.distribution[star | string] %}
+                            {% set pct = (count / quality_stats.max_dist * 100) | round | int %}
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-stat text-gray-500 w-8 text-right shrink-0">{{ label }}</span>
+                                <div class="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
+                                    <div class="{{ color }} h-full rounded-full transition-all" style="width: {{ pct }}%"></div>
+                                </div>
+                                <span class="text-sm font-stat text-gray-600 w-8 shrink-0">{{ count }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
                         {% else %}
                         <p class="text-sm text-gray-400">No ratings yet.</p>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Tags -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">What Worked Well</p>
-                        {% if quality_stats.great_tags %}
-                        <div class="flex flex-wrap gap-2">
-                            {% for tag, count in quality_stats.great_tags %}
-                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-accent/10 text-accent border border-accent/20">
-                                {{ tag }}
-                                <span class="text-xs font-bold">{{ count }}</span>
-                            </span>
+                <!-- Feedback feed — full width -->
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider">Player Feedback</p>
+                        <!-- Star filters -->
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs text-gray-400">Filter:</span>
+                            <button onclick="fbToggleStar(0)" id="fb-star-0" class="fb-star-btn px-2.5 py-1 text-xs rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">All</button>
+                            {% for s in [5,4,3,2,1] %}
+                            <button onclick="fbToggleStar({{ s }})" id="fb-star-{{ s }}" class="fb-star-btn px-2.5 py-1 text-xs rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">{{ s }}★</button>
                             {% endfor %}
                         </div>
-                        {% else %}
-                        <p class="text-sm text-gray-400">No feedback tags yet.</p>
-                        {% endif %}
                     </div>
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Could Be Improved</p>
-                        {% if quality_stats.improve_tags %}
-                        <div class="flex flex-wrap gap-2">
-                            {% for tag, count in quality_stats.improve_tags %}
-                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600 border border-gray-200">
-                                {{ tag }}
-                                <span class="text-xs font-bold">{{ count }}</span>
-                            </span>
-                            {% endfor %}
-                        </div>
-                        {% else %}
-                        <p class="text-sm text-gray-400">No feedback tags yet.</p>
-                        {% endif %}
+                    <!-- Tag filters -->
+                    {% if quality_stats.all_tags %}
+                    <div class="flex flex-wrap gap-1.5 mb-5">
+                        {% for tag in quality_stats.all_tags %}
+                        <button onclick="fbToggleTag('{{ tag }}')" id="fb-tag-{{ loop.index }}" data-tag="{{ tag }}" class="fb-tag-btn px-2.5 py-1 text-xs rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">{{ tag }}</button>
+                        {% endfor %}
                     </div>
+                    {% endif %}
+                    <!-- Feedback list -->
+                    {% if quality_stats.recent_feedback %}
+                    <div id="fb-list" class="space-y-3"></div>
+                    <p id="fb-empty" class="text-sm text-gray-400 hidden">No feedback matches this filter.</p>
+                    {% else %}
+                    <p class="text-sm text-gray-400">No written feedback yet.</p>
+                    {% endif %}
                 </div>
+
             </div>
 
         </div><!-- /p-8 -->
@@ -682,6 +739,59 @@ function initFinanceCharts() {
 }
 
 function initQualityCharts() {
+    const radarDefaults = {
+        plugins: { legend: { display: false } },
+        scales: {
+            r: {
+                beginAtZero: true,
+                ticks: { display: false },
+                pointLabels: { font: { size: 11, family: 'Inter' }, color: '#6b7280' },
+                grid: { color: '#f3f4f6' },
+                angleLines: { color: '#e5e7eb' },
+            }
+        }
+    };
+
+    // What Worked Well radar — green
+    const greatTags = (qualityStats.great_tags || []).slice(0, 8);
+    if (greatTags.length) {
+        new Chart(document.getElementById('chartGreatRadar'), {
+            type: 'radar',
+            data: {
+                labels: greatTags.map(t => t[0]),
+                datasets: [{
+                    data: greatTags.map(t => t[1]),
+                    backgroundColor: 'rgba(13,148,136,0.15)',
+                    borderColor: '#0d9488',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#0d9488',
+                    pointRadius: 4,
+                }]
+            },
+            options: radarDefaults,
+        });
+    }
+
+    // Could Be Improved radar — gold
+    const improveTags = (qualityStats.improve_tags || []).slice(0, 8);
+    if (improveTags.length) {
+        new Chart(document.getElementById('chartImproveRadar'), {
+            type: 'radar',
+            data: {
+                labels: improveTags.map(t => t[0]),
+                datasets: [{
+                    data: improveTags.map(t => t[1]),
+                    backgroundColor: 'rgba(201,168,76,0.15)',
+                    borderColor: ACCENT,
+                    borderWidth: 2,
+                    pointBackgroundColor: ACCENT,
+                    pointRadius: 4,
+                }]
+            },
+            options: radarDefaults,
+        });
+    }
+
     const rpg = qualityStats.ratings_per_game || [];
     if (rpg.length) {
         new Chart(document.getElementById('chartRatingTrend'), {
@@ -706,24 +816,155 @@ function initQualityCharts() {
         });
     }
 
-    const dist = qualityStats.distribution || {};
-    if (qualityStats.total_ratings > 0) {
-        new Chart(document.getElementById('chartRatingDist'), {
-            type: 'bar',
-            data: {
-                labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
-                datasets: [{
-                    data: [dist['1']||0, dist['2']||0, dist['3']||0, dist['4']||0, dist['5']||0],
-                    backgroundColor: ['#fca5a5', '#fdba74', '#fde68a', '#86efac', ACCENT],
-                    borderRadius: 4,
-                }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
+}
+
+// ── Feedback feed ──────────────────────────────────────────────
+const STAR_COLORS = { 5:'#C9A84C', 4:'#fbbf24', 3:'#9ca3af', 2:'#f87171', 1:'#ef4444' };
+let fbActiveStar = 0;        // 0 = all
+let fbActiveTags = new Set();
+
+function fbStars(n) {
+    return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+function fbRender() {
+    const all = qualityStats.recent_feedback || [];
+    const filtered = all.filter(f => {
+        const starOk = fbActiveStar === 0 || f.rating === fbActiveStar;
+        if (!starOk) return false;
+        if (fbActiveTags.size === 0) return true;
+        const tags = [
+            ...(f.great_things || '').split(','),
+            ...(f.could_be_improved || '').split(',')
+        ].map(t => t.trim()).filter(Boolean);
+        return tags.some(t => fbActiveTags.has(t));
+    });
+
+    const list  = document.getElementById('fb-list');
+    const empty = document.getElementById('fb-empty');
+    if (!list) return;
+
+    if (!filtered.length) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
     }
+    empty.classList.add('hidden');
+
+    list.innerHTML = filtered.map(f => {
+        const name   = f.is_anonymous ? 'Anonymous' : f.player_name;
+        const date   = fmtDate(f.game_datetime);
+        const color  = STAR_COLORS[f.rating] || '#9ca3af';
+        const gtags  = (f.great_things || '').split(',').map(t => t.trim()).filter(Boolean);
+        const itags  = (f.could_be_improved || '').split(',').map(t => t.trim()).filter(Boolean);
+        const tagHtml = [
+            ...gtags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-teal-50 text-teal-700 border border-teal-100">${t}</span>`),
+            ...itags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100">${t}</span>`),
+        ].join('');
+
+        return `<div class="flex gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+            <div class="shrink-0 text-lg font-stat" style="color:${color}">${fbStars(f.rating)}</div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-800 mb-2">${f.feedback}</p>
+                ${tagHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>` : ''}
+                <p class="text-xs text-gray-400">${name} · ${date}</p>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function fbToggleStar(star) {
+    fbActiveStar = fbActiveStar === star ? 0 : star;
+    document.querySelectorAll('.fb-star-btn').forEach(btn => btn.classList.remove('bg-accent','text-black','border-accent'));
+    const active = document.getElementById(`fb-star-${fbActiveStar}`);
+    if (active) active.classList.add('bg-accent','text-black','border-accent');
+    fbRender();
+}
+
+function fbToggleTag(tag) {
+    if (fbActiveTags.has(tag)) fbActiveTags.delete(tag);
+    else fbActiveTags.add(tag);
+    document.querySelectorAll('.fb-tag-btn').forEach(btn => {
+        const active = fbActiveTags.has(btn.dataset.tag);
+        btn.classList.toggle('bg-gray-800', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-gray-800', active);
+    });
+    fbRender();
+}
+
+// ── Potential members pagination ───────────────────────────────
+const PM_PAGE_SIZE = 12;
+let pmCurrentPage = 0;
+
+function pmRender() {
+    const data  = playerStats.potential_members || [];
+    const total = data.length;
+    if (!total) return;
+
+    const start = pmCurrentPage * PM_PAGE_SIZE;
+    const end   = Math.min(start + PM_PAGE_SIZE, total);
+    const page  = data.slice(start, end);
+
+    const list = document.getElementById('pm-list');
+    list.innerHTML = page.map(p => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${p.name}</span>
+                ${p.nickname ? `<span class="text-gray-400 text-xs ml-1">"${p.nickname}"</span>` : ''}
+                ${p.contact_no ? `<span class="text-gray-400 text-xs block">${p.contact_no}</span>` : ''}
+            </div>
+            <span class="font-stat text-accent text-lg">${p.games_attended}x</span>
+        </div>
+    `).join('');
+
+    document.getElementById('pm-info').textContent = `${start + 1}–${end} of ${total}`;
+    document.getElementById('pm-prev').disabled = pmCurrentPage === 0;
+    document.getElementById('pm-next').disabled = end >= total;
+}
+
+function pmPage(dir) {
+    const total = (playerStats.potential_members || []).length;
+    const maxPage = Math.ceil(total / PM_PAGE_SIZE) - 1;
+    pmCurrentPage = Math.max(0, Math.min(pmCurrentPage + dir, maxPage));
+    pmRender();
+}
+
+// ── Dropout watch pagination ───────────────────────────────────
+const DW_PAGE_SIZE = 10;
+let dwCurrentPage = 0;
+
+function dwRender() {
+    const data  = playerStats.dropout_watch || [];
+    const total = data.length;
+    if (!total) return;
+
+    const start = dwCurrentPage * DW_PAGE_SIZE;
+    const end   = Math.min(start + DW_PAGE_SIZE, total);
+    const page  = data.slice(start, end);
+
+    const list = document.getElementById('dw-list');
+    list.innerHTML = page.map(p => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${p.name}</span>
+                ${p.nickname ? `<span class="text-gray-400 text-xs ml-1">"${p.nickname}"</span>` : ''}
+                <span class="text-gray-400 text-xs block">${p.total_games} games total</span>
+            </div>
+            <span class="text-xs text-red-400 font-medium">${p.days_since}d ago</span>
+        </div>
+    `).join('');
+
+    document.getElementById('dw-info').textContent = `${start + 1}–${end} of ${total}`;
+    document.getElementById('dw-prev').disabled = dwCurrentPage === 0;
+    document.getElementById('dw-next').disabled = end >= total;
+}
+
+function dwPage(dir) {
+    const total = (playerStats.dropout_watch || []).length;
+    const maxPage = Math.ceil(total / DW_PAGE_SIZE) - 1;
+    dwCurrentPage = Math.max(0, Math.min(dwCurrentPage + dir, maxPage));
+    dwRender();
 }
 
 // ── Boot ───────────────────────────────────────────────────────
@@ -732,6 +973,9 @@ initOverviewCharts();
 initPlayerCharts();
 initFinanceCharts();
 initQualityCharts();
+pmRender();
+dwRender();
+fbRender();
 </script>
 </body>
 </html>
