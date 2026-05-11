@@ -37,7 +37,12 @@
             color: #6B7280;
             background: #FFFFFF;
         }
-        .tag-btn input:checked + label {
+        .tag-btn.great input:checked + label {
+            border-color: #16a34a;
+            color: #15803d;
+            background: #f0fdf4;
+        }
+        .tag-btn.improve input:checked + label {
             border-color: #C9A84C;
             color: #92700F;
             background: #FEF9EC;
@@ -118,7 +123,7 @@
                     <p class="text-sm text-gray-600 mb-3">What worked well?</p>
                     <div class="flex flex-wrap gap-2">
                         {% for tag in rating_tags %}
-                        <span class="tag-btn">
+                        <span class="tag-btn great">
                             <input type="checkbox" name="great_things" value="{{ tag }}" id="great-{{ tag }}">
                             <label for="great-{{ tag }}">{{ tag.replace('_', ' ') }}</label>
                         </span>
@@ -131,7 +136,7 @@
                     <p class="text-sm text-gray-600 mb-3">Could be improved?</p>
                     <div class="flex flex-wrap gap-2">
                         {% for tag in rating_tags %}
-                        <span class="tag-btn">
+                        <span class="tag-btn improve">
                             <input type="checkbox" name="could_be_improved" value="{{ tag }}" id="improve-{{ tag }}">
                             <label for="improve-{{ tag }}">{{ tag.replace('_', ' ') }}</label>
                         </span>
