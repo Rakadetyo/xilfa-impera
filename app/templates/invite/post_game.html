@@ -26,6 +26,7 @@
             color: #FFFFFF;
         }
         .tag-btn input[type="checkbox"] { display: none; }
+        .tag-btn { position: relative; }
         .tag-btn label {
             display: inline-block;
             padding: 0.375rem 0.875rem;
@@ -36,6 +37,27 @@
             transition: all 0.15s;
             color: #6B7280;
             background: #FFFFFF;
+        }
+        .tag-btn label[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: #f9fafb;
+            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 10;
+        }
+        .tag-btn label[data-tooltip]:hover::after,
+        .tag-btn label[data-tooltip].tooltip-show::after {
+            opacity: 1;
         }
         .tag-btn.great input:checked + label {
             border-color: #16a34a;
@@ -118,6 +140,18 @@
                     <input type="hidden" name="rating" id="rating-input" required>
                 </div>
 
+                {% set tag_tooltips = {
+                    'team': 'Teams felt balanced and fair',
+                    'competitiveness': 'Games were intense and challenging',
+                    'atmosphere': 'Energy, vibe, and community feel',
+                    'punctuality': 'Session started and ran on time',
+                    'organization': 'Flow, scheduling, and communication',
+                    'price': 'Cost felt worth it',
+                    'court': 'Court condition and facilities',
+                    'sportsmanship': 'Players were respectful to each other',
+                    'supporting_partners': 'Videographer, photographer, or referee added value'
+                } %}
+
                 <!-- What was great -->
                 <div class="bg-white/80 border border-white/20 rounded-2xl p-5">
                     <p class="text-sm text-gray-600 mb-3">What worked well?</p>
@@ -125,7 +159,7 @@
                         {% for tag in rating_tags %}
                         <span class="tag-btn great">
                             <input type="checkbox" name="great_things" value="{{ tag }}" id="great-{{ tag }}">
-                            <label for="great-{{ tag }}">{{ tag.replace('_', ' ') }}</label>
+                            <label for="great-{{ tag }}" data-tooltip="{{ tag_tooltips.get(tag, '') }}">{{ tag.replace('_', ' ') }}</label>
                         </span>
                         {% endfor %}
                     </div>
@@ -138,7 +172,7 @@
                         {% for tag in rating_tags %}
                         <span class="tag-btn improve">
                             <input type="checkbox" name="could_be_improved" value="{{ tag }}" id="improve-{{ tag }}">
-                            <label for="improve-{{ tag }}">{{ tag.replace('_', ' ') }}</label>
+                            <label for="improve-{{ tag }}" data-tooltip="{{ tag_tooltips.get(tag, '') }}">{{ tag.replace('_', ' ') }}</label>
                         </span>
                         {% endfor %}
                     </div>
@@ -188,6 +222,18 @@
             4: 'Great Session',
             5: 'World Class'
         };
+
+        // Mobile tooltip: tap to show briefly, tap again or tap elsewhere to hide
+        document.querySelectorAll('label[data-tooltip]').forEach(label => {
+            label.addEventListener('touchstart', e => {
+                const active = label.classList.contains('tooltip-show');
+                document.querySelectorAll('label[data-tooltip]').forEach(l => l.classList.remove('tooltip-show'));
+                if (!active) {
+                    label.classList.add('tooltip-show');
+                    setTimeout(() => label.classList.remove('tooltip-show'), 2000);
+                }
+            }, { passive: true });
+        });
 
         let selectedRating = 0;
 
