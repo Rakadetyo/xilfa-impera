@@ -2502,12 +2502,21 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     great_tags = sorted([(t, c) for t, c in great_counts.items() if c > 0], key=lambda x: -x[1])
     improve_tags = sorted([(t, c) for t, c in improve_counts.items() if c > 0], key=lambda x: -x[1])
 
+    # Diverging chart data: all tags sorted by total mentions desc
+    tag_chart_data = sorted(
+        [{"tag": t, "great": great_counts[t], "improve": improve_counts[t]} for t in RATING_TAGS],
+        key=lambda x: -(int(x["great"]) + int(x["improve"]))
+    )
+    tag_chart_max = max((max(d["great"], d["improve"]) for d in tag_chart_data), default=1)
+
     ratings_summary = {
         "total": total_ratings,
         "avg": avg_rating,
         "dist": rating_dist,
         "great_tags": great_tags,
         "improve_tags": improve_tags,
+        "tag_chart_data": tag_chart_data,
+        "tag_chart_max": tag_chart_max,
         "response_rate": round(total_ratings / len(attendees) * 100) if attendees else 0,
     }
 
@@ -2771,6 +2780,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "ratings_summary": ratings_summary,
         "finance": finance,
         "finance_entries": finance_entries,
+        "is_superadmin": is_superadmin,
         "active": "games"
     })
 
