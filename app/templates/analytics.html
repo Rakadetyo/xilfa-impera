@@ -65,6 +65,7 @@
             <div class="flex gap-1 mb-8">
                 <button class="tab-btn active px-5 py-2 rounded-lg text-sm" onclick="showTab('overview')">Overview</button>
                 <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('players')">Players</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('members')">Members</button>
                 <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('finance')">Finance</button>
                 <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('quality')">Quality</button>
             </div>
@@ -197,6 +198,22 @@
             </div>
 
             <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: MEMBERS — lazy loaded                    -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-members" class="hidden">
+                <div id="tab-members-loading" class="flex items-center justify-center py-24">
+                    <div class="text-center">
+                        <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>
+                        <p class="text-xs text-gray-400">Loading members...</p>
+                    </div>
+                </div>
+                <div id="tab-members-content" class="hidden"></div>
+                <div id="tab-members-error" class="hidden py-20 text-center">
+                    <p class="text-sm text-red-400">Failed to load. <button onclick="loadTab('members')" class="underline">Retry</button></p>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
             <!-- TAB: FINANCE — lazy loaded                    -->
             <!-- ══════════════════════════════════════════════ -->
             <div id="tab-finance" class="hidden">
@@ -237,7 +254,7 @@
 const ACCENT   = '#C9A84C';
 const ACCENT20 = 'rgba(201,168,76,0.2)';
 const GRAY     = '#e5e7eb';
-const TABS     = ['overview', 'players', 'finance', 'quality'];
+const TABS     = ['overview', 'players', 'members', 'finance', 'quality'];
 
 Chart.defaults.font.family = 'Inter, sans-serif';
 Chart.defaults.font.size   = 11;
@@ -275,6 +292,7 @@ async function loadTab(name) {
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         if (name === 'players') renderPlayersTab(data);
+        if (name === 'members') renderMembersTab(data);
         if (name === 'finance') renderFinanceTab(data);
         if (name === 'quality') renderQualityTab(data);
         loading.classList.add('hidden');
@@ -537,6 +555,156 @@ function renderPlayersTab(data) {
     _dwData = data.dropout_watch     || [];
     _pmPage = 0; _dwPage = 0;
     pmRender(); dwRender();
+}
+
+// ── Members tab ───────────────────────────────────────────────
+function renderMembersTab(data) {
+    const retColor  = data.retention_rate >= 70 ? 'text-green-600' : data.retention_rate >= 50 ? 'text-amber-500' : 'text-red-400';
+    const retBorder = data.retention_rate >= 70 ? 'border-green-200' : data.retention_rate >= 50 ? 'border-amber-200' : 'border-red-100';
+
+    // Growth chart labels + data
+    const growthLabels = (data.growth || []).map(g => g.member_period);
+    const growthCounts = (data.growth || []).map(g => g.member_count);
+
+    // ROI table rows — null cost_per_game = 0 games (unpaid or non-attendee)
+    const roiRows = (data.roi || []).map((m, i) => {
+        const costHtml = m.cost_per_game != null
+            ? `<span class="font-stat text-lg ${m.cost_per_game <= 50000 ? 'text-green-600' : m.cost_per_game <= 100000 ? 'text-accent' : 'text-red-400'}">${fmtRp(m.cost_per_game)}</span>`
+            : `<span class="text-gray-400 text-sm">No games</span>`;
+        const paidBadge = m.is_paid
+            ? `<span class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">Paid</span>`
+            : `<span class="text-xs bg-red-100 text-red-400 px-2 py-0.5 rounded">Unpaid</span>`;
+        return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="py-2.5 font-stat text-gray-300 text-xl w-8">${i + 1}</td>
+            <td class="py-2.5">
+                <span class="font-medium">${m.name}</span>
+                ${m.nickname ? `<span class="text-gray-400 text-xs ml-1">"${m.nickname}"</span>` : ''}
+            </td>
+            <td class="py-2.5">${paidBadge}</td>
+            <td class="py-2.5 text-center font-stat text-lg text-gray-600">${m.games_this_period}</td>
+            <td class="py-2.5 text-right">${costHtml}</td>
+        </tr>`;
+    }).join('');
+
+    // Churn list
+    const churnRows = (data.churn_list || []).map(m => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${m.name}</span>
+                ${m.nickname ? `<span class="text-gray-400 text-xs ml-1">"${m.nickname}"</span>` : ''}
+            </div>
+            <span class="text-xs ${m.is_paid ? 'text-green-600' : 'text-red-400'}">${m.is_paid ? 'Was paid' : 'Unpaid'}</span>
+        </div>`).join('');
+
+    // Dead members list
+    const deadRows = (data.dead_members || []).map(m => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${m.name}</span>
+                ${m.nickname ? `<span class="text-gray-400 text-xs ml-1">"${m.nickname}"</span>` : ''}
+            </div>
+            <span class="text-xs text-gray-400">${fmtRp(m.membership_price)} paid · 0 games</span>
+        </div>`).join('');
+
+    document.getElementById('tab-members-content').innerHTML = `
+        <!-- Summary cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-accent">${data.active_count}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Active Members</p>
+                <p class="text-xs text-gray-400 mt-1">${data.current_period}</p>
+            </div>
+            <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-green-600">${data.paid_pct}%</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Paid</p>
+                <p class="text-xs text-gray-400 mt-1">${data.paid_count} of ${data.active_count}</p>
+            </div>
+            <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-red-400">${data.churn_count}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Churned</p>
+                <p class="text-xs text-gray-400 mt-1">vs ${data.prev_period || '—'}</p>
+            </div>
+            <div class="bg-white border-2 ${retBorder} rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat ${retColor}">${data.retention_rate != null ? data.retention_rate + '%' : '—'}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Retention Rate</p>
+                <p class="text-xs text-gray-400 mt-1">${data.new_count} new this period</p>
+            </div>
+        </div>
+
+        <!-- Growth (2/3) + New vs Recurring pie (1/3) -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+            <div class="col-span-3 md:col-span-2 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Membership Growth</p>
+                <canvas id="chartMemberGrowth" height="130"></canvas>
+            </div>
+            <div class="col-span-3 md:col-span-1 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">New vs Recurring</p>
+                <p class="text-xs text-gray-400 mb-4">${data.current_period}</p>
+                <canvas id="chartMemberPie"></canvas>
+            </div>
+        </div>
+
+        <!-- ROI table — full width -->
+        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Member ROI — ${data.current_period}</p>
+            <p class="text-xs text-gray-400 mb-4">Cost per game = membership fee ÷ games attended this month.</p>
+            ${roiRows ? `<div class="overflow-x-auto"><table class="w-full text-sm">
+                <thead><tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                    <th class="text-left pb-2 font-medium">#</th>
+                    <th class="text-left pb-2 font-medium">Player</th>
+                    <th class="text-left pb-2 font-medium">Status</th>
+                    <th class="text-center pb-2 font-medium">Games</th>
+                    <th class="text-right pb-2 font-medium">Cost / Game</th>
+                </tr></thead>
+                <tbody>${roiRows}</tbody>
+            </table></div>` : '<p class="text-sm text-gray-400">No members this period.</p>'}
+        </div>
+
+        <!-- Churn + Dead members -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Churned Members</p>
+                    <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded font-bold">${data.churn_count}</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Were members in ${data.prev_period || 'previous period'}, not renewed.</p>
+                ${churnRows || '<p class="text-sm text-gray-400">No churn this period.</p>'}
+            </div>
+            <div class="bg-white border-2 border-amber-100 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Paid, Not Attending</p>
+                    <span class="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded font-bold">${data.dead_members?.length || 0}</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Paid membership, 0 games this month. High churn risk.</p>
+                ${deadRows || '<p class="text-sm text-gray-400">All paid members are attending.</p>'}
+            </div>
+        </div>`;
+
+    // Growth chart
+    new Chart(document.getElementById('chartMemberGrowth'), {
+        type: 'line',
+        data: {
+            labels: growthLabels,
+            datasets: [{ label: 'Members', data: growthCounts, borderColor: ACCENT, backgroundColor: ACCENT20, borderWidth: 2, pointBackgroundColor: ACCENT, fill: true, tension: 0.3 }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    // New vs Recurring pie
+    const recurring = data.active_count - data.new_count;
+    new Chart(document.getElementById('chartMemberPie'), {
+        type: 'pie',
+        data: {
+            labels: ['Recurring', 'New'],
+            datasets: [{ data: [recurring, data.new_count], backgroundColor: [ACCENT, '#0d9488'], borderWidth: 0 }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
 }
 
 // ── Finance tab ───────────────────────────────────────────────

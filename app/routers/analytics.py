@@ -60,3 +60,15 @@ async def analytics_quality(request: Request):
         return JSONResponse(analytics_service.get_quality_stats(conn))
     finally:
         conn.close()
+
+
+@router.get("/manage/analytics/members")
+async def analytics_members(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    conn = get_db()
+    try:
+        return JSONResponse(analytics_service.get_member_stats(conn))
+    finally:
+        conn.close()

@@ -428,3 +428,143 @@ def get_quality_stats(conn) -> dict:
         "recent_feedback": recent_feedback,
         "all_tags": all_tags,
     }
+
+
+def get_member_stats(conn) -> dict:
+    cursor = conn.cursor()
+
+    current_period = datetime.now().strftime("%B %Y")
+
+    # Previous period from actual data (not just -1 month, in case of gaps)
+    cursor.execute("""
+        SELECT member_period FROM member
+        WHERE member_period != ?
+        GROUP BY member_period
+        ORDER BY MIN(member_start_date) DESC
+        LIMIT 1
+    """, (current_period,))
+    row = cursor.fetchone()
+    prev_period = row["member_period"] if row else None
+
+    # Summary: active, paid, new, churn
+    cursor.execute("SELECT COUNT(DISTINCT player_id) as cnt FROM member WHERE member_period = ?", (current_period,))
+    active_count = cursor.fetchone()["cnt"]
+
+    cursor.execute("SELECT COUNT(*) as cnt FROM member WHERE member_period = ? AND is_paid = 1", (current_period,))
+    paid_count = cursor.fetchone()["cnt"]
+
+    # New = first ever membership record for this player
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM member m
+        WHERE m.member_period = ?
+        AND NOT EXISTS (
+            SELECT 1 FROM member m2
+            WHERE m2.player_id = m.player_id AND m2.id < m.id
+        )
+    """, (current_period,))
+    new_count = cursor.fetchone()["cnt"]
+
+    # Churn = was member last period, not this period
+    churn_count = 0
+    churn_list  = []
+    if prev_period:
+        cursor.execute("""
+            SELECT COUNT(*) as cnt FROM member m
+            WHERE m.member_period = ?
+            AND NOT EXISTS (
+                SELECT 1 FROM member m2
+                WHERE m2.player_id = m.player_id AND m2.member_period = ?
+            )
+        """, (prev_period, current_period))
+        churn_count = cursor.fetchone()["cnt"]
+
+        cursor.execute("""
+            SELECT p.id, p.name, p.nickname, m.membership_price, m.is_paid
+            FROM member m
+            JOIN player p ON p.id = m.player_id
+            WHERE m.member_period = ?
+            AND NOT EXISTS (
+                SELECT 1 FROM member m2
+                WHERE m2.player_id = m.player_id AND m2.member_period = ?
+            )
+            ORDER BY p.name
+        """, (prev_period, current_period))
+        churn_list = [dict(r) for r in cursor.fetchall()]
+
+    paid_pct = round(paid_count / active_count * 100) if active_count else 0
+
+    retention_rate = None
+    if prev_period:
+        cursor.execute("SELECT COUNT(DISTINCT player_id) as cnt FROM member WHERE member_period = ?", (prev_period,))
+        prev_count = cursor.fetchone()["cnt"]
+        if prev_count:
+            retained = prev_count - churn_count
+            retention_rate = round(retained / prev_count * 100)
+
+    # Membership growth per period
+    cursor.execute("""
+        SELECT member_period, COUNT(DISTINCT player_id) as member_count,
+               MIN(member_start_date) as sort_date
+        FROM member
+        GROUP BY member_period
+        ORDER BY sort_date
+    """)
+    growth = [dict(r) for r in cursor.fetchall()]
+
+    # Dead members — paid this period, 0 games attended in current month
+    cursor.execute("""
+        SELECT p.id, p.name, p.nickname, m.membership_price,
+               COALESCE(att.games_played, 0) as games_this_period
+        FROM member m
+        JOIN player p ON p.id = m.player_id
+        LEFT JOIN (
+            SELECT ga.player_id, COUNT(*) as games_played
+            FROM game_attendee ga
+            JOIN game g ON g.id = ga.game_id
+            WHERE ga.is_attend = 1
+              AND strftime('%Y-%m', g.datetime) = strftime('%Y-%m', 'now')
+            GROUP BY ga.player_id
+        ) att ON att.player_id = m.player_id
+        WHERE m.member_period = ? AND m.is_paid = 1
+          AND COALESCE(att.games_played, 0) = 0
+        ORDER BY p.name
+    """, (current_period,))
+    dead_members = [dict(r) for r in cursor.fetchall()]
+
+    # Member ROI — cost per game this period
+    cursor.execute("""
+        SELECT p.id, p.name, p.nickname, m.membership_price, m.is_paid,
+               COALESCE(att.games_played, 0) as games_this_period,
+               CASE WHEN COALESCE(att.games_played, 0) > 0
+                    THEN ROUND(m.membership_price * 1.0 / att.games_played, 0)
+                    ELSE NULL
+               END as cost_per_game
+        FROM member m
+        JOIN player p ON p.id = m.player_id
+        LEFT JOIN (
+            SELECT ga.player_id, COUNT(*) as games_played
+            FROM game_attendee ga
+            JOIN game g ON g.id = ga.game_id
+            WHERE ga.is_attend = 1
+              AND strftime('%Y-%m', g.datetime) = strftime('%Y-%m', 'now')
+            GROUP BY ga.player_id
+        ) att ON att.player_id = m.player_id
+        WHERE m.member_period = ?
+        ORDER BY cost_per_game ASC, games_this_period DESC
+    """, (current_period,))
+    roi = [dict(r) for r in cursor.fetchall()]
+
+    return {
+        "current_period": current_period,
+        "prev_period": prev_period,
+        "active_count": active_count,
+        "paid_count": paid_count,
+        "paid_pct": paid_pct,
+        "new_count": new_count,
+        "churn_count": churn_count,
+        "retention_rate": retention_rate,
+        "growth": growth,
+        "dead_members": dead_members,
+        "churn_list": churn_list,
+        "roi": roi,
+    }
