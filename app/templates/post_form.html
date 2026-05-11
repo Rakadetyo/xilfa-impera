@@ -29,6 +29,13 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .comic-border { border: 2px solid #e5e7eb; }
+        @keyframes lightboxIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-lightbox {
+            animation: lightboxIn 0.3s ease-out;
+        }
         .dropzone {
             border: 2px dashed #d1d5db;
             transition: border-color 0.2s, background 0.2s;
@@ -53,7 +60,14 @@
 
     <div class="pt-24 px-6 pb-12">
         <div class="max-w-3xl mx-auto">
-            <h1 class="text-4xl font-display mb-8">{{ 'Edit Post' if post else 'New Post' }}</h1>
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-4xl font-display">{{ 'Edit Post' if post else 'New Post' }}</h1>
+                {% if post %}
+                <button type="button" onclick="openPreview()" class="px-4 py-2 bg-accent text-black font-medium rounded-lg hover:bg-accent-light transition">
+                    Preview
+                </button>
+                {% endif %}
+            </div>
 
             <form action="/manage/posts{% if post %}/{{ post.id }}{% endif %}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 <!-- Title -->
@@ -305,6 +319,110 @@
             e.preventDefault();
             dropzone.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
+        });
+    </script>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80" onclick="closePreview()"></div>
+        <div class="absolute inset-4 md:inset-12 lg:inset-20 flex">
+            <button onclick="closePreview()" class="absolute -top-2 right-0 z-20 text-[#F5F0E6] hover:text-accent text-4xl font-bold p-4">&times;</button>
+            <div class="flex w-full max-w-6xl mx-auto bg-[#F5F0E6] rounded-lg overflow-hidden relative" style="border: 4px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.4);">
+                <div class="w-1/2 p-4 overflow-y-auto bg-[#F5F0E6] max-h-[80vh] border-r border-gray-300">
+                    <div id="previewMedia" class="columns-1 md:columns-2 gap-2 space-y-2 relative"></div>
+                </div>
+                <div class="w-1/2 flex flex-col max-h-[80vh]">
+                    <div class="p-5 overflow-y-auto bg-[#F5F0E6] text-black">
+                        <div class="pb-2 mb-3">
+                            <p id="previewPostType" class="text-xs font-bold uppercase tracking-widest text-red-600"></p>
+                        </div>
+                        <p id="previewDate" class="text-xs text-gray-500 uppercase tracking-widest mb-1"></p>
+                        <h2 id="previewTitle" class="text-xl font-display mb-3"></h2>
+                        <p id="previewAuthor" class="text-sm text-gray-600 mb-3"></p>
+                        <p id="previewAbstract" class="text-sm italic border-l-4 border-accent pl-3"></p>
+                    </div>
+                    <div class="p-5 overflow-y-auto bg-[#F5F0E6] text-black flex-1">
+                        <div id="previewBodyMiddle" class="prose prose-sm"></div>
+                        <div id="previewBodyBottom" class="prose prose-sm mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="imageLightbox" class="fixed inset-0 z-[60] hidden" onclick="closeLightbox()">
+        <div class="absolute inset-0 bg-black/95" onclick="closeLightbox()"></div>
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 z-10 text-white hover:text-accent text-4xl font-bold">&times;</button>
+        <div class="absolute inset-0 flex items-center justify-center p-8" onclick="event.stopPropagation()">
+            <img id="lightboxImage" src="" class="max-w-full max-h-full object-contain animate-lightbox">
+        </div>
+    </div>
+
+    <script>
+        function openPreview() {
+            const postId = {{ post.id if post else 'null' }};
+            if (!postId) return;
+
+            const modal = document.getElementById('previewModal');
+            modal.classList.remove('hidden');
+
+            const mediaEl = document.getElementById('previewMedia');
+            mediaEl.innerHTML = '<div class="animate-pulse">Loading...</div>';
+
+            fetch(`/api/blog/${postId}`)
+                .then(res => res.json())
+                .then(post => {
+                    document.getElementById('previewTitle').textContent = post.title;
+                    document.getElementById('previewAuthor').textContent = `By ${post.author}`;
+                    document.getElementById('previewDate').textContent = post.created_at;
+                    document.getElementById('previewAbstract').textContent = post.summary || '';
+                    document.getElementById('previewPostType').textContent = post.post_type || 'HIGHLIGHT';
+
+                    const bodyText = post.body || '';
+                    const paragraphs = bodyText.split('\n\n').filter(p => p.trim());
+                    const half = Math.ceil(paragraphs.length / 2);
+                    document.getElementById('previewBodyMiddle').innerHTML = paragraphs.slice(0, half).join('<br><br>');
+                    document.getElementById('previewBodyBottom').innerHTML = paragraphs.slice(half).join('<br><br>');
+
+                    if (post.images && post.images.length > 0) {
+                        mediaEl.innerHTML = post.images.map(img => {
+                            if (img.is_video) {
+                                return `<div class="break-inside-avoid mb-2">
+                                    <video src="/static/img/comics/${img.filename}" class="w-full border-2 border-black" controls style="box-shadow: 2px 2px 0px #000;"></video>
+                                </div>`;
+                            }
+                            return `<div class="break-inside-avoid mb-2">
+                                <img src="/static/img/comics/${img.filename}" class="w-full border-2 border-black cursor-zoom-in" alt="" style="box-shadow: 2px 2px 0px #000;" onclick="openLightbox('/static/img/comics/${img.filename}')">
+                            </div>`;
+                        }).join('');
+                    } else {
+                        mediaEl.innerHTML = '<div class="text-gray-500">No media</div>';
+                    }
+                })
+                .catch(e => {
+                    mediaEl.innerHTML = '<div class="text-red-500">Error loading preview</div>';
+                });
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').classList.add('hidden');
+        }
+
+        function openLightbox(src) {
+            document.getElementById('lightboxImage').src = src;
+            document.getElementById('imageLightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('imageLightbox').classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+                closePreview();
+            }
         });
     </script>
 </body>
