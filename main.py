@@ -140,7 +140,7 @@ async def get_post(post_id: int):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT p.id, p.title, p.body, p.summary, p.post_type, p.status, p.created_at, p.updated_at, u.username
+        SELECT p.id, p.title, p.body, p.summary, p.post_type, p.status, p.created_at, p.updated_at, p.cover_image_id, u.username
         FROM posts p
         JOIN users u ON p.author_id = u.id
         WHERE p.id = ?
@@ -157,7 +157,6 @@ async def get_post(post_id: int):
         ORDER BY display_order
     """, (post_id,))
     images = cursor.fetchall()
-    conn.close()
 
     cursor.execute("""
         SELECT COALESCE(
