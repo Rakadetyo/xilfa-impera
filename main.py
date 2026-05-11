@@ -50,6 +50,31 @@ def get_current_user(request: Request):
 def is_superadmin(user):
     return user and dict(user).get("role") == "superadmin"
 
+def _platform_from_url(url: str) -> str:
+    _map = {
+        "drive.google.com": "Google Drive",
+        "docs.google.com": "Google Docs",
+        "photos.google.com": "Google Photos",
+        "youtube.com": "YouTube",
+        "youtu.be": "YouTube",
+        "instagram.com": "Instagram",
+        "tiktok.com": "TikTok",
+        "vimeo.com": "Vimeo",
+        "dropbox.com": "Dropbox",
+        "icloud.com": "iCloud",
+        "fb.com": "Facebook",
+        "facebook.com": "Facebook",
+    }
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(url).netloc.lower().lstrip("www.")
+        for domain, name in _map.items():
+            if host == domain or host.endswith("." + domain):
+                return name
+        return host or url
+    except Exception:
+        return url
+
 def _game_period(cursor, game_id: int) -> str | None:
     from datetime import datetime
     cursor.execute("SELECT datetime FROM game WHERE id = ?", (game_id,))
@@ -413,7 +438,7 @@ async def list_players(request: Request):
     # Build dynamic query
     query = """
         SELECT p.id, p.name, p.nickname, p.position_1, p.position_2, p.skill_level, p.contact_no, p.instagram, p.reclub, p.join_date, p.created_at, p.status, p.notes, p.join_source,
-               (SELECT MAX(g.datetime) FROM game_attendee ga JOIN game g ON ga.game_id = g.id WHERE ga.player_id = p.id) as last_played
+               (SELECT MAX(g.datetime) FROM game_attendee ga JOIN game g ON ga.game_id = g.id WHERE ga.player_id = p.id AND g.datetime <= datetime('now')) as last_played
         FROM player p
         WHERE 1=1
     """
@@ -4197,6 +4222,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     conn.close()
 
     start_fmt, end_fmt, date_fmt = "", "", ""
+    game_ended = False
     try:
         raw = game_dict["datetime"].replace("T", " ")
         if len(raw) == 16:
@@ -4206,8 +4232,19 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         start_fmt = start_dt.strftime("%H:%M")
         end_fmt = end_dt.strftime("%H:%M")
         date_fmt = start_dt.strftime("%A, %d %B %Y")
+        game_ended = dt.now() > end_dt
     except Exception:
         pass
+
+    # Check if player already submitted a rating
+    conn2 = get_db()
+    c2 = conn2.cursor()
+    c2.execute(
+        "SELECT id FROM game_rating WHERE game_id = ? AND player_id = ?",
+        (game_dict["id"], dict(attendee)["player_id"])
+    )
+    already_rated = c2.fetchone() is not None
+    conn2.close()
 
     return templates.TemplateResponse(request, "invite/player.html", {
         "token": token,
@@ -4224,7 +4261,109 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         "is_member": is_member,
         "member_label": member_label,
         "streak": streak,
+        "game_ended": game_ended,
+        "already_rated": already_rated,
     })
+
+
+@app.get("/invite/{token}/{attendee_id}/post-game")
+async def post_game_page(request: Request, token: str, attendee_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM game WHERE invite_token = ?", (token,))
+    game = cursor.fetchone()
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("""
+        SELECT ga.*, p.name, p.nickname
+        FROM game_attendee ga
+        JOIN player p ON ga.player_id = p.id
+        WHERE ga.id = ? AND ga.game_id = ?
+    """, (attendee_id, game["id"]))
+    attendee = cursor.fetchone()
+    if not attendee:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("""
+        SELECT ga.*, gp.name as partner_name
+        FROM game_asset ga
+        LEFT JOIN game_partner gp ON ga.game_partner_id = gp.id
+        WHERE ga.game_id = ?
+        ORDER BY ga.created_at
+    """, (game["id"],))
+    assets = cursor.fetchall()
+
+    cursor.execute(
+        "SELECT id FROM game_rating WHERE game_id = ? AND player_id = ?",
+        (game["id"], dict(attendee)["player_id"])
+    )
+    already_rated = cursor.fetchone() is not None
+
+    conn.close()
+
+    RATING_TAGS = ['team', 'competitiveness', 'atmosphere', 'punctuality',
+                   'organization', 'price', 'court', 'sportsmanship', 'supporting_partners']
+
+    return templates.TemplateResponse(request, "invite/post_game.html", {
+        "token": token,
+        "game": dict(game),
+        "attendee": dict(attendee),
+        "assets": [{**dict(a), "platform": _platform_from_url(a["url"])} for a in assets],
+        "already_rated": already_rated,
+        "rating_tags": RATING_TAGS,
+    })
+
+
+@app.post("/invite/{token}/{attendee_id}/post-game")
+async def post_game_submit(
+    request: Request,
+    token: str,
+    attendee_id: int,
+    rating: int = Form(...),
+    great_things: list[str] = Form(default=[]),
+    could_be_improved: list[str] = Form(default=[]),
+    feedback: str = Form(""),
+    is_anonymous: int = Form(0),
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM game WHERE invite_token = ?", (token,))
+    game = cursor.fetchone()
+    if not game:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    cursor.execute("SELECT player_id FROM game_attendee WHERE id = ? AND game_id = ?", (attendee_id, game["id"]))
+    attendee = cursor.fetchone()
+    if not attendee:
+        conn.close()
+        raise HTTPException(status_code=404)
+
+    player_id = attendee["player_id"]
+    game_id = game["id"]
+
+    # Guard: one rating per player per game
+    cursor.execute("SELECT id FROM game_rating WHERE game_id = ? AND player_id = ?", (game_id, player_id))
+    if not cursor.fetchone():
+        cursor.execute("""
+            INSERT INTO game_rating (game_id, game_attendee_id, player_id, is_anonymous, rating, great_things, could_be_improved, feedback)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            game_id, attendee_id, player_id, is_anonymous,
+            max(1, min(5, rating)),
+            ",".join(great_things),
+            ",".join(could_be_improved),
+            feedback.strip() or None,
+        ))
+        conn.commit()
+
+    conn.close()
+    return RedirectResponse(f"/invite/{token}/{attendee_id}/post-game", status_code=302)
 
 
 @app.get("/invite/{token}/{attendee_id}/teams")
