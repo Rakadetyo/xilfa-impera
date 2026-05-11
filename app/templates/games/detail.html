@@ -1508,8 +1508,152 @@ Klik link untuk lihat info tim kamu
             {% endif %}
 
             {% elif tab == 'results' %}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
-                <p class="text-yellow-800 font-medium">Feature on development</p>
+
+            <!-- Finance Report -->
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
+                <h3 class="font-medium mb-5">Finance Report</h3>
+
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <!-- Income -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-3">Income</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Players (actual collected)</span>
+                                <span class="font-medium">Rp{{ "{:,.0f}".format(finance.income_players) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>Players (expected)</span>
+                                <span>Rp{{ "{:,.0f}".format(finance.income_expected) }}</span>
+                            </div>
+                            {% for e in finance_entries if e.type == 'income' %}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600">{{ e.label }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium">Rp{{ "{:,.0f}".format(e.amount) }}</span>
+                                    <form method="post" action="/manage/games/{{ game.id }}/finance/{{ e.id }}/delete" onsubmit="return confirm('Delete entry?')">
+                                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">✕</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div class="border-t border-gray-100 pt-2 flex justify-between text-sm font-semibold">
+                                <span>Total Income</span>
+                                <span class="text-green-600">Rp{{ "{:,.0f}".format(finance.total_income) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expenses -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-3">Expenses</h4>
+                        <div class="space-y-2">
+                            {% if finance.expense_arena %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Arena ({{ game.arena_name or '—' }})</span>
+                                <span class="font-medium">Rp{{ "{:,.0f}".format(finance.expense_arena) }}</span>
+                            </div>
+                            {% endif %}
+                            {% for p in partners if p.fee %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">{{ p.name or '—' }} <span class="text-gray-400 text-xs">(partner)</span></span>
+                                <span class="font-medium">Rp{{ "{:,.0f}".format(p.fee) }}</span>
+                            </div>
+                            {% endfor %}
+                            {% for e in finance_entries if e.type == 'expense' %}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600">{{ e.label }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium">Rp{{ "{:,.0f}".format(e.amount) }}</span>
+                                    <form method="post" action="/manage/games/{{ game.id }}/finance/{{ e.id }}/delete" onsubmit="return confirm('Delete entry?')">
+                                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">✕</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div class="border-t border-gray-100 pt-2 flex justify-between text-sm font-semibold">
+                                <span>Total Expenses</span>
+                                <span class="text-red-600">Rp{{ "{:,.0f}".format(finance.total_expense) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Net -->
+                <div class="border-t border-gray-200 pt-4 flex justify-between items-center">
+                    <span class="font-semibold">Net</span>
+                    <span class="text-lg font-bold {% if finance.net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        Rp{{ "{:,.0f}".format(finance.net) }}
+                    </span>
+                </div>
+
+                <!-- Add Entry Form -->
+                <div class="border-t border-gray-200 mt-5 pt-4">
+                    <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden'); this.classList.toggle('text-accent')" class="text-sm font-medium text-gray-500 hover:text-accent transition flex items-center gap-1">
+                        <span>+ Add Entry</span>
+                    </button>
+                    <form method="POST" action="/manage/games/{{ game.id }}/finance/new" class="hidden flex flex-wrap gap-2 mt-3">
+                        <select name="type" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                        <input type="text" name="label" placeholder="Label" required class="flex-1 min-w-40 px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <input type="number" name="amount" placeholder="Amount" min="0" step="1000" required class="w-36 px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm">Add</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Game Assets -->
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <h3 class="font-medium mb-4">Game Assets</h3>
+
+                <!-- Add Asset Form -->
+                <form method="POST" action="/manage/games/{{ game.id }}/assets/new" class="border-b border-gray-200 pb-4 mb-4">
+                    <div class="flex flex-wrap gap-2">
+                        <select name="type" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="video">Video</option>
+                            <option value="photo">Photo</option>
+                            <option value="document">Document</option>
+                        </select>
+                        <input type="url" name="url" placeholder="Link URL" required class="flex-1 min-w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <input type="text" name="label" placeholder="Label (optional)" class="w-48 px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <select name="game_partner_id" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">No partner</option>
+                            {% for p in partners %}
+                            <option value="{{ p.id }}">{{ p.name or '—' }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm">Add</button>
+                    </div>
+                </form>
+
+                <!-- Asset List -->
+                <div class="space-y-2">
+                    {% for a in assets %}
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="px-1.5 py-0.5 rounded text-xs font-medium
+                                {% if a.type == 'video' %}bg-blue-100 text-blue-700
+                                {% elif a.type == 'photo' %}bg-purple-100 text-purple-700
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ a.type }}
+                            </span>
+                            <a href="{{ a.url }}" target="_blank" class="text-sm text-accent hover:underline truncate max-w-xs">
+                                {{ a.label or a.url }}
+                            </a>
+                            {% if a.partner_name %}
+                            <span class="text-xs text-gray-400">by {{ a.partner_name }}</span>
+                            {% endif %}
+                        </div>
+                        <form method="post" action="/manage/games/{{ game.id }}/assets/{{ a.id }}/delete" onsubmit="return confirm('Delete this asset?')">
+                            <button type="submit" class="text-red-500 text-sm hover:text-red-700">Delete</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-400 text-sm py-2">No assets added</p>
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
         </main>

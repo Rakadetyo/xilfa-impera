@@ -50,6 +50,27 @@ def get_current_user(request: Request):
 def is_superadmin(user):
     return user and dict(user).get("role") == "superadmin"
 
+def _game_period(cursor, game_id: int) -> str | None:
+    from datetime import datetime
+    cursor.execute("SELECT datetime FROM game WHERE id = ?", (game_id,))
+    row = cursor.fetchone()
+    if not row:
+        return None
+    dt_str = str(row["datetime"])[:10]
+    try:
+        dt = datetime.strptime(dt_str, "%Y-%m-%d")
+    except ValueError:
+        return None
+    months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+    return f"{months[dt.month - 1]} {dt.year}"
+
+def _get_slot_type(cursor, game_id: int, player_id: int) -> str:
+    period = _game_period(cursor, game_id)
+    if not period:
+        return "non-member"
+    cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, period))
+    return "member" if cursor.fetchone() else "non-member"
+
 def get_setting(page: str, section: str, key: str, default: str = ""):
     conn = get_db()
     cursor = conn.cursor()
@@ -100,7 +121,10 @@ async def blog(request: Request):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT p.id, p.title, p.body, p.status, p.post_type, p.created_at, u.username,
-               (SELECT filename FROM post_images WHERE post_id = p.id ORDER BY display_order LIMIT 1) as cover_image
+               COALESCE(
+                   (SELECT filename FROM post_images WHERE id = p.cover_image_id),
+                   (SELECT filename FROM post_images WHERE post_id = p.id AND is_video = 0 ORDER BY display_order LIMIT 1)
+               ) as cover_image
         FROM posts p
         JOIN users u ON p.author_id = u.id
         WHERE p.status = 'published'
@@ -128,7 +152,7 @@ async def get_post(post_id: int):
         raise HTTPException(status_code=404, detail="Post not found")
 
     cursor.execute("""
-        SELECT id, filename FROM post_images
+        SELECT id, filename, is_video FROM post_images
         WHERE post_id = ?
         ORDER BY display_order
     """, (post_id,))
@@ -145,7 +169,7 @@ async def get_post(post_id: int):
         "author": post["username"],
         "created_at": post["created_at"],
         "updated_at": post["updated_at"],
-        "images": [{"id": img["id"], "filename": img["filename"]} for img in images]
+        "images": [{"id": img["id"], "filename": img["filename"], "is_video": img["is_video"] if "is_video" in img.keys() else 0} for img in images]
     })
 
 # --- Auth Routes ---
@@ -823,6 +847,7 @@ async def edit_post_page(request: Request, post_id: int):
         "request": request,
         "post": post,
         "images": images,
+        "cover_image_id": post["cover_image_id"],
         "user": user
     })
 
@@ -849,12 +874,31 @@ async def upload_image(request: Request, post_id: int, image: UploadFile = File(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Check combined media count (images + videos)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as cnt FROM post_images WHERE post_id = ?", (post_id,))
+    if cursor.fetchone()["cnt"] >= 8:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Maximum 8 media items allowed")
+
     upload_dir = Path("app/static/img/comics")
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     ext = Path(image.filename).suffix.lower()
-    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
-        raise HTTPException(status_code=400, detail="Invalid image format")
+    valid_images = [".jpg", ".jpeg", ".png", ".webp"]
+    valid_videos = [".mp4", ".webm", ".mov"]
+
+    is_video = ext in valid_videos
+
+    if is_video:
+        if ext not in valid_videos:
+            conn.close()
+            raise HTTPException(status_code=400, detail="Invalid video format")
+    else:
+        if ext not in valid_images:
+            conn.close()
+            raise HTTPException(status_code=400, detail="Invalid image format")
 
     filename = f"{uuid.uuid4()}{ext}"
     filepath = upload_dir / filename
@@ -862,18 +906,37 @@ async def upload_image(request: Request, post_id: int, image: UploadFile = File(
     with open(filepath, "wb") as f:
         shutil.copyfileobj(image.file, f)
 
-    conn = get_db()
-    cursor = conn.cursor()
     cursor.execute("SELECT COALESCE(MAX(display_order), -1) + 1 as next_order FROM post_images WHERE post_id = ?", (post_id,))
     next_order = cursor.fetchone()["next_order"]
     cursor.execute(
-        "INSERT INTO post_images (post_id, filename, display_order) VALUES (?, ?, ?)",
-        (post_id, filename, next_order)
+        "INSERT INTO post_images (post_id, filename, display_order, is_video) VALUES (?, ?, ?, ?)",
+        (post_id, filename, next_order, 1 if is_video else 0)
     )
     conn.commit()
     conn.close()
 
-    return JSONResponse({"filename": filename, "id": cursor.lastrowid})
+    return JSONResponse({"filename": filename, "id": cursor.lastrowid, "is_video": is_video})
+
+@app.post("/manage/posts/{post_id}/cover")
+async def set_cover_image(request: Request, post_id: int, image_id: int = Form(...)):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Verify image belongs to this post
+    cursor.execute("SELECT id FROM post_images WHERE id = ? AND post_id = ?", (image_id, post_id))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    cursor.execute("UPDATE posts SET cover_image_id = ? WHERE id = ?", (image_id, post_id))
+    conn.commit()
+    conn.close()
+
+    return JSONResponse({"success": True})
 
 @app.post("/manage/posts/{post_id}/delete")
 async def delete_post(request: Request, post_id: int):
@@ -2319,8 +2382,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
 
         # Only insert players not already in game
         cursor.execute("""
-            INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend)
-            SELECT ?, p.id, 1, 1
+            INSERT INTO game_attendee (game_id, player_id, is_paid, is_attend, slot_type)
+            SELECT ?, p.id, 1, 1, 'member'
             FROM player p
             JOIN member m ON p.id = m.player_id
             WHERE p.status = 1
@@ -2348,6 +2411,53 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     # Get all active partners for dropdown
     cursor.execute("SELECT * FROM partner WHERE is_active = 1 ORDER BY name")
     all_partners = cursor.fetchall()
+
+    # Get assets with optional partner name
+    cursor.execute("""
+        SELECT ga.*, gp.name as partner_name
+        FROM game_asset ga
+        LEFT JOIN game_partner gp ON ga.game_partner_id = gp.id
+        WHERE ga.game_id = ?
+        ORDER BY ga.created_at
+    """, (game_id,))
+    assets = cursor.fetchall()
+
+    # Get finance entries
+    cursor.execute("SELECT * FROM game_finance_entry WHERE game_id = ? ORDER BY created_at", (game_id,))
+    finance_entries = cursor.fetchall()
+
+    # Compute finance summary
+    price_member = game_dict.get("price_per_member") or 0
+    price_person = game_dict.get("price_per_person") or 0
+
+    def attendee_price(a):
+        return price_member if a["slot_type"] == "member" else price_person
+
+    # Income: sum amount_paid (written on pay toggle)
+    income_players = sum((a["amount_paid"] or 0) for a in attendees)
+    # Income: if all attendees paid (for reference)
+    income_expected = sum(attendee_price(a) for a in attendees)
+    # Expense: arena price (from arena master)
+    cursor.execute("SELECT price FROM arena WHERE id = ?", (game_dict.get("arena_id"),))
+    arena_row = cursor.fetchone()
+    expense_arena = (arena_row["price"] or 0) if arena_row else 0
+    # Expense: sum of partner fees
+    expense_partners = sum((p["fee"] or 0) for p in partners)
+    # Additional entries
+    extra_income = sum((e["amount"] or 0) for e in finance_entries if e["type"] == "income")
+    extra_expense = sum((e["amount"] or 0) for e in finance_entries if e["type"] == "expense")
+
+    finance = {
+        "income_players": income_players,
+        "income_expected": income_expected,
+        "extra_income": extra_income,
+        "expense_arena": expense_arena,
+        "expense_partners": expense_partners,
+        "extra_expense": extra_expense,
+        "total_income": income_players + extra_income,
+        "total_expense": expense_arena + expense_partners + extra_expense,
+    }
+    finance["net"] = finance["total_income"] - finance["total_expense"]
 
     # Get teams
     cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game_id,))
@@ -2567,8 +2677,88 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "position_counts": position_counts,
         "position_counts_primary": position_counts_primary,
         "position_counts_secondary": position_counts_secondary,
+        "assets": assets,
+        "finance": finance,
+        "finance_entries": finance_entries,
         "active": "games"
     })
+
+
+@app.post("/manage/games/{game_id}/assets/new")
+async def add_game_asset(
+    request: Request,
+    game_id: int,
+    type: str = Form("video"),
+    url: str = Form(...),
+    label: str = Form(""),
+    game_partner_id: str = Form(""),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    partner_id = int(game_partner_id) if game_partner_id.strip().isdigit() else None
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO game_asset (game_id, game_partner_id, type, url, label) VALUES (?, ?, ?, ?, ?)",
+        (game_id, partner_id, type, url.strip(), label.strip() or None),
+    )
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=results", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/assets/{asset_id}/delete")
+async def delete_game_asset(request: Request, game_id: int, asset_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_asset WHERE id = ? AND game_id = ?", (asset_id, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=results", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/finance/new")
+async def add_finance_entry(
+    request: Request,
+    game_id: int,
+    type: str = Form(...),
+    label: str = Form(...),
+    amount: float = Form(...),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO game_finance_entry (game_id, type, label, amount) VALUES (?, ?, ?, ?)",
+        (game_id, type, label.strip(), amount),
+    )
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=results", status_code=302)
+
+
+@app.post("/manage/games/{game_id}/finance/{entry_id}/delete")
+async def delete_finance_entry(request: Request, game_id: int, entry_id: int):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_finance_entry WHERE id = ? AND game_id = ?", (entry_id, game_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=results", status_code=302)
 
 
 @app.get("/manage/games/{game_id}/edit")
@@ -2666,7 +2856,8 @@ async def add_attendee(request: Request, game_id: int, player_id: int):
         conn.close()
         return JSONResponse({"error": "Player already added"}, status_code=400)
 
-    cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend) VALUES (?, ?, 1)", (game_id, player_id))
+    slot_type = _get_slot_type(cursor, game_id, player_id)
+    cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend, slot_type) VALUES (?, ?, 1, ?)", (game_id, player_id, slot_type))
     conn.commit()
     conn.close()
 
@@ -2686,9 +2877,11 @@ async def add_attendees_bulk(request: Request, game_id: int):
     cursor = conn.cursor()
 
     for player_id in player_ids:
-        cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND player_id = ?", (game_id, int(player_id)))
+        pid = int(player_id)
+        cursor.execute("SELECT id FROM game_attendee WHERE game_id = ? AND player_id = ?", (game_id, pid))
         if not cursor.fetchone():
-            cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend) VALUES (?, ?, 1)", (game_id, int(player_id)))
+            slot_type = _get_slot_type(cursor, game_id, pid)
+            cursor.execute("INSERT INTO game_attendee (game_id, player_id, is_attend, slot_type) VALUES (?, ?, 1, ?)", (game_id, pid, slot_type))
 
     conn.commit()
     conn.close()
@@ -2747,11 +2940,23 @@ async def toggle_payment(request: Request, game_id: int, attendee_id: int):
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT is_paid FROM game_attendee WHERE id = ?", (attendee_id,))
+    cursor.execute("""
+        SELECT ga.is_paid, ga.slot_type, g.price_per_member, g.price_per_person
+        FROM game_attendee ga
+        JOIN game g ON ga.game_id = g.id
+        WHERE ga.id = ?
+    """, (attendee_id,))
     row = cursor.fetchone()
     if row:
         new_is_paid = 0 if row["is_paid"] else 1
-        cursor.execute("UPDATE game_attendee SET is_paid = ? WHERE id = ?", (new_is_paid, attendee_id))
+        if new_is_paid == 1:
+            amount_paid = (row["price_per_member"] or 0) if row["slot_type"] == "member" else (row["price_per_person"] or 0)
+        else:
+            amount_paid = 0
+        cursor.execute(
+            "UPDATE game_attendee SET is_paid = ?, amount_paid = ? WHERE id = ?",
+            (new_is_paid, amount_paid, attendee_id)
+        )
         conn.commit()
     conn.close()
 
