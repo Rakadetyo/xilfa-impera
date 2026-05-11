@@ -3,15 +3,16 @@ from pathlib import Path
 import bcrypt
 import logging
 import secrets
-from urllib.parse import quote
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 import shutil
 import uuid
+
+from app.templating import templates
+from app.deps import get_current_user, is_superadmin
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -25,30 +26,16 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
-templates = Jinja2Templates(directory="app/templates")
-templates.env.filters["urlencode"] = lambda s: quote(s, safe="")
 
 from app.database import init_db, seed_admin, get_db
+from app.routers import analytics as analytics_router
+
+app.include_router(analytics_router.router)
 
 @app.on_event("startup")
 async def startup():
     init_db()
     seed_admin()
-
-# --- Helpers ---
-def get_current_user(request: Request):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return None
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, username, role FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    conn.close()
-    return user
-
-def is_superadmin(user):
-    return user and dict(user).get("role") == "superadmin"
 
 def _platform_from_url(url: str) -> str:
     _map = {
@@ -1869,6 +1856,7 @@ async def resolve_google_maps(url: str):
             })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
+
 @app.get("/manage/arena", response_class=HTMLResponse)
 async def arena_page(request: Request):
     user = get_current_user(request)

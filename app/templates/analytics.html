@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="/assets/impera-logo-only-white.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#C9A84C',
+                        'accent-light': '#E5C878',
+                        gold: '#71717A',
+                    },
+                    fontFamily: {
+                        'display': ['Bangers', 'sans-serif'],
+                        'accent':  ['Permanent Marker', 'cursive'],
+                        'body':    ['Inter', 'sans-serif'],
+                        'stat':    ['Oswald', 'sans-serif'],
+                    },
+                    borderWidth: { '3': '3px' }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Inter:wght@400;500;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-btn.active { background-color: #C9A84C; color: #000; font-weight: 700; }
+        .tab-btn { transition: background 0.15s; }
+        .heatmap-cell { position: relative; }
+        .heatmap-cell .tip {
+            display: none; position: absolute; bottom: calc(100% + 6px);
+            left: 50%; transform: translateX(-50%);
+            background: #111; color: #fff; font-size: 11px;
+            padding: 4px 8px; border-radius: 4px; white-space: nowrap;
+            z-index: 50; pointer-events: none;
+        }
+        .heatmap-cell:hover .tip { display: block; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+<div class="flex min-h-screen">
+    {% include '_sidebar.html' %}
+
+    <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <h1 class="text-lg font-display">Analytics</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
+                <form method="POST" action="/manage/logout">
+                    <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
+                </form>
+            </div>
+        </header>
+
+        <div class="p-6 md:p-8">
+
+            <!-- Tab nav -->
+            <div class="flex gap-1 mb-8">
+                <button class="tab-btn active px-5 py-2 rounded-lg text-sm" onclick="showTab('overview')">Overview</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('players')">Players</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('members')">Members</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('finance')">Finance</button>
+                <button class="tab-btn px-5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100" onclick="showTab('quality')">Quality</button>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: OVERVIEW — server-rendered               -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-overview">
+                <!-- Summary cards -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-stat text-accent">{{ game_activity.total_games }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Games</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-3xl font-stat text-accent">{{ game_activity.avg_players_per_game }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Players / Game</p>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm col-span-2 md:col-span-1">
+                        <p class="text-3xl font-stat text-accent">{{ game_activity.avg_fill_rate }}%</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Fill Rate</p>
+                    </div>
+                </div>
+
+                <!-- Most / least packed + momentum -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    {% if game_activity.most_packed %}
+                    <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Most Packed</span>
+                        </div>
+                        <p class="text-2xl font-stat text-green-600">{{ game_activity.most_packed.month }}</p>
+                        <div class="mt-3 space-y-1">
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.most_packed.total_players }}</span> <span class="text-gray-400">total players</span></p>
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.most_packed.avg_players }}</span> <span class="text-gray-400">avg per game</span></p>
+                            <p class="text-xs text-gray-400">{{ game_activity.most_packed.game_count }} game{{ 's' if game_activity.most_packed.game_count != 1 }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if game_activity.least_packed %}
+                    <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Least Packed</span>
+                        </div>
+                        <p class="text-2xl font-stat text-red-400">{{ game_activity.least_packed.month }}</p>
+                        <div class="mt-3 space-y-1">
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.least_packed.total_players }}</span> <span class="text-gray-400">total players</span></p>
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.least_packed.avg_players }}</span> <span class="text-gray-400">avg per game</span></p>
+                            <p class="text-xs text-gray-400">{{ game_activity.least_packed.game_count }} game{{ 's' if game_activity.least_packed.game_count != 1 }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if game_activity.momentum_pct is not none %}
+                    <div class="bg-white border-2 {% if game_activity.momentum_pct >= 0 %}border-green-200{% else %}border-red-100{% endif %} rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs {% if game_activity.momentum_pct >= 0 %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-500{% endif %} px-2 py-0.5 rounded uppercase tracking-wider font-bold">Momentum</span>
+                        </div>
+                        <p class="text-2xl font-stat {% if game_activity.momentum_pct >= 0 %}text-green-600{% else %}text-red-400{% endif %}">
+                            {{ '+' if game_activity.momentum_pct >= 0 else '' }}{{ game_activity.momentum_pct }}%
+                        </p>
+                        <div class="mt-3 space-y-1">
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.momentum_recent_avg }}</span> <span class="text-gray-400">avg last 8 games</span></p>
+                            <p class="text-sm text-gray-700"><span class="font-bold">{{ game_activity.momentum_prev_avg }}</span> <span class="text-gray-400">avg prev 8 games</span></p>
+                            <p class="text-xs text-gray-400">Player count trend</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-white border-2 border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-center">
+                        <p class="text-xs text-gray-400 text-center">Need 16+ games<br>for momentum data</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Heatmap -->
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wider">Game Activity</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Each cell = one game. Color = fill rate (players / max).</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-gray-400 shrink-0">
+                            <span>Low</span>
+                            <div class="flex gap-1">
+                                <div class="w-3 h-3 rounded-sm" style="background:#f3f4f6"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#fef3c7"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#fde68a"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#fbbf24"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#d97706"></div>
+                                <div class="w-3 h-3 rounded-sm" style="background:#92400e"></div>
+                            </div>
+                            <span>High</span>
+                        </div>
+                    </div>
+                    <div id="heatmap">
+                        {% if not game_activity.games %}
+                        <p class="text-sm text-gray-400">No game data yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Monthly charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Games per Month</p>
+                        <canvas id="chartGamesPerMonth" height="200"></canvas>
+                    </div>
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Avg Players per Month</p>
+                        <canvas id="chartAvgPlayers" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: PLAYERS — lazy loaded                    -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-players" class="hidden">
+                <div id="tab-players-loading" class="flex items-center justify-center py-24">
+                    <div class="text-center">
+                        <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>
+                        <p class="text-xs text-gray-400">Loading players...</p>
+                    </div>
+                </div>
+                <div id="tab-players-content" class="hidden"></div>
+                <div id="tab-players-error" class="hidden py-20 text-center">
+                    <p class="text-sm text-red-400">Failed to load. <button onclick="loadTab('players')" class="underline">Retry</button></p>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: MEMBERS — lazy loaded                    -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-members" class="hidden">
+                <div id="tab-members-loading" class="flex items-center justify-center py-24">
+                    <div class="text-center">
+                        <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>
+                        <p class="text-xs text-gray-400">Loading members...</p>
+                    </div>
+                </div>
+                <div id="tab-members-content" class="hidden"></div>
+                <div id="tab-members-error" class="hidden py-20 text-center">
+                    <p class="text-sm text-red-400">Failed to load. <button onclick="loadTab('members')" class="underline">Retry</button></p>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: FINANCE — lazy loaded                    -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-finance" class="hidden">
+                <div id="tab-finance-loading" class="flex items-center justify-center py-24">
+                    <div class="text-center">
+                        <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>
+                        <p class="text-xs text-gray-400">Loading finance...</p>
+                    </div>
+                </div>
+                <div id="tab-finance-content" class="hidden"></div>
+                <div id="tab-finance-error" class="hidden py-20 text-center">
+                    <p class="text-sm text-red-400">Failed to load. <button onclick="loadTab('finance')" class="underline">Retry</button></p>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!-- TAB: QUALITY — lazy loaded                    -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div id="tab-quality" class="hidden">
+                <div id="tab-quality-loading" class="flex items-center justify-center py-24">
+                    <div class="text-center">
+                        <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>
+                        <p class="text-xs text-gray-400">Loading quality...</p>
+                    </div>
+                </div>
+                <div id="tab-quality-content" class="hidden"></div>
+                <div id="tab-quality-error" class="hidden py-20 text-center">
+                    <p class="text-sm text-red-400">Failed to load. <button onclick="loadTab('quality')" class="underline">Retry</button></p>
+                </div>
+            </div>
+
+        </div><!-- /p-8 -->
+    </main>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────
+const ACCENT   = '#C9A84C';
+const ACCENT20 = 'rgba(201,168,76,0.2)';
+const GRAY     = '#e5e7eb';
+const TABS     = ['overview', 'players', 'members', 'finance', 'quality'];
+
+Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#9ca3af';
+
+// ── Overview data (server-rendered) ───────────────────────────
+const gameActivity = {{ game_activity | tojson }};
+
+// ── Tab state ─────────────────────────────────────────────────
+const tabLoaded = {};
+
+async function showTab(name) {
+    TABS.forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+    });
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        const active = TABS[i] === name;
+        btn.classList.toggle('active', active);
+        btn.classList.toggle('text-gray-600', !active);
+        btn.classList.toggle('hover:bg-gray-100', !active);
+    });
+    if (name === 'overview' || tabLoaded[name]) return;
+    await loadTab(name);
+}
+
+async function loadTab(name) {
+    const loading = document.getElementById(`tab-${name}-loading`);
+    const content = document.getElementById(`tab-${name}-content`);
+    const error   = document.getElementById(`tab-${name}-error`);
+    loading.classList.remove('hidden');
+    content.classList.add('hidden');
+    error.classList.add('hidden');
+    try {
+        const res = await fetch(`/manage/analytics/${name}`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        if (name === 'players') renderPlayersTab(data);
+        if (name === 'members') renderMembersTab(data);
+        if (name === 'finance') renderFinanceTab(data);
+        if (name === 'quality') renderQualityTab(data);
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+        tabLoaded[name] = true;
+    } catch(e) {
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function fmtDate(s) {
+    if (!s) return '';
+    return new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function fmtMonth(s) {
+    const [y, m] = s.split('-');
+    return new Date(y, parseInt(m) - 1, 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+}
+function fmtRp(n) {
+    return 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
+}
+function memberBadge(is_member) {
+    return is_member
+        ? `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Member</span>`
+        : `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Regular</span>`;
+}
+function getFillColor(rate) {
+    if (!rate || rate === 0) return '#f3f4f6';
+    if (rate < 30) return '#fef3c7';
+    if (rate < 50) return '#fde68a';
+    if (rate < 70) return '#fbbf24';
+    if (rate < 90) return '#d97706';
+    return '#92400e';
+}
+
+// ── Heatmap (Overview) ────────────────────────────────────────
+function getWeekOfYear(date) {
+    const start = new Date(date.getFullYear(), 0, 1);
+    return Math.min(Math.floor((date - start) / (7 * 24 * 60 * 60 * 1000)), 51);
+}
+
+function renderHeatmap() {
+    const container = document.getElementById('heatmap');
+    if (!gameActivity.games || !gameActivity.games.length) return;
+
+    const byYearWeek = {};
+    gameActivity.games.forEach(g => {
+        const dt   = new Date(g.datetime);
+        const year = dt.getFullYear();
+        const week = getWeekOfYear(dt);
+        if (!byYearWeek[year]) byYearWeek[year] = {};
+        byYearWeek[year][week] = g;
+    });
+
+    const years  = Object.keys(byYearWeek).sort();
+    const CELL   = 13, GAP = 2, STEP = 15, YEAR_W = 36;
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'overflow-x-auto pb-2';
+    const inner = document.createElement('div');
+    inner.style.minWidth = `${YEAR_W + 52 * STEP}px`;
+
+    years.forEach((year, yi) => {
+        const yearInt = parseInt(year);
+        const weekMap = byYearWeek[year];
+        const block   = document.createElement('div');
+        block.className = 'mb-4';
+
+        if (yi === 0) {
+            const monthRow = document.createElement('div');
+            monthRow.className = 'relative mb-1';
+            monthRow.style.height = '16px';
+            monthRow.style.paddingLeft = `${YEAR_W}px`;
+            MONTHS.forEach((name, m) => {
+                const week = getWeekOfYear(new Date(yearInt, m, 1));
+                const lbl  = document.createElement('span');
+                lbl.className = 'absolute text-xs text-gray-400';
+                lbl.style.left = `${YEAR_W + week * STEP}px`;
+                lbl.textContent = name;
+                monthRow.appendChild(lbl);
+            });
+            block.appendChild(monthRow);
+        }
+
+        const cellRow = document.createElement('div');
+        cellRow.className = 'flex items-center';
+        cellRow.style.gap = `${GAP}px`;
+
+        const yearLbl = document.createElement('span');
+        yearLbl.className = 'text-xs text-gray-400 shrink-0 text-right pr-2';
+        yearLbl.style.width = `${YEAR_W}px`;
+        yearLbl.textContent = year;
+        cellRow.appendChild(yearLbl);
+
+        for (let w = 0; w < 52; w++) {
+            const game = weekMap[w];
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell shrink-0 rounded-sm';
+            cell.style.width  = `${CELL}px`;
+            cell.style.height = `${CELL}px`;
+            cell.style.backgroundColor = game ? getFillColor(game.fill_rate) : '#f3f4f6';
+            if (game) {
+                const tip = document.createElement('div');
+                tip.className = 'tip';
+                tip.textContent = `${fmtDate(game.datetime)} · ${game.attendee_count} players · ${game.fill_rate}% full`;
+                cell.appendChild(tip);
+            }
+            cellRow.appendChild(cell);
+        }
+        block.appendChild(cellRow);
+        inner.appendChild(block);
+    });
+
+    wrapper.appendChild(inner);
+    container.appendChild(wrapper);
+}
+
+// ── Overview charts ───────────────────────────────────────────
+function initOverviewCharts() {
+    const monthly = gameActivity.monthly || [];
+    const labels  = monthly.map(m => fmtMonth(m.month));
+
+    new Chart(document.getElementById('chartGamesPerMonth'), {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Games', data: monthly.map(m => m.game_count), backgroundColor: ACCENT, borderRadius: 4 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+    new Chart(document.getElementById('chartAvgPlayers'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Avg Players', data: monthly.map(m => m.avg_players), borderColor: ACCENT, backgroundColor: ACCENT20, borderWidth: 2, pointBackgroundColor: ACCENT, fill: true, tension: 0.3 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+}
+
+// ── Players tab ───────────────────────────────────────────────
+let _pmData = [], _pmPage = 0;
+let _dwData = [], _dwPage = 0;
+
+function renderPlayersTab(data) {
+    const leaderboardRows = (data.leaderboard || []).map((p, i) => `
+        <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="py-2.5 font-stat text-gray-300 text-2xl w-8">${i + 1}</td>
+            <td class="py-2.5">
+                <span class="font-medium">${p.name}</span>
+                ${p.nickname ? `<span class="text-gray-400 text-xs ml-1">"${p.nickname}"</span>` : ''}
+            </td>
+            <td class="py-2.5">${memberBadge(p.is_member)}</td>
+            <td class="py-2.5 text-right font-stat text-2xl text-accent">${p.games_attended}</td>
+        </tr>`).join('');
+
+    const streakRows = (data.streak_leaderboard || []).map((p, i) => `
+        <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="py-2 font-stat text-gray-300 text-lg w-6">${i + 1}</td>
+            <td class="py-2">
+                <span class="font-medium text-sm">${p.name}</span>
+                ${p.is_member ? `<span class="text-xs bg-accent/20 text-accent px-1.5 py-0.5 rounded ml-1">M</span>` : ''}
+            </td>
+            <td class="py-2 text-right font-stat text-lg text-accent">${p.streak} 🔥</td>
+        </tr>`).join('');
+
+    document.getElementById('tab-players-content').innerHTML = `
+        <div class="grid grid-cols-5 gap-6 mb-6">
+            <div class="col-span-5 md:col-span-3 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Most Games — Top 15</p>
+                ${leaderboardRows ? `<table class="w-full text-sm">
+                    <thead><tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                        <th class="text-left pb-2 font-medium">#</th>
+                        <th class="text-left pb-2 font-medium">Player</th>
+                        <th class="text-left pb-2 font-medium">Status</th>
+                        <th class="text-right pb-2 font-medium">Games</th>
+                    </tr></thead>
+                    <tbody>${leaderboardRows}</tbody>
+                </table>` : '<p class="text-sm text-gray-400">No attendance data yet.</p>'}
+            </div>
+            <div class="col-span-5 md:col-span-2 flex flex-col gap-6">
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Attendance Frequency</p>
+                    <canvas id="chartFrequency" height="200"></canvas>
+                </div>
+                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm flex-1">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current Streak — Top 10</p>
+                    <p class="text-xs text-gray-400 mb-4">Consecutive weeks attended.</p>
+                    ${streakRows ? `<table class="w-full text-sm">
+                        <thead><tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                            <th class="text-left pb-2 font-medium">#</th>
+                            <th class="text-left pb-2 font-medium">Player</th>
+                            <th class="text-right pb-2 font-medium">Streak</th>
+                        </tr></thead>
+                        <tbody>${streakRows}</tbody>
+                    </table>` : '<p class="text-sm text-gray-400">No streak data yet.</p>'}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+            <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">New vs Returning Players (per Month)</p>
+            <canvas id="chartNewVsReturning" height="120"></canvas>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Potential Members</p>
+                    <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded font-bold">${data.potential_member_count}</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">No active membership this period · 5+ games attended.</p>
+                ${data.potential_members?.length ? `
+                    <div id="pm-list" class="space-y-2 mb-3"></div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span id="pm-info" class="text-xs text-gray-400"></span>
+                        <div class="flex gap-1">
+                            <button id="pm-prev" onclick="pmPage(-1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">←</button>
+                            <button id="pm-next" onclick="pmPage(+1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">→</button>
+                        </div>
+                    </div>` : '<p class="text-sm text-gray-400">No candidates at this time.</p>'}
+            </div>
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Dropout Watch</p>
+                    <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded font-bold">${data.dropout_watch?.length || 0}</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">Regulars (3+ games) not seen in 60+ days.</p>
+                ${data.dropout_watch?.length ? `
+                    <div id="dw-list" class="space-y-2 mb-3"></div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span id="dw-info" class="text-xs text-gray-400"></span>
+                        <div class="flex gap-1">
+                            <button id="dw-prev" onclick="dwPage(-1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">←</button>
+                            <button id="dw-next" onclick="dwPage(+1)" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">→</button>
+                        </div>
+                    </div>` : '<p class="text-sm text-gray-400">No dropouts detected.</p>'}
+            </div>
+        </div>`;
+
+    // Init charts
+    const nvr    = data.new_vs_returning || [];
+    const labels = nvr.map(m => fmtMonth(m.month));
+    new Chart(document.getElementById('chartNewVsReturning'), {
+        type: 'bar',
+        data: { labels, datasets: [
+            { label: 'New',       data: nvr.map(m => m.new_players),       backgroundColor: ACCENT, borderRadius: 4 },
+            { label: 'Returning', data: nvr.map(m => m.returning_players), backgroundColor: GRAY,   borderRadius: 4 },
+        ]},
+        options: { plugins: { legend: { position: 'top' } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+    });
+    const buckets = data.frequency_buckets || {};
+    new Chart(document.getElementById('chartFrequency'), {
+        type: 'doughnut',
+        data: { labels: ['1 game','2–5 games','6–10 games','11+ games'],
+            datasets: [{ data: [buckets['1']||0, buckets['2-5']||0, buckets['6-10']||0, buckets['11+']||0],
+                backgroundColor: ['#f3f4f6','#fde68a','#f59e0b', ACCENT], borderWidth: 0 }] },
+        options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+    });
+
+    // Init pagination
+    _pmData = data.potential_members || [];
+    _dwData = data.dropout_watch     || [];
+    _pmPage = 0; _dwPage = 0;
+    pmRender(); dwRender();
+}
+
+// ── Members tab ───────────────────────────────────────────────
+function renderMembersTab(data) {
+    const retColor  = data.retention_rate >= 70 ? 'text-green-600' : data.retention_rate >= 50 ? 'text-amber-500' : 'text-red-400';
+    const retBorder = data.retention_rate >= 70 ? 'border-green-200' : data.retention_rate >= 50 ? 'border-amber-200' : 'border-red-100';
+
+    // Growth chart labels + data
+    const growthLabels = (data.growth || []).map(g => g.member_period);
+    const growthCounts = (data.growth || []).map(g => g.member_count);
+
+    // ROI table rows — null cost_per_game = 0 games (unpaid or non-attendee)
+    const roiRows = (data.roi || []).map((m, i) => {
+        const costHtml = m.cost_per_game != null
+            ? `<span class="font-stat text-lg ${m.cost_per_game <= 50000 ? 'text-green-600' : m.cost_per_game <= 100000 ? 'text-accent' : 'text-red-400'}">${fmtRp(m.cost_per_game)}</span>`
+            : `<span class="text-gray-400 text-sm">No games</span>`;
+        const paidBadge = m.is_paid
+            ? `<span class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">Paid</span>`
+            : `<span class="text-xs bg-red-100 text-red-400 px-2 py-0.5 rounded">Unpaid</span>`;
+        return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="py-2.5 font-stat text-gray-300 text-xl w-8">${i + 1}</td>
+            <td class="py-2.5">
+                <span class="font-medium">${m.name}</span>
+                ${m.nickname ? `<span class="text-gray-400 text-xs ml-1">"${m.nickname}"</span>` : ''}
+            </td>
+            <td class="py-2.5">${paidBadge}</td>
+            <td class="py-2.5 text-center font-stat text-lg text-gray-600">${m.games_this_period}</td>
+            <td class="py-2.5 text-right">${costHtml}</td>
+        </tr>`;
+    }).join('');
+
+    // Churn list
+    const churnRows = (data.churn_list || []).map(m => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${m.name}</span>
+                ${m.nickname ? `<span class="text-gray-400 text-xs ml-1">"${m.nickname}"</span>` : ''}
+            </div>
+            <span class="text-xs ${m.is_paid ? 'text-green-600' : 'text-red-400'}">${m.is_paid ? 'Was paid' : 'Unpaid'}</span>
+        </div>`).join('');
+
+    // Dead members list
+    const deadRows = (data.dead_members || []).map(m => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${m.name}</span>
+                ${m.nickname ? `<span class="text-gray-400 text-xs ml-1">"${m.nickname}"</span>` : ''}
+            </div>
+            <span class="text-xs text-gray-400">${fmtRp(m.membership_price)} paid · 0 games</span>
+        </div>`).join('');
+
+    document.getElementById('tab-members-content').innerHTML = `
+        <!-- Summary cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-accent">${data.active_count}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Active Members</p>
+                <p class="text-xs text-gray-400 mt-1">${data.current_period}</p>
+            </div>
+            <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-green-600">${data.paid_pct}%</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Paid</p>
+                <p class="text-xs text-gray-400 mt-1">${data.paid_count} of ${data.active_count}</p>
+            </div>
+            <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-red-400">${data.churn_count}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Churned</p>
+                <p class="text-xs text-gray-400 mt-1">vs ${data.prev_period || '—'}</p>
+            </div>
+            <div class="bg-white border-2 ${retBorder} rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat ${retColor}">${data.retention_rate != null ? data.retention_rate + '%' : '—'}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Retention Rate</p>
+                <p class="text-xs text-gray-400 mt-1">${data.new_count} new this period</p>
+            </div>
+        </div>
+
+        <!-- Growth (2/3) + New vs Recurring pie (1/3) -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+            <div class="col-span-3 md:col-span-2 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Membership Growth</p>
+                <canvas id="chartMemberGrowth" height="130"></canvas>
+            </div>
+            <div class="col-span-3 md:col-span-1 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">New vs Recurring</p>
+                <p class="text-xs text-gray-400 mb-4">${data.current_period}</p>
+                <canvas id="chartMemberPie"></canvas>
+            </div>
+        </div>
+
+        <!-- ROI table — full width -->
+        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-6">
+            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Member ROI — ${data.current_period}</p>
+            <p class="text-xs text-gray-400 mb-4">Cost per game = membership fee ÷ games attended this month.</p>
+            ${roiRows ? `<div class="overflow-x-auto"><table class="w-full text-sm">
+                <thead><tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                    <th class="text-left pb-2 font-medium">#</th>
+                    <th class="text-left pb-2 font-medium">Player</th>
+                    <th class="text-left pb-2 font-medium">Status</th>
+                    <th class="text-center pb-2 font-medium">Games</th>
+                    <th class="text-right pb-2 font-medium">Cost / Game</th>
+                </tr></thead>
+                <tbody>${roiRows}</tbody>
+            </table></div>` : '<p class="text-sm text-gray-400">No members this period.</p>'}
+        </div>
+
+        <!-- Churn + Dead members -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Churned Members</p>
+                    <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded font-bold">${data.churn_count}</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Were members in ${data.prev_period || 'previous period'}, not renewed.</p>
+                ${churnRows || '<p class="text-sm text-gray-400">No churn this period.</p>'}
+            </div>
+            <div class="bg-white border-2 border-amber-100 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Paid, Not Attending</p>
+                    <span class="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded font-bold">${data.dead_members?.length || 0}</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Paid membership, 0 games this month. High churn risk.</p>
+                ${deadRows || '<p class="text-sm text-gray-400">All paid members are attending.</p>'}
+            </div>
+        </div>`;
+
+    // Growth chart
+    new Chart(document.getElementById('chartMemberGrowth'), {
+        type: 'line',
+        data: {
+            labels: growthLabels,
+            datasets: [{ label: 'Members', data: growthCounts, borderColor: ACCENT, backgroundColor: ACCENT20, borderWidth: 2, pointBackgroundColor: ACCENT, fill: true, tension: 0.3 }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    // New vs Recurring pie
+    const recurring = data.active_count - data.new_count;
+    new Chart(document.getElementById('chartMemberPie'), {
+        type: 'pie',
+        data: {
+            labels: ['Recurring', 'New'],
+            datasets: [{ data: [recurring, data.new_count], backgroundColor: [ACCENT, '#0d9488'], borderWidth: 0 }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+// ── Finance tab ───────────────────────────────────────────────
+function renderFinanceTab(data) {
+    const profitColor = data.total_profit >= 0 ? 'text-green-600' : 'text-red-500';
+    const games = data.game_revenue || [];
+
+    document.getElementById('tab-finance-content').innerHTML = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-2xl font-stat text-accent">${fmtRp(data.total_revenue)}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Revenue</p>
+            </div>
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-2xl font-stat text-gray-500">${fmtRp(data.total_expense)}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Expense</p>
+            </div>
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-2xl font-stat ${profitColor}">${fmtRp(data.total_profit)}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Net Profit</p>
+            </div>
+            <div class="bg-white border-2 border-red-100 rounded-xl p-6 shadow-sm">
+                <p class="text-2xl font-stat text-red-400">${data.unpaid_count}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Unpaid Slots</p>
+                <p class="text-xs text-red-300 mt-1">~${fmtRp(data.unpaid_estimated)}</p>
+            </div>
+        </div>
+        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+            <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Revenue vs Expense per Game</p>
+            ${games.length ? '<canvas id="chartPnL" height="160"></canvas>' : '<p class="text-sm text-gray-400">No financial data yet.</p>'}
+        </div>`;
+
+    if (games.length) {
+        new Chart(document.getElementById('chartPnL'), {
+            type: 'bar',
+            data: { labels: games.map(g => fmtDate(g.datetime)), datasets: [
+                { label: 'Revenue', data: games.map(g => g.total_revenue), backgroundColor: ACCENT,     borderRadius: 4 },
+                { label: 'Expense', data: games.map(g => g.total_expense), backgroundColor: '#fca5a5', borderRadius: 4 },
+            ]},
+            options: { plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+}
+
+// ── Quality tab ───────────────────────────────────────────────
+let _fbData = [], _fbAllTags = [];
+let _fbActiveStar = 0, _fbActiveTags = new Set();
+
+function renderQualityTab(data) {
+    const dist    = data.distribution || {};
+    const maxDist = data.max_dist || 1;
+    const DIST_BARS = [
+        { star: 5, label: '5 ★', bg: 'background:#C9A84C' },
+        { star: 4, label: '4 ★', bg: 'background:#fbbf24' },
+        { star: 3, label: '3 ★', bg: 'background:#d1d5db' },
+        { star: 2, label: '2 ★', bg: 'background:#fca5a5' },
+        { star: 1, label: '1 ★', bg: 'background:#f87171' },
+    ];
+    const distBarsHtml = DIST_BARS.map(({ star, label, bg }) => {
+        const count = dist[String(star)] || 0;
+        const pct   = Math.round(count / maxDist * 100);
+        return `<div class="flex items-center gap-3">
+            <span class="text-sm font-stat text-gray-500 w-8 text-right shrink-0">${label}</span>
+            <div class="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
+                <div class="h-full rounded-full transition-all" style="${bg}; width:${pct}%"></div>
+            </div>
+            <span class="text-sm font-stat text-gray-600 w-8 shrink-0">${count}</span>
+        </div>`;
+    }).join('');
+
+    const starBtns = [0,5,4,3,2,1].map(s =>
+        `<button onclick="fbToggleStar(${s})" id="fb-star-${s}" class="fb-star-btn px-2.5 py-1 text-xs rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">${s === 0 ? 'All' : s + '★'}</button>`
+    ).join('');
+
+    const tagBtns = (data.all_tags || []).map((tag, i) =>
+        `<button onclick="fbToggleTag('${tag}')" id="fb-tag-${i}" data-tag="${tag}" class="fb-tag-btn px-2.5 py-1 text-xs rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">${tag}</button>`
+    ).join('');
+
+    document.getElementById('tab-quality-content').innerHTML = `
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-accent">${data.overall_avg || '—'}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Avg Rating</p>
+            </div>
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-accent">${data.total_ratings}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Total Ratings</p>
+            </div>
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-3xl font-stat text-accent">${data.games_with_ratings}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mt-1">Games Rated</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">What Worked Well</p>
+                <p class="text-xs text-gray-400 mb-4">Top tags from player feedback.</p>
+                ${data.great_tags?.length ? '<canvas id="chartGreatRadar"></canvas>' : '<p class="text-sm text-gray-400">No feedback tags yet.</p>'}
+            </div>
+            <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Could Be Improved</p>
+                <p class="text-xs text-gray-400 mb-4">Top tags from player feedback.</p>
+                ${data.improve_tags?.length ? '<canvas id="chartImproveRadar"></canvas>' : '<p class="text-sm text-gray-400">No feedback tags yet.</p>'}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-5 gap-6 mb-6">
+            <div class="col-span-5 md:col-span-3 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Rating Trend</p>
+                ${data.ratings_per_game?.length ? '<canvas id="chartRatingTrend" height="200"></canvas>' : '<p class="text-sm text-gray-400">No ratings yet.</p>'}
+            </div>
+            <div class="col-span-5 md:col-span-2 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-6">Distribution</p>
+                ${data.total_ratings > 0 ? `<div class="space-y-3">${distBarsHtml}</div>` : '<p class="text-sm text-gray-400">No ratings yet.</p>'}
+            </div>
+        </div>
+
+        <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Player Feedback</p>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs text-gray-400">Filter:</span>
+                    ${starBtns}
+                </div>
+            </div>
+            ${tagBtns ? `<div class="flex flex-wrap gap-1.5 mb-5">${tagBtns}</div>` : ''}
+            ${data.recent_feedback?.length ? `
+                <div id="fb-list" class="space-y-3"></div>
+                <p id="fb-empty" class="text-sm text-gray-400 hidden">No feedback matches this filter.</p>`
+            : '<p class="text-sm text-gray-400">No written feedback yet.</p>'}
+        </div>`;
+
+    // Radar charts
+    const radarOpts = {
+        plugins: { legend: { display: false } },
+        scales: { r: { beginAtZero: true, ticks: { display: false },
+            pointLabels: { font: { size: 11, family: 'Inter' }, color: '#6b7280' },
+            grid: { color: '#f3f4f6' }, angleLines: { color: '#e5e7eb' } } }
+    };
+    if (data.great_tags?.length) {
+        const tags = data.great_tags.slice(0, 8);
+        new Chart(document.getElementById('chartGreatRadar'), {
+            type: 'radar',
+            data: { labels: tags.map(t => t[0]), datasets: [{
+                data: tags.map(t => t[1]),
+                backgroundColor: 'rgba(13,148,136,0.15)', borderColor: '#0d9488',
+                borderWidth: 2, pointBackgroundColor: '#0d9488', pointRadius: 4,
+            }]},
+            options: radarOpts,
+        });
+    }
+    if (data.improve_tags?.length) {
+        const tags = data.improve_tags.slice(0, 8);
+        new Chart(document.getElementById('chartImproveRadar'), {
+            type: 'radar',
+            data: { labels: tags.map(t => t[0]), datasets: [{
+                data: tags.map(t => t[1]),
+                backgroundColor: 'rgba(201,168,76,0.15)', borderColor: ACCENT,
+                borderWidth: 2, pointBackgroundColor: ACCENT, pointRadius: 4,
+            }]},
+            options: radarOpts,
+        });
+    }
+    if (data.ratings_per_game?.length) {
+        new Chart(document.getElementById('chartRatingTrend'), {
+            type: 'line',
+            data: { labels: data.ratings_per_game.map(g => fmtDate(g.datetime)), datasets: [{
+                label: 'Avg Rating', data: data.ratings_per_game.map(g => g.avg_rating),
+                borderColor: ACCENT, backgroundColor: ACCENT20, borderWidth: 2,
+                pointBackgroundColor: ACCENT, fill: true, tension: 0.3,
+            }]},
+            options: { plugins: { legend: { display: false } }, scales: { y: { min: 1, max: 5 } } }
+        });
+    }
+
+    // Feedback feed
+    _fbData     = data.recent_feedback || [];
+    _fbAllTags  = data.all_tags        || [];
+    _fbActiveStar = 0;
+    _fbActiveTags = new Set();
+    fbRender();
+}
+
+// ── Pagination: potential members ─────────────────────────────
+const PM_PAGE_SIZE = 12;
+
+function pmRender() {
+    const list = document.getElementById('pm-list');
+    if (!list) return;
+    const total = _pmData.length;
+    const start = _pmPage * PM_PAGE_SIZE;
+    const end   = Math.min(start + PM_PAGE_SIZE, total);
+    list.innerHTML = _pmData.slice(start, end).map(p => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${p.name}</span>
+                ${p.nickname ? `<span class="text-gray-400 text-xs ml-1">"${p.nickname}"</span>` : ''}
+                ${p.contact_no ? `<span class="text-gray-400 text-xs block">${p.contact_no}</span>` : ''}
+            </div>
+            <span class="font-stat text-accent text-lg">${p.games_attended}x</span>
+        </div>`).join('');
+    document.getElementById('pm-info').textContent = `${start + 1}–${end} of ${total}`;
+    document.getElementById('pm-prev').disabled = _pmPage === 0;
+    document.getElementById('pm-next').disabled = end >= total;
+}
+function pmPage(dir) {
+    const max = Math.ceil(_pmData.length / PM_PAGE_SIZE) - 1;
+    _pmPage = Math.max(0, Math.min(_pmPage + dir, max));
+    pmRender();
+}
+
+// ── Pagination: dropout watch ─────────────────────────────────
+const DW_PAGE_SIZE = 10;
+
+function dwRender() {
+    const list = document.getElementById('dw-list');
+    if (!list) return;
+    const total = _dwData.length;
+    const start = _dwPage * DW_PAGE_SIZE;
+    const end   = Math.min(start + DW_PAGE_SIZE, total);
+    list.innerHTML = _dwData.slice(start, end).map(p => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+            <div>
+                <span class="font-medium text-sm">${p.name}</span>
+                ${p.nickname ? `<span class="text-gray-400 text-xs ml-1">"${p.nickname}"</span>` : ''}
+                <span class="text-gray-400 text-xs block">${p.total_games} games total</span>
+            </div>
+            <span class="text-xs text-red-400 font-medium">${p.days_since}d ago</span>
+        </div>`).join('');
+    document.getElementById('dw-info').textContent = `${start + 1}–${end} of ${total}`;
+    document.getElementById('dw-prev').disabled = _dwPage === 0;
+    document.getElementById('dw-next').disabled = end >= total;
+}
+function dwPage(dir) {
+    const max = Math.ceil(_dwData.length / DW_PAGE_SIZE) - 1;
+    _dwPage = Math.max(0, Math.min(_dwPage + dir, max));
+    dwRender();
+}
+
+// ── Feedback feed ─────────────────────────────────────────────
+const STAR_COLORS = { 5:'#C9A84C', 4:'#fbbf24', 3:'#9ca3af', 2:'#f87171', 1:'#ef4444' };
+
+function fbStars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+function fbRender() {
+    const list  = document.getElementById('fb-list');
+    const empty = document.getElementById('fb-empty');
+    if (!list) return;
+    const filtered = _fbData.filter(f => {
+        if (_fbActiveStar && f.rating !== _fbActiveStar) return false;
+        if (_fbActiveTags.size === 0) return true;
+        const tags = [
+            ...(f.great_things || '').split(','),
+            ...(f.could_be_improved || '').split(','),
+        ].map(t => t.trim()).filter(Boolean);
+        return tags.some(t => _fbActiveTags.has(t));
+    });
+    if (!filtered.length) {
+        list.innerHTML = '';
+        empty?.classList.remove('hidden');
+        return;
+    }
+    empty?.classList.add('hidden');
+    list.innerHTML = filtered.map(f => {
+        const name  = f.is_anonymous ? 'Anonymous' : f.player_name;
+        const color = STAR_COLORS[f.rating] || '#9ca3af';
+        const gtags = (f.great_things || '').split(',').map(t => t.trim()).filter(Boolean);
+        const itags = (f.could_be_improved || '').split(',').map(t => t.trim()).filter(Boolean);
+        const tagHtml = [
+            ...gtags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-teal-50 text-teal-700 border border-teal-100">${t}</span>`),
+            ...itags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100">${t}</span>`),
+        ].join('');
+        return `<div class="flex gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+            <div class="shrink-0 text-lg font-stat" style="color:${color}">${fbStars(f.rating)}</div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-800 mb-2">${f.feedback}</p>
+                ${tagHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>` : ''}
+                <p class="text-xs text-gray-400">${name} · ${fmtDate(f.game_datetime)}</p>
+            </div>
+        </div>`;
+    }).join('');
+}
+function fbToggleStar(star) {
+    _fbActiveStar = _fbActiveStar === star ? 0 : star;
+    document.querySelectorAll('.fb-star-btn').forEach(btn => btn.classList.remove('bg-accent','text-black','border-accent'));
+    const active = document.getElementById(`fb-star-${_fbActiveStar}`);
+    if (active) active.classList.add('bg-accent','text-black','border-accent');
+    fbRender();
+}
+function fbToggleTag(tag) {
+    _fbActiveTags.has(tag) ? _fbActiveTags.delete(tag) : _fbActiveTags.add(tag);
+    document.querySelectorAll('.fb-tag-btn').forEach(btn => {
+        const on = _fbActiveTags.has(btn.dataset.tag);
+        btn.classList.toggle('bg-gray-800', on);
+        btn.classList.toggle('text-white', on);
+        btn.classList.toggle('border-gray-800', on);
+    });
+    fbRender();
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+renderHeatmap();
+initOverviewCharts();
+</script>
+</body>
+</html>
