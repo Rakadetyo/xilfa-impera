@@ -2443,6 +2443,49 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     """, (game_id,))
     assets = cursor.fetchall()
 
+    # Get ratings with player name
+    cursor.execute("""
+        SELECT gr.*, p.name as player_name, p.nickname as player_nickname
+        FROM game_rating gr
+        JOIN player p ON gr.player_id = p.id
+        WHERE gr.game_id = ?
+        ORDER BY gr.created_at
+    """, (game_id,))
+    ratings_raw = cursor.fetchall()
+
+    # Aggregate ratings
+    RATING_TAGS = ['team', 'competitiveness', 'atmosphere', 'punctuality',
+                   'organization', 'price', 'court', 'sportsmanship', 'supporting_partners']
+
+    ratings_list = [dict(r) for r in ratings_raw]
+    total_ratings = len(ratings_list)
+    avg_rating = round(sum(r["rating"] for r in ratings_list) / total_ratings, 1) if total_ratings else 0
+    rating_dist = {i: sum(1 for r in ratings_list if r["rating"] == i) for i in range(1, 6)}
+
+    great_counts = {t: 0 for t in RATING_TAGS}
+    improve_counts = {t: 0 for t in RATING_TAGS}
+    for r in ratings_list:
+        for t in (r["great_things"] or "").split(","):
+            t = t.strip()
+            if t in great_counts:
+                great_counts[t] += 1
+        for t in (r["could_be_improved"] or "").split(","):
+            t = t.strip()
+            if t in improve_counts:
+                improve_counts[t] += 1
+
+    great_tags = sorted([(t, c) for t, c in great_counts.items() if c > 0], key=lambda x: -x[1])
+    improve_tags = sorted([(t, c) for t, c in improve_counts.items() if c > 0], key=lambda x: -x[1])
+
+    ratings_summary = {
+        "total": total_ratings,
+        "avg": avg_rating,
+        "dist": rating_dist,
+        "great_tags": great_tags,
+        "improve_tags": improve_tags,
+        "response_rate": round(total_ratings / len(attendees) * 100) if attendees else 0,
+    }
+
     # Get finance entries
     cursor.execute("SELECT * FROM game_finance_entry WHERE game_id = ? ORDER BY created_at", (game_id,))
     finance_entries = cursor.fetchall()
@@ -2699,6 +2742,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "position_counts_primary": position_counts_primary,
         "position_counts_secondary": position_counts_secondary,
         "assets": assets,
+        "ratings": ratings_list,
+        "ratings_summary": ratings_summary,
         "finance": finance,
         "finance_entries": finance_entries,
         "active": "games"
