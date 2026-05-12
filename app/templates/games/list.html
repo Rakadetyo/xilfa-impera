@@ -169,7 +169,7 @@
                         <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
                             ←
                         </button>
-                        <h2 id="calendar-title" class="text-3xl font-display tracking-wide text-gray-800"></h2>
+                        <button type="button" onclick="openDatePickerModal()" class="text-3xl font-display tracking-wide text-gray-800 hover:text-accent transition-colors" id="calendar-title"></button>
                         <button onclick="changeMonth(1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
                             →
                         </button>
@@ -190,7 +190,41 @@
                         <!-- Calendar Days -->
                         <div id="calendar-days" class="grid grid-cols-7" style="min-height: 500px;"></div>
                     </div>
-                </div>
+
+                    <!-- Date Picker Modal -->
+                    <div id="datePickerModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+                        <div class="bg-white rounded-lg p-6 w-full max-w-sm mx-4">
+                            <h2 class="text-lg font-bold mb-4">Select Month & Year</h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">Month</label>
+                                    <select id="monthSelect" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                                        <option value="0">January</option>
+                                        <option value="1">February</option>
+                                        <option value="2">March</option>
+                                        <option value="3">April</option>
+                                        <option value="4">May</option>
+                                        <option value="5">June</option>
+                                        <option value="6">July</option>
+                                        <option value="7">August</option>
+                                        <option value="8">September</option>
+                                        <option value="9">October</option>
+                                        <option value="10">November</option>
+                                        <option value="11">December</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">Year</label>
+                                    <select id="yearSelect" class="w-full bg-gray-50 border border-gray-200 px-4 py-2 focus:outline-none focus:border-accent">
+                                    </select>
+                                </div>
+                                <div class="flex gap-2 justify-end pt-2">
+                                    <button type="button" onclick="closeDatePickerModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100">Cancel</button>
+                                    <button type="button" onclick="applyDatePicker()" class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light">Go</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 {% else %}
                 <div class="text-center py-12">
                     <p class="text-gray-500">No games yet. Create your first game!</p>
@@ -422,6 +456,46 @@
             calendarDate.setMonth(calendarDate.getMonth() + delta);
             renderCalendar();
         }
+
+        // Date Picker Modal
+        function openDatePickerModal() {
+            const modal = document.getElementById('datePickerModal');
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+
+            monthSelect.value = calendarDate.getMonth();
+            yearSelect.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear - 2; y <= currentYear + 2; y++) {
+                const option = document.createElement('option');
+                option.value = y;
+                option.textContent = y;
+                if (y === calendarDate.getFullYear()) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDatePickerModal() {
+            const modal = document.getElementById('datePickerModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function applyDatePicker() {
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const year = parseInt(document.getElementById('yearSelect').value);
+            calendarDate.setMonth(month);
+            calendarDate.setFullYear(year);
+            renderCalendar();
+            closeDatePickerModal();
+        }
+
+        document.getElementById('datePickerModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeDatePickerModal();
+        });
 
         // Initialize calendar
         renderCalendar();
