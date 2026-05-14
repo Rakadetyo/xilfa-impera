@@ -178,7 +178,7 @@
                                 <td class="p-4 text-gray-500">{{ m.member_end_date or 'Ongoing' }}</td>
                                 <td class="p-4 text-gray-500">{{ (m.membership_price or 0)|int }}</td>
                                 <td class="p-4">
-                                    <span onclick="event.stopPropagation(); togglePaid({{ m.id }}, {{ m.is_paid }})" class="cursor-pointer px-2 py-1 text-xs font-bold rounded hover:opacity-80 {% if m.is_paid %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    <span onclick="event.stopPropagation(); togglePaid({{ m.id }}, {{ m.is_paid }}, this)" class="cursor-pointer px-2 py-1 text-xs font-bold rounded hover:opacity-80 {% if m.is_paid %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
                                         {{ 'Yes' if m.is_paid else 'No' }}
                                     </span>
                                 </td>
@@ -370,14 +370,18 @@
             if (e.target === this) closeMemberModal();
         });
 
-        async function togglePaid(id, currentPaid) {
+        async function togglePaid(id, currentPaid, el) {
             const newPaid = currentPaid ? 0 : 1;
             const res = await fetch(`/manage/members/${id}/toggle-paid`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_paid: newPaid })
             });
-            if (res.ok) location.reload();
+            if (res.ok) {
+                el.textContent = newPaid ? 'Yes' : 'No';
+                el.className = `cursor-pointer px-2 py-1 text-xs font-bold rounded hover:opacity-80 ${newPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+                el.setAttribute('onclick', `event.stopPropagation(); togglePaid(${id}, ${newPaid}, this)`);
+            }
         }
 
         function openDatePickerModal() {
