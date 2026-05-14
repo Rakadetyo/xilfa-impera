@@ -3049,7 +3049,7 @@ async def toggle_payment(request: Request, game_id: int, attendee_id: int):
         conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+    return JSONResponse({"is_paid": new_is_paid})
 
 
 @app.post("/manage/games/{game_id}/attendees/{attendee_id}/attend")
@@ -3068,7 +3068,7 @@ async def toggle_attendance(request: Request, game_id: int, attendee_id: int):
         conn.commit()
     conn.close()
 
-    return RedirectResponse(f"/manage/games/{game_id}?tab=players", status_code=302)
+    return JSONResponse({"is_attend": new_is_attend})
 
 
 # --- Teams CRUD ---

@@ -858,24 +858,26 @@ Klik link untuk lihat info tim kamu
                                 </td>
                                 <td class="px-6 py-4">
                                     {% if a %}
-                                    <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/pay">
-                                        <button type="submit" class="px-2 py-1 rounded text-sm font-medium
+                                    <button type="button"
+                                        onclick="toggleAttendee('{{ a.id }}', 'pay', this)"
+                                        data-state="{{ '1' if a.is_paid else '0' }}"
+                                        class="px-2 py-1 rounded text-sm font-medium
                                             {% if a.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
-                                            {{ 'Paid' if a.is_paid else 'Unpaid' }}
-                                        </button>
-                                    </form>
+                                        {{ 'Paid' if a.is_paid else 'Unpaid' }}
+                                    </button>
                                     {% else %}
                                     <span class="text-gray-400">-</span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
                                     {% if a %}
-                                    <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/attend">
-                                        <button type="submit" class="px-2 py-1 rounded text-sm font-medium
+                                    <button type="button"
+                                        onclick="toggleAttendee('{{ a.id }}', 'attend', this)"
+                                        data-state="{{ '1' if a.is_attend else '0' }}"
+                                        class="px-2 py-1 rounded text-sm font-medium
                                             {% if a.is_attend %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
-                                            {{ 'Yes' if a.is_attend else 'No' }}
-                                        </button>
-                                    </form>
+                                        {{ 'Yes' if a.is_attend else 'No' }}
+                                    </button>
                                     {% else %}
                                     <span class="text-gray-400">-</span>
                                     {% endif %}
@@ -964,6 +966,22 @@ Klik link untuk lihat info tim kamu
                 </div>
 
                 <script>
+                async function toggleAttendee(attendeeId, action, btn) {
+                    btn.disabled = true;
+                    try {
+                        const res = await fetch(`/manage/games/{{ game.id }}/attendees/${attendeeId}/${action}`, { method: 'POST' });
+                        if (!res.ok) throw new Error('failed');
+                        const data = await res.json();
+                        const isOn = action === 'pay' ? data.is_paid : data.is_attend;
+                        btn.dataset.state = isOn ? '1' : '0';
+                        btn.textContent = action === 'pay' ? (isOn ? 'Paid' : 'Unpaid') : (isOn ? 'Yes' : 'No');
+                        btn.className = `px-2 py-1 rounded text-sm font-medium ${isOn ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`;
+                    } catch {
+                        alert('Toggle failed, please try again.');
+                    } finally {
+                        btn.disabled = false;
+                    }
+                }
                 function openEditModal(id, name, nickname, pos1, pos2, skill) {
                     document.getElementById('edit-attendee-id').value = id;
                     document.getElementById('edit-name').value = name;

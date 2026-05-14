@@ -246,7 +246,7 @@
                 </form>
 
                 <!-- Players Table -->
-                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <div id="players-table-container" class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
@@ -354,6 +354,26 @@
     </div>
 
     <script>
+        function initPagination() {
+            document.querySelectorAll('#players-table-container a[href*="page="]').forEach(link => {
+                link.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    const url = this.href;
+                    const res = await fetch(url);
+                    if (!res.ok) return;
+                    const html = await res.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const next = doc.getElementById('players-table-container');
+                    if (next) {
+                        document.getElementById('players-table-container').replaceWith(next);
+                        initPagination();
+                    }
+                    history.pushState(null, '', url);
+                });
+            });
+        }
+        initPagination();
+
         async function deletePlayer(playerId, name) {
             if (!confirm(`Delete player "${name}"? This cannot be undone.`)) return;
             const res = await fetch(`/manage/players/${playerId}/delete`, { method: 'POST' });
