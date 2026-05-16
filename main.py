@@ -4301,7 +4301,63 @@ async def post_game_page(request: Request, token: str, attendee_id: int):
     )
     already_rated = cursor.fetchone() is not None
 
+    # Team standings
+    cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game["id"],))
+    teams_raw = {t["id"]: dict(t) for t in cursor.fetchall()}
+
+    cursor.execute("""
+        SELECT * FROM game_match
+        WHERE game_id = ? AND score_home IS NOT NULL AND score_away IS NOT NULL
+    """, (game["id"],))
+    scored_matches = cursor.fetchall()
+
+    team_rosters = {}
+    for team_id in teams_raw:
+        cursor.execute("""
+            SELECT p.name, p.position_1, p.position_2
+            FROM game_attendee ga
+            JOIN player p ON ga.player_id = p.id
+            WHERE ga.team_id = ? AND ga.game_id = ?
+            ORDER BY p.name
+        """, (team_id, game["id"]))
+        team_rosters[team_id] = [dict(p) for p in cursor.fetchall()]
+
     conn.close()
+
+    from collections import defaultdict
+    stats = defaultdict(lambda: {"wins": 0, "losses": 0, "draws": 0, "score_for": 0, "score_against": 0})
+    for m in scored_matches:
+        h, a, sh, sa = m["team_home_id"], m["team_away_id"], m["score_home"], m["score_away"]
+        stats[h]["score_for"] += sh
+        stats[h]["score_against"] += sa
+        stats[a]["score_for"] += sa
+        stats[a]["score_against"] += sh
+        if sh > sa:
+            stats[h]["wins"] += 1
+            stats[a]["losses"] += 1
+        elif sa > sh:
+            stats[a]["wins"] += 1
+            stats[h]["losses"] += 1
+        else:
+            stats[h]["draws"] += 1
+            stats[a]["draws"] += 1
+
+    standings = []
+    for team_id, team in teams_raw.items():
+        s = stats[team_id]
+        standings.append({
+            **team,
+            "wins": s["wins"],
+            "losses": s["losses"],
+            "draws": s["draws"],
+            "score_for": s["score_for"],
+            "score_against": s["score_against"],
+            "score_diff": s["score_for"] - s["score_against"],
+            "played": s["wins"] + s["losses"] + s["draws"],
+        })
+    standings.sort(key=lambda x: (-x["wins"], -x["score_diff"], -x["score_for"]))
+    for i, t in enumerate(standings):
+        t["rank"] = i + 1
 
     RATING_TAGS = ['team', 'competitiveness', 'atmosphere', 'punctuality',
                    'organization', 'price', 'court', 'sportsmanship', 'supporting_partners']
@@ -4313,6 +4369,9 @@ async def post_game_page(request: Request, token: str, attendee_id: int):
         "assets": [{**dict(a), "platform": _platform_from_url(a["url"])} for a in assets],
         "already_rated": already_rated,
         "rating_tags": RATING_TAGS,
+        "standings": standings,
+        "team_rosters": team_rosters,
+        "has_scores": len(scored_matches) > 0,
     })
 
 
