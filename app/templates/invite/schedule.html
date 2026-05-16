@@ -67,16 +67,26 @@
                             <!-- Home team color dot + name -->
                             <span class="w-2 h-2 rounded-full flex-shrink-0"
                                   style="background-color: {{ match.home_color or '#6B7280' }}"></span>
-                            <span class="{% if match.team_home_id == player_team_id %}text-accent font-normal{% else %}text-gray-300{% endif %}">
+                            <span class="{% if match.team_home_id == player_team_id %}text-accent{% else %}text-gray-300{% endif %} {% if match.winner_team_id == match.team_home_id %}font-bold{% endif %}">
                                 {{ match.home_name or 'TBD' }}
                             </span>
                             <span class="text-gray-600 text-xs">vs</span>
                             <span class="w-2 h-2 rounded-full flex-shrink-0"
                                   style="background-color: {{ match.away_color or '#6B7280' }}"></span>
-                            <span class="{% if match.team_away_id == player_team_id %}text-accent font-normal{% else %}text-gray-300{% endif %}">
+                            <span class="{% if match.team_away_id == player_team_id %}text-accent{% else %}text-gray-300{% endif %} {% if match.winner_team_id == match.team_away_id %}font-bold{% endif %}">
                                 {{ match.away_name or 'TBD' }}
                             </span>
                         </div>
+                        {% if match.score_home is not none and match.score_away is not none %}
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="font-mono font-bold text-white text-sm tabular-nums">{{ match.score_home }} – {{ match.score_away }}</span>
+                            {% if match.score_home == match.score_away %}
+                            <span class="text-xs text-gray-500">· Draw</span>
+                            {% elif match.winner_team_id %}
+                            <span class="text-xs text-gray-500">· {{ match.home_name if match.winner_team_id == match.team_home_id else match.away_name }} wins</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                         {% if match.court_label %}
                         <div class="text-gray-600 text-xs mt-1">Court {{ match.court_label }}</div>
                         {% endif %}
