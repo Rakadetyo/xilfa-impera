@@ -4682,6 +4682,35 @@ async def update_match_score(request: Request, game_id: int, match_id: int):
     return JSONResponse({"ok": True, "value": new_value})
 
 
+@app.get("/manage/games/{game_id}/matches/{match_id}/team-stats")
+async def get_match_team_stats(request: Request, game_id: int, match_id: int):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT team_home_id, team_away_id FROM game_match WHERE id = ? AND game_id = ?", (match_id, game_id))
+    match = cursor.fetchone()
+    if not match:
+        conn.close()
+        return JSONResponse({"error": "not found"}, status_code=404)
+    blank = {"points":0,"rebounds":0,"assists":0,"steals":0,"blocks":0,"turnovers":0,"fouls":0}
+    def team_totals(team_id):
+        if not team_id:
+            return blank.copy()
+        cursor.execute("""
+            SELECT SUM(points),SUM(rebounds),SUM(assists),SUM(steals),SUM(blocks),SUM(turnovers),SUM(fouls)
+            FROM game_player_stat WHERE match_id = ? AND team_id = ?
+        """, (match_id, team_id))
+        r = cursor.fetchone()
+        if r and r[0] is not None:
+            return {"points":r[0]or 0,"rebounds":r[1]or 0,"assists":r[2]or 0,"steals":r[3]or 0,"blocks":r[4]or 0,"turnovers":r[5]or 0,"fouls":r[6]or 0}
+        return blank.copy()
+    result = {"home": team_totals(match["team_home_id"]), "away": team_totals(match["team_away_id"])}
+    conn.close()
+    return JSONResponse(result)
+
+
 @app.get("/manage/games/{game_id}/matches/{match_id}/player-stat/{player_id}")
 async def get_player_stat(request: Request, game_id: int, match_id: int, player_id: int):
     user = get_current_user(request)
