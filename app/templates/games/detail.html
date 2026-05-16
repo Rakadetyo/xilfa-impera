@@ -91,6 +91,8 @@
                 <p class="text-gray-500">Create teams and assign players to each team. Organize players into teams for the game. Each team can have a name and color. Once teams are created, generate a schedule in the Schedule tab to determine match pairings.</p>
                 {% elif tab == 'schedule' %}
                 <p class="text-gray-500">Generate match schedule and track scores. Automatically create a round-robin schedule where each team plays every other team. Enter scores after each match to track results. The system will determine winners based on the scores entered.</p>
+                {% elif tab == 'scores' %}
+                <p class="text-gray-500">Record team and player scores for this game. Open the Scoring Board to enter match results in real time or after the game.</p>
                 {% elif tab == 'results' %}
                 <p class="text-gray-500">View match results and winners. See the final standings and scores for all matches in this game. Review which team won each match and how many points each team scored throughout the session.</p>
                 {% endif %}
@@ -1524,6 +1526,27 @@ Klik link untuk lihat info tim kamu
                 }
             </script>
             {% endif %}
+
+            {% elif tab == 'scores' %}
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-medium">Scoring Board</h3>
+                </div>
+                <p class="text-sm text-gray-500 mb-5">Enter match scores in real time or after the game. Opens in a fullscreen landscape view.</p>
+                {% if matches %}
+                <a href="/manage/games/{{ game.id }}/scoring" target="_blank"
+                   class="inline-flex items-center gap-2 px-5 py-3 bg-accent text-black font-semibold rounded-xl text-sm hover:bg-accent-light transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Open Scoring Board
+                </a>
+                {% else %}
+                <p class="text-gray-400 text-sm">Generate a schedule first before entering scores.</p>
+                <a href="?tab=schedule" class="text-sm text-accent hover:underline mt-1 inline-block">→ Go to Schedule</a>
+                {% endif %}
+            </div>
 
             {% elif tab == 'results' %}
 
