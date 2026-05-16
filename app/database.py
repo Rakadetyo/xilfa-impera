@@ -384,6 +384,36 @@ def init_db():
         )
     """)
 
+    # game_player_stat: individual player stats per match
+    # Drop and recreate if old schema missing match_id
+    cursor.execute("PRAGMA table_info(game_player_stat)")
+    gps_cols = {row[1] for row in cursor.fetchall()}
+    if gps_cols and 'match_id' not in gps_cols:
+        cursor.execute("DROP TABLE game_player_stat")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_player_stat (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            match_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            team_id INTEGER,
+            points INTEGER DEFAULT 0,
+            rebounds INTEGER DEFAULT 0,
+            assists INTEGER DEFAULT 0,
+            steals INTEGER DEFAULT 0,
+            blocks INTEGER DEFAULT 0,
+            turnovers INTEGER DEFAULT 0,
+            fouls INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES game(id) ON DELETE CASCADE,
+            FOREIGN KEY (match_id) REFERENCES game_match(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES player(id),
+            FOREIGN KEY (team_id) REFERENCES game_team(id),
+            UNIQUE(match_id, player_id)
+        )
+    """)
+
     # game_asset: video/photo/doc links per game, optionally attributed to a partner
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS game_asset (
