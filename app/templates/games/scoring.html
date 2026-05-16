@@ -130,7 +130,7 @@
             <!-- Stat buttons -->
             <div id="stat-col">
                 <div id="selected-label">Select a player</div>
-                <div id="player-stats" style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;min-height:1.25rem;margin-bottom:0.1rem;"></div>
+                <div id="player-stats" style="display:flex;gap:0.5rem;flex-wrap:nowrap;justify-content:center;min-height:1rem;overflow:hidden;"></div>
 
                 <!-- Team comparison (shown when no player selected) -->
                 <div id="team-comparison" style="width:100%;display:flex;flex-direction:column;gap:0.3rem;">
@@ -324,6 +324,8 @@
             lbl.textContent = p.name;
             lbl.style.color = '#C9A84C';
             document.getElementById('stat-buttons').style.display = 'flex';
+            document.getElementById('stat-col').style.justifyContent = 'flex-start';
+            document.getElementById('stat-col').style.paddingTop = '0.5rem';
             hideComparison();
             // Fetch current stats
             currentStats = {};
@@ -341,6 +343,8 @@
             lbl.textContent = 'Select a player';
             lbl.style.color = '#6b7280';
             document.getElementById('stat-buttons').style.display = 'none';
+            document.getElementById('stat-col').style.justifyContent = 'center';
+            document.getElementById('stat-col').style.paddingTop = '0.4rem';
             renderStats();
             showComparison();
             fetchAndRenderComparison();
