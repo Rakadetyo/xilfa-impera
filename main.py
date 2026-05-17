@@ -4238,7 +4238,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     except Exception:
         pass
 
-    if start_dt and dt.now().date() > start_dt.date():
+    if start_dt and dt.now().date() > start_dt.date() and not request.query_params.get("back"):
         return RedirectResponse(f"/invite/{token}/{attendee_id}/post-game", status_code=302)
 
     # Check if player already submitted a rating
