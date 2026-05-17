@@ -4222,6 +4222,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
 
     start_fmt, end_fmt, date_fmt = "", "", ""
     game_ended = False
+    start_dt = None
     try:
         raw = game_dict["datetime"].replace("T", " ")
         if len(raw) == 16:
@@ -4236,6 +4237,9 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         game_ended = dt.now() > halfway_dt
     except Exception:
         pass
+
+    if start_dt and dt.now().date() > start_dt.date():
+        return RedirectResponse(f"/invite/{token}/{attendee_id}/post-game", status_code=302)
 
     # Check if player already submitted a rating
     conn2 = get_db()
