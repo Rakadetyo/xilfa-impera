@@ -4227,11 +4227,13 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         if len(raw) == 16:
             raw += ":00"
         start_dt = dt.strptime(raw, "%Y-%m-%d %H:%M:%S")
-        end_dt = start_dt + timedelta(minutes=int(game_dict.get("session_duration") or 120))
+        session_minutes = int(game_dict.get("session_duration") or 120)
+        end_dt = start_dt + timedelta(minutes=session_minutes)
+        halfway_dt = start_dt + timedelta(minutes=session_minutes / 2)
         start_fmt = start_dt.strftime("%H:%M")
         end_fmt = end_dt.strftime("%H:%M")
         date_fmt = start_dt.strftime("%A, %d %B %Y")
-        game_ended = dt.now() > end_dt
+        game_ended = dt.now() > halfway_dt
     except Exception:
         pass
 
@@ -4547,6 +4549,50 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
             "players": [dict(p) for p in cursor.fetchall()]
         }
 
+    # Standings
+    cursor.execute("""
+        SELECT * FROM game_match
+        WHERE game_id = ? AND score_home IS NOT NULL AND score_away IS NOT NULL
+    """, (game["id"],))
+    scored_matches = cursor.fetchall()
+
+    from collections import defaultdict
+    stats = defaultdict(lambda: {"wins": 0, "losses": 0, "draws": 0, "score_for": 0, "score_against": 0})
+    for m in scored_matches:
+        h, a, sh, sa = m["team_home_id"], m["team_away_id"], m["score_home"], m["score_away"]
+        stats[h]["score_for"] += sh
+        stats[h]["score_against"] += sa
+        stats[a]["score_for"] += sa
+        stats[a]["score_against"] += sh
+        if sh > sa:
+            stats[h]["wins"] += 1
+            stats[a]["losses"] += 1
+        elif sa > sh:
+            stats[a]["wins"] += 1
+            stats[h]["losses"] += 1
+        else:
+            stats[h]["draws"] += 1
+            stats[a]["draws"] += 1
+
+    standings = []
+    for t in teams_raw:
+        t_dict = dict(t)
+        s = stats[t_dict["id"]]
+        standings.append({
+            **t_dict,
+            "wins": s["wins"],
+            "losses": s["losses"],
+            "draws": s["draws"],
+            "score_for": s["score_for"],
+            "score_against": s["score_against"],
+            "score_diff": s["score_for"] - s["score_against"],
+            "played": s["wins"] + s["losses"] + s["draws"],
+        })
+    standings.sort(key=lambda x: (-x["wins"], -x["score_diff"], -x["score_for"]))
+    for i, t in enumerate(standings):
+        t["rank"] = i + 1
+    has_scores = len(scored_matches) > 0
+
     # Format game time
     from datetime import datetime as dt, timedelta
     game_dict = dict(game)
@@ -4584,6 +4630,8 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
         "all_matches": all_matches,
         "player_team_id": player_team_id,
         "team_rosters": team_rosters,
+        "standings": standings,
+        "has_scores": has_scores,
         "start_fmt": start_fmt,
         "end_fmt": end_fmt,
         "date_fmt": date_fmt,
