@@ -99,6 +99,16 @@ Start with pages that have no table→card conversion needed (arena, partners/li
 
 ---
 
+### 1b. `app/templates/games/new.html` ✅ DONE, `games/edit.html` ✅ DONE
+
+**Fixes applied:**
+- `p-8` → `p-4 md:p-8`
+- Price grid `grid-cols-2` → `grid-cols-1 sm:grid-cols-2`
+- Duration/session/max grid `grid-cols-3` → `grid-cols-1 md:grid-cols-3`
+- Submit row `flex gap-4` → `flex flex-wrap gap-4`
+
+---
+
 ### 2. `app/templates/games/list.html`
 
 **Problem areas and exact fixes:**
