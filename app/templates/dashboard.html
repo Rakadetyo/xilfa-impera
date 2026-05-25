@@ -36,10 +36,10 @@
         <!-- Main Content -->
         <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
             <!-- Top Bar -->
-            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-xl font-display">Dashboard</h1>
-                <div class="flex items-center gap-4">
-                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <div class="flex items-center gap-3">
+                    <span class="hidden md:inline text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/" class="text-sm text-accent hover:underline">Home</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -47,54 +47,54 @@
                 </div>
             </header>
 
-            <div class="p-8">
+            <div class="p-4 md:p-8">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-5 gap-4 mb-8">
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 md:mb-8">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-accent">{{ stats.total_players }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Total Players</p>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-green-600">{{ stats.active_players }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Active Players</p>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-blue-600">{{ stats.members_this_month }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Members This Month</p>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-purple-600">{{ stats.total_arenas }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Arenas</p>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-orange-600">{{ stats.recent_games }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-widest">Games (30 days)</p>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
+                <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 mb-6 md:mb-8 shadow-sm">
                     <h2 class="text-lg font-bold mb-4">Quick Actions</h2>
-                    <div class="flex gap-4">
-                        <a href="/manage/players" class="flex items-center gap-2 px-4 py-2 bg-accent text-black font-bold hover:bg-accent-light transition-colors">
+                    <div class="flex flex-wrap gap-2 md:gap-4">
+                        <a href="/manage/players" class="flex items-center gap-2 px-3 py-2 md:px-4 bg-accent text-black font-bold text-sm hover:bg-accent-light transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                             Add Player
                         </a>
-                        <a href="/manage/members" class="flex items-center gap-2 px-4 py-2 bg-accent text-black font-bold hover:bg-accent-light transition-colors">
+                        <a href="/manage/members" class="flex items-center gap-2 px-3 py-2 md:px-4 bg-accent text-black font-bold text-sm hover:bg-accent-light transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                             Add Member
                         </a>
-                        <a href="/manage/arena" class="flex items-center gap-2 px-4 py-2 bg-accent text-black font-bold hover:bg-accent-light transition-colors">
+                        <a href="/manage/arena" class="flex items-center gap-2 px-3 py-2 md:px-4 bg-accent text-black font-bold text-sm hover:bg-accent-light transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                             Add Arena
                         </a>
-                        <a href="/manage/games/new" class="flex items-center gap-2 px-4 py-2 bg-accent text-black font-bold hover:bg-accent-light transition-colors">
+                        <a href="/manage/games/new" class="flex items-center gap-2 px-3 py-2 md:px-4 bg-accent text-black font-bold text-sm hover:bg-accent-light transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
@@ -104,9 +104,9 @@
                 </div>
 
                 <!-- Game Sessions -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 md:mb-8">
                     <!-- Last Session -->
-                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Last Session</p>
                         {% if last_game %}
                         <div class="flex items-start justify-between">
@@ -166,7 +166,7 @@
                 </div>
 
                 <!-- Navigation Grid -->
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     <a href="/manage/posts" class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:border-accent transition-colors">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">

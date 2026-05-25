@@ -71,7 +71,7 @@ Start with pages that have no table→card conversion needed (arena, partners/li
 
 ## Phase 1 — High Priority (Most used on mobile)
 
-### 1. `app/templates/dashboard.html`
+### 1. `app/templates/dashboard.html` ✅ DONE
 
 **Problem areas and exact fixes:**
 
