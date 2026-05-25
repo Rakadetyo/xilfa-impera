@@ -116,7 +116,7 @@
                 <!-- Add Player Form -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                     <h2 class="text-lg font-bold mb-4">Add New Player</h2>
-                    <form action="/manage/players" method="POST" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <form action="/manage/players" method="POST" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name *</label>
                             <input type="text" name="name" required placeholder="Full name" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
@@ -173,11 +173,11 @@
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Join Source</label>
                             <input type="text" name="join_source" placeholder="e.g. Instagram, Friend, Event" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                         </div>
-                        <div class="col-span-2 md:col-span-4">
+                        <div class="col-span-1 sm:col-span-2 md:col-span-4">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
                             <textarea name="notes" placeholder="Free text notes" rows="2" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent"></textarea>
                         </div>
-                        <div class="col-span-4 flex items-center gap-4">
+                        <div class="col-span-1 sm:col-span-2 md:col-span-4 flex items-center gap-4">
                             <select name="status" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                                 <option value="1">Active</option>
                                 <option value="0">Inactive</option>
