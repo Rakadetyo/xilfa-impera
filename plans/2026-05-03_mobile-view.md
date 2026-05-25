@@ -272,7 +272,7 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ## Phase 2 — Data Management Pages
 
-### 4. `app/templates/players.html`
+### 4. `app/templates/players.html` ✅ DONE
 
 **Header bar** (lines 39–47):
 - `px-8 py-4` → `px-4 md:px-8 py-4`
