@@ -131,7 +131,7 @@ Start with pages that have no table→card conversion needed (arena, partners/li
 
 ---
 
-### 3. `app/templates/games/detail.html` ← Most important page
+### 3. `app/templates/games/detail.html` ✅ DONE
 
 **Main layout padding** (line 67):
 - `<main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-8">` → `<main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-4 md:p-8">`
@@ -420,6 +420,10 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 ---
 
 ## Phase 3 — Setup / Config Pages
+
+**Lesson learned:** Pop stash before starting work on a complex page — it may be 90% done from a prior session. Also, stashed WIP can contain `overflow-x-hidden` on `<body>` as a failed fix attempt; always check and remove it. The correct fix for title overflow is `flex-1 min-w-0` on the title + `flex-shrink-0` on sibling buttons.
+
+---
 
 ### 6. `app/templates/arena.html`
 
