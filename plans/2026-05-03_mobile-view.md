@@ -405,6 +405,20 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
+### 2b. `app/templates/analytics.html` ✅ DONE
+
+**Fixes applied:**
+- Header: standard `px-4 md:px-8`, username `hidden md:inline`
+- Tab nav: `flex gap-1 overflow-x-auto pb-1` (scrolls on mobile)
+- Players tab JS innerHTML: `grid-cols-5` → `grid-cols-1 md:grid-cols-5`, removed `col-span-5` on children
+- Members tab JS innerHTML: `grid-cols-3` → `grid-cols-1 md:grid-cols-3`, removed `col-span-3` on children
+- Quality tab JS innerHTML: `grid-cols-3` → `grid-cols-1 sm:grid-cols-3`, `grid-cols-5` → `grid-cols-1 md:grid-cols-5`, removed `col-span-5` on children
+- Finance tab was already responsive (`grid-cols-2 md:grid-cols-4`)
+
+**Lesson learned:** JS-rendered innerHTML strings also contain non-responsive grids — don't forget to grep inside script blocks, not just HTML.
+
+---
+
 ## Phase 3 — Setup / Config Pages
 
 ### 6. `app/templates/arena.html`
