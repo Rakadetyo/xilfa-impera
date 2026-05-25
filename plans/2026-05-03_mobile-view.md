@@ -346,7 +346,7 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
-### 5. `app/templates/members.html`
+### 5. `app/templates/members.html` ✅ DONE
 
 **Header bar** (lines 38–47):
 - `px-8 py-4` → `px-4 md:px-8 py-4`
