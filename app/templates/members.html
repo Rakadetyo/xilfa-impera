@@ -36,10 +36,10 @@
         <!-- Main Content -->
         <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
             <!-- Top Bar -->
-            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-lg font-display">Members</h1>
-                <div class="flex items-center gap-4">
-                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <div class="flex items-center gap-3">
+                    <span class="hidden md:inline text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -47,9 +47,9 @@
                 </div>
             </header>
 
-            <div class="p-8">
+            <div class="p-4 md:p-8">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 md:mb-8">
                     <!-- Card 1: Active + Total Unique -->
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                         <p class="text-2xl font-display text-accent">{{ stats.active_this_month }}</p>
@@ -138,19 +138,19 @@
                         </form>
                     </div>
                 </div>
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <div class="text-lg font-display text-gray-600">
                         Members List
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <button type="button" onclick="openMemberModal(null, null, '', '', false, 0)" class="bg-accent text-black px-4 py-2 text-xs font-bold hover:bg-accent-light rounded-lg">Add Member</button>
                         <button type="button" onclick="generateWhatsAppChat()" class="bg-gray-200 text-gray-700 px-4 py-2 text-xs font-bold hover:bg-gray-300 rounded-lg">Generate WhatsApp Chat</button>
                         <button type="button" onclick="openWhatsAppModal()" class="bg-gray-200 text-gray-700 px-4 py-2 text-xs font-bold hover:bg-gray-300 rounded-lg">Import from WhatsApp</button>
                     </div>
                 </div>
 
-                <!-- Members Table -->
-                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <!-- Members Table (desktop) -->
+                <div class="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
@@ -197,6 +197,36 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile member cards -->
+                <div class="md:hidden space-y-3">
+                    {% for m in members %}
+                    {% if m %}
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer"
+                        onclick="openMemberModal({{ m.id }}, {{ m.player_id }}, '{{ m.member_start_date or '' }}', '{{ m.member_end_date or '' }}', {{ m.is_paid }}, {{ m.membership_price or 0 }})">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-bold">{{ m.name }}{% if m.nickname %} <span class="text-gray-400 font-normal">({{ m.nickname }})</span>{% endif %}</p>
+                                <p class="text-sm text-gray-500">{{ m.member_period or '-' }}</p>
+                            </div>
+                            <span onclick="event.stopPropagation(); togglePaid({{ m.id }}, {{ m.is_paid }}, this)"
+                                class="cursor-pointer px-2 py-1 text-xs font-bold rounded hover:opacity-80 {% if m.is_paid %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {{ 'Paid' if m.is_paid else 'Unpaid' }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                            <span>Start: {{ m.member_start_date or '-' }}</span>
+                            <span>End: {{ m.member_end_date or 'Ongoing' }}</span>
+                            <span>Price: Rp{{ (m.membership_price or 0)|int }}</span>
+                            <span>Members: {{ m.n_members or 0 }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% if not members %}
+                    <p class="text-center text-gray-400 py-8">No members this month.</p>
+                    {% endif %}
                 </div>
             </div>
         </main>

@@ -34,40 +34,45 @@
         {% include '_sidebar.html' %}
 
         <!-- Main Content -->
-        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-8">
-            <div class="flex justify-between items-center mb-8">
+        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-4 md:p-8">
+            <div class="flex flex-wrap justify-between items-start gap-3 mb-6 md:mb-8">
                 <div>
                     <a href="/manage/partners" class="text-gray-500 hover:text-gray-700 text-sm">← Back to Partners</a>
                     <h1 class="text-3xl font-display tracking-wide mt-2">{{ partner.name }}</h1>
-                    <div class="flex gap-2 mt-2">
+                    <div class="flex flex-wrap gap-2 mt-2">
                         {% for t in parse_types(partner.types) %}
                         <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-sm">{{ t }}</span>
                         {% endfor %}
-                        {% if partner.internal_rating > 0 %}
-                        <span class="text-accent text-sm">
-                            {% for i in range(1, 6) %}
-                            {% if i <= partner.internal_rating %}★{% else %}☆{% endif %}
-                            {% endfor %}
-                        </span>
-                        {% endif %}
                     </div>
                 </div>
-                <a href="/manage/partners/{{ partner.id }}/edit" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">Edit Partner</a>
+                <a href="/manage/partners/{{ partner.id }}/edit" class="px-4 py-2 md:px-6 md:py-3 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium flex-shrink-0">Edit Partner</a>
             </div>
 
             <!-- Stats -->
-            <div class="grid grid-cols-3 gap-6 mb-8">
-                <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 md:mb-8">
+                <div class="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
                     <div class="text-2xl font-bold">{{ history | length }}</div>
                     <div class="text-gray-500 text-sm">Games</div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6">
-                    <div class="text-2xl font-bold">Rp{{ "{:,.0f}".format(total_earned) }}</div>
+                <div class="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                    <div class="text-xl md:text-2xl font-bold">Rp{{ "{:,.0f}".format(total_earned) }}</div>
                     <div class="text-gray-500 text-sm">Total Earned</div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6">
-                    <div class="text-2xl font-bold">Rp{{ "{:,.0f}".format(total_earned - total_paid) }}</div>
+                <div class="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                    <div class="text-xl md:text-2xl font-bold">Rp{{ "{:,.0f}".format(total_earned - total_paid) }}</div>
                     <div class="text-gray-500 text-sm">Unpaid</div>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+                    <div class="text-2xl font-bold text-accent">
+                        {% if partner.internal_rating > 0 %}{{ partner.internal_rating }}<span class="text-base font-normal text-gray-400">/5</span>
+                        {% else %}—{% endif %}
+                    </div>
+                    <div class="text-gray-500 text-sm">Rating</div>
+                    {% if partner.internal_rating > 0 %}
+                    <div class="text-xs text-accent mt-1">
+                        {% for i in range(1, 6) %}{% if i <= partner.internal_rating %}★{% else %}☆{% endif %}{% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -98,6 +103,8 @@
                     <h3 class="font-medium">Game History</h3>
                 </div>
                 {% if history %}
+                <!-- Desktop table -->
+                <div class="hidden md:block">
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
@@ -136,6 +143,30 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
+                <!-- Mobile cards -->
+                <div class="md:hidden divide-y divide-gray-100">
+                    {% for h in history %}
+                    <div class="px-4 py-3">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-sm font-medium">{{ h.datetime[:10] if h.datetime else '—' }}</span>
+                            <a href="/manage/games/{{ h.game_id }}" class="text-xs text-accent hover:underline font-medium">View →</a>
+                        </div>
+                        <div class="text-sm text-gray-500 mb-2">{{ h.arena_name or '—' }}</div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            {% for t in parse_types(h.types or h.type or '') %}
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{{ t }}</span>
+                            {% endfor %}
+                            <span class="text-sm font-medium text-gray-700">Rp{{ "{:,.0f}".format(h.fee) }}</span>
+                            {% if h.is_paid %}
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">✓ Paid</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">Unpaid</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
                 {% else %}
                 <div class="p-6 text-center text-gray-500">
                     No game history yet.

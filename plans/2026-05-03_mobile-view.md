@@ -8,6 +8,48 @@
 - `md:` = 768px+ (tablet/desktop) — use as the desktop threshold
 - `sm:` = 640px+ — use for intermediate 2-column layouts
 
+---
+
+## Lessons Learned (from implementation)
+
+### 1. Don't mask overflow — fix the source
+`overflow-x: hidden` on `<body>` does NOT prevent viewport-level horizontal scroll (body propagation only works when body has `overflow: visible`). Adding it to `<html>` stops scrolling but clips real content instead. **Always find and fix the actual overflowing element.**
+
+### 2. Bangers `text-3xl` in a flex row overflows on mobile
+Long titles using the Bangers display font at `text-3xl` (e.g. "SAT, 02 MAY 2026 @ JETZ STADIUM") exceed 400–430px viewport width. When a title sits in a `flex` row with a sibling button, the row overflows and the button goes off-screen.
+
+**Pattern:**
+```html
+<div class="flex items-center gap-2">
+  <h1 class="text-xl md:text-3xl font-display tracking-wide flex-1 min-w-0">{{ title }}</h1>
+  <form class="flex-shrink-0">...</form>
+</div>
+```
+- `flex-1 min-w-0` on the title allows it to shrink and wrap
+- `flex-shrink-0` on the sibling keeps it visible
+- `text-xl md:text-3xl` reduces font size on mobile to help fit single-line
+
+### 3. Stat cards with currency values need reduced padding on mobile
+`p-6` + `grid-cols-3` gives ~100px inner width per card — too narrow for "Rp400,000". Currency values also need smaller font on mobile.
+
+**Pattern:**
+```html
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+  <div class="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+    <div class="text-xl md:text-2xl font-bold">Rp{{ value }}</div>
+    <div class="text-gray-500 text-sm">Label</div>
+  </div>
+</div>
+```
+
+### 4. Check detail pages when fixing list pages
+The plan listed `partners/list.html` but not `partners/detail.html`. When a list page links to a detail page, the detail page also needs mobile fixes (table → cards, padding, stat grids). Always check the full flow.
+
+### 5. Implementation order: simplest first
+Start with pages that have no table→card conversion needed (arena, partners/list). Use them to establish and verify the pattern, then apply to complex pages (players, members, games/detail).
+
+---
+
 **Core pattern for table → cards:**
 ```html
 <!-- Table: hidden on mobile, shown on md+ -->
@@ -29,7 +71,7 @@
 
 ## Phase 1 — High Priority (Most used on mobile)
 
-### 1. `app/templates/dashboard.html`
+### 1. `app/templates/dashboard.html` ✅ DONE
 
 **Problem areas and exact fixes:**
 
@@ -57,7 +99,17 @@
 
 ---
 
-### 2. `app/templates/games/list.html`
+### 1b. `app/templates/games/new.html` ✅ DONE, `games/edit.html` ✅ DONE
+
+**Fixes applied:**
+- `p-8` → `p-4 md:p-8`
+- Price grid `grid-cols-2` → `grid-cols-1 sm:grid-cols-2`
+- Duration/session/max grid `grid-cols-3` → `grid-cols-1 md:grid-cols-3`
+- Submit row `flex gap-4` → `flex flex-wrap gap-4`
+
+---
+
+### 2. `app/templates/games/list.html` ✅ DONE
 
 **Problem areas and exact fixes:**
 
@@ -79,7 +131,7 @@
 
 ---
 
-### 3. `app/templates/games/detail.html` ← Most important page
+### 3. `app/templates/games/detail.html` ✅ DONE
 
 **Main layout padding** (line 67):
 - `<main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-8">` → `<main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-4 md:p-8">`
@@ -220,7 +272,7 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ## Phase 2 — Data Management Pages
 
-### 4. `app/templates/players.html`
+### 4. `app/templates/players.html` ✅ DONE
 
 **Header bar** (lines 39–47):
 - `px-8 py-4` → `px-4 md:px-8 py-4`
@@ -294,7 +346,7 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
-### 5. `app/templates/members.html`
+### 5. `app/templates/members.html` ✅ DONE
 
 **Header bar** (lines 38–47):
 - `px-8 py-4` → `px-4 md:px-8 py-4`
@@ -353,7 +405,25 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
+### 2b. `app/templates/analytics.html` ✅ DONE
+
+**Fixes applied:**
+- Header: standard `px-4 md:px-8`, username `hidden md:inline`
+- Tab nav: `flex gap-1 overflow-x-auto pb-1` (scrolls on mobile)
+- Players tab JS innerHTML: `grid-cols-5` → `grid-cols-1 md:grid-cols-5`, removed `col-span-5` on children
+- Members tab JS innerHTML: `grid-cols-3` → `grid-cols-1 md:grid-cols-3`, removed `col-span-3` on children
+- Quality tab JS innerHTML: `grid-cols-3` → `grid-cols-1 sm:grid-cols-3`, `grid-cols-5` → `grid-cols-1 md:grid-cols-5`, removed `col-span-5` on children
+- Finance tab was already responsive (`grid-cols-2 md:grid-cols-4`)
+
+**Lesson learned:** JS-rendered innerHTML strings also contain non-responsive grids — don't forget to grep inside script blocks, not just HTML.
+
+---
+
 ## Phase 3 — Setup / Config Pages
+
+**Lesson learned:** Pop stash before starting work on a complex page — it may be 90% done from a prior session. Also, stashed WIP can contain `overflow-x-hidden` on `<body>` as a failed fix attempt; always check and remove it. The correct fix for title overflow is `flex-1 min-w-0` on the title + `flex-shrink-0` on sibling buttons.
+
+---
 
 ### 6. `app/templates/arena.html`
 
@@ -374,7 +444,7 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
-### 7. `app/templates/users.html`
+### 7. `app/templates/users.html` ✅ DONE
 
 **Header bar** (lines 38–47):
 - `px-8 py-4` → `px-4 md:px-8 py-4`
@@ -460,9 +530,15 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
-### 9. `app/templates/partners/detail.html`, `partners/edit.html`, `partners/new.html`
+### 9. `app/templates/partners/detail.html` ✅ DONE, `partners/edit.html` ✅ DONE, `partners/new.html` ✅ DONE
 
-Read each file and apply:
+**partners/detail.html** (done):
+- `p-8` → `p-4 md:p-8` on main
+- Header: `flex-wrap gap-3`, button `px-4 py-2 md:px-6 md:py-3 flex-shrink-0`
+- Stats: `grid-cols-3 gap-6` → `grid-cols-2 md:grid-cols-4 gap-4`, `p-6` → `p-4 md:p-6`, added Rating as 4th card, removed stars from header
+- Game History table → `hidden md:block` + mobile card list (`md:hidden divide-y`)
+
+**partners/edit.html**, **partners/new.html** (pending):
 - `p-8` padding → `p-4 md:p-8`
 - `grid-cols-2` or `grid-cols-3` forms → `grid-cols-1 md:grid-cols-2` / `grid-cols-1 md:grid-cols-3`
 - Any wide `flex` rows with many items → `flex-wrap`

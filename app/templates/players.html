@@ -37,10 +37,10 @@
         <!-- Main Content -->
         <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
             <!-- Top Bar -->
-            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-lg font-display">Players</h1>
-                <div class="flex items-center gap-4">
-                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <div class="flex items-center gap-3">
+                    <span class="hidden md:inline text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -48,7 +48,7 @@
                 </div>
             </header>
 
-            <div class="p-8">
+            <div class="p-4 md:p-8">
                 <!-- Messages -->
                 {% if request.query_params.get('error') %}
                 <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 mb-6 rounded-lg">
@@ -62,7 +62,7 @@
                 {% endif %}
 
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 md:mb-8">
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm flex flex-col justify-between">
                         <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Total Players</p>
                         <p class="text-4xl font-display text-accent mb-4 text-center">{{ stats.total }}</p>
@@ -116,7 +116,7 @@
                 <!-- Add Player Form -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                     <h2 class="text-lg font-bold mb-4">Add New Player</h2>
-                    <form action="/manage/players" method="POST" class="grid grid-cols-4 gap-4">
+                    <form action="/manage/players" method="POST" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name *</label>
                             <input type="text" name="name" required placeholder="Full name" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
@@ -173,11 +173,11 @@
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Join Source</label>
                             <input type="text" name="join_source" placeholder="e.g. Instagram, Friend, Event" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                         </div>
-                        <div class="col-span-4">
+                        <div class="col-span-1 sm:col-span-2 md:col-span-4">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
                             <textarea name="notes" placeholder="Free text notes" rows="2" class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent"></textarea>
                         </div>
-                        <div class="col-span-4 flex items-center gap-4">
+                        <div class="col-span-1 sm:col-span-2 md:col-span-4 flex items-center gap-4">
                             <select name="status" class="bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                                 <option value="1">Active</option>
                                 <option value="0">Inactive</option>
@@ -196,7 +196,7 @@
                     <input type="hidden" name="order" value="{{ filters.order }}">
                     <input type="hidden" name="page" value="1">
                     <div class="flex flex-wrap gap-4 items-end">
-                        <div class="flex-1 min-w-[200px]">
+                        <div class="flex-1 min-w-[150px]">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Search</label>
                             <input type="text" name="search" value="{{ filters.search }}" placeholder="Name or nickname..." class="w-full bg-gray-50 border border-gray-200 px-3 py-2 focus:outline-none focus:border-accent">
                         </div>
@@ -245,8 +245,8 @@
                     </div>
                 </form>
 
-                <!-- Players Table -->
-                <div id="players-table-container" class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <!-- Players Table (desktop) -->
+                <div id="players-table-container" class="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
@@ -344,6 +344,57 @@
                             {% endfor %}
                             {% if pagination.page < pagination.total_pages %}
                             <a href="{{ page_url ~ (pagination.page + 1) }}" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">Next</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Mobile player cards -->
+                <div class="md:hidden space-y-3">
+                    {% for p in players %}
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer"
+                        onclick="openPlayerModal({{ p.id }}, '{{ p.name }}', '{{ p.nickname or '' }}', '{{ p.position_1 or '' }}', '{{ p.position_2 or '' }}', {{ p.skill_level }}, '{{ p.contact_no or '' }}', '{{ p.instagram or '' }}', '{{ p.reclub or '' }}', '{{ p.join_date or '' }}', {{ p.status if p.status is not none else 1 }}, '{{ p.notes or '' | replace("'", "\\'") }}', '{{ p.join_source or '' }}')">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-bold">{{ p.name }}</p>
+                                <p class="text-sm text-gray-500">{{ p.nickname or '-' }}</p>
+                            </div>
+                            {% set status_map = {1: 'Active', 0: 'Inactive', -1: 'Blacklisted'} %}
+                            {% set status_colors = {1: 'bg-green-100 text-green-700', 0: 'bg-gray-100 text-gray-600', -1: 'bg-red-100 text-red-700'} %}
+                            <span class="px-2 py-0.5 text-xs font-bold rounded {{ status_colors.get(p.status, 'bg-gray-100 text-gray-600') }}">
+                                {{ status_map.get(p.status, 'Active') }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-1 text-xs">
+                            {% if p.position_1 or p.position_2 %}
+                            <span class="px-2 py-1 bg-gray-100 rounded font-bold">{{ p.position_1 or '' }}{% if p.position_1 and p.position_2 %}/{{ p.position_2 }}{% endif %}</span>
+                            {% endif %}
+                            {% set skill_map = {1: 'Newbie', 2: 'Beginner', 3: 'Intermediate', 4: 'Expert', 5: 'Pro'} %}
+                            <span class="px-2 py-1 rounded font-bold {% if p.skill_level >= 4 %}bg-green-100 text-green-700{% elif p.skill_level >= 3 %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ skill_map[p.skill_level] }}
+                            </span>
+                            <span class="px-2 py-1 bg-gray-50 text-gray-500 rounded">Joined: {{ p.join_date[:10] if p.join_date else '-' }}</span>
+                            <span class="px-2 py-1 bg-gray-50 text-gray-500 rounded">Last: {{ p.last_played[:10] if p.last_played else '-' }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if not players %}
+                    <p class="text-center text-gray-400 py-8">No players found.</p>
+                    {% endif %}
+                    <!-- Mobile pagination -->
+                    {% if pagination.total_pages > 1 %}
+                    <div class="bg-white border border-gray-200 rounded-lg px-4 py-3 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">
+                            {{ (pagination.page - 1) * pagination.per_page + 1 }}–{{ [pagination.page * pagination.per_page, pagination.total] | min }} of {{ pagination.total }}
+                        </span>
+                        <div class="flex gap-2">
+                            {% set page_url = '?search=' ~ filters.search ~ '&position=' ~ filters.position ~ '&skill=' ~ filters.skill ~ '&member=' ~ filters.member ~ '&sort=' ~ filters.sort ~ '&order=' ~ filters.order ~ '&page=' %}
+                            {% if pagination.page > 1 %}
+                            <a href="{{ page_url ~ (pagination.page - 1) }}" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">Prev</a>
+                            {% endif %}
+                            {% if pagination.page < pagination.total_pages %}
+                            <a href="{{ page_url ~ (pagination.page + 1) }}" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">Next</a>
                             {% endif %}
                         </div>
                     </div>

@@ -59,21 +59,24 @@
         input[type=range]::-moz-range-track {
             background: transparent;
         }
+        .scrollbar-thin::-webkit-scrollbar { height: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="flex min-h-screen">
         {% include '_sidebar.html' %}
 
-        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-8">
+        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-4 md:p-8">
             <div class="mb-6">
                 <a href="/manage/games" class="text-gray-500 hover:text-accent">← Back to Games</a>
             </div>
 
             <div class="mb-8">
                 <div class="flex items-center gap-2 mb-2">
-                    <h1 class="text-3xl font-display tracking-wide">{{ game.title }}</h1>
-                    <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')">
+                    <h1 class="text-xl md:text-3xl font-display tracking-wide flex-1 min-w-0">{{ game.title }}</h1>
+                    <form method="post" action="/manage/games/{{ game.id }}/delete" onsubmit="return confirm('Delete this game?')" class="flex-shrink-0">
                         <button type="submit" class="p-2 text-gray-400 hover:text-red-600 transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -100,9 +103,9 @@
 
             <!-- Tabs -->
             <div class="border-b border-gray-200 mb-6">
-                <nav class="flex gap-6">
+                <nav class="flex gap-4 overflow-x-auto pb-1 scrollbar-thin">
                     {% for t in tabs %}
-                    <a href="?tab={{ t }}" class="py-3 px-1 border-b-2 font-medium text-sm transition
+                    <a href="?tab={{ t }}" class="py-3 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap
                         {% if tab == t %} border-accent text-accent
                         {% else %} border-transparent text-gray-500 hover:text-gray-700{% endif %}">
                         {{ t|title }}
@@ -116,7 +119,7 @@
             <div class="space-y-6">
 
                 <!-- Analytics Row -->
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <!-- Average Skill -->
                     <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
                         <h3 class="font-medium text-sm text-gray-500 mb-2">Average Skill</h3>
@@ -336,7 +339,7 @@ Klik link untuk lihat info tim kamu
                     </div>
 
                     <!-- Steps -->
-                    <div class="grid grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {% for step in overview_steps %}
                         <a href="?tab={{ step.tab }}" class="flex flex-col items-center text-center group">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center mb-2 transition
@@ -362,7 +365,7 @@ Klik link untuk lihat info tim kamu
                 </div>
 
                 <!-- Section 2: Summary Grid -->
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                     <!-- Game Details Card -->
                     <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
@@ -544,7 +547,7 @@ Klik link untuk lihat info tim kamu
                 <!-- Event Details -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Event Details</h3>
-                    <div class="grid grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-500 mb-1">Date & Time</label>
                             <input type="datetime-local" name="datetime" value="{{ game.datetime.replace(' ', 'T')[:16] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
@@ -571,7 +574,7 @@ Klik link untuk lihat info tim kamu
                 <!-- Pricing & Capacity -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Pricing & Capacity</h3>
-                    <div class="grid grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-500 mb-1">Price per Person</label>
                             <input type="number" name="price_per_person" value="{{ game.price_per_person }}" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
@@ -590,7 +593,7 @@ Klik link untuk lihat info tim kamu
                 <!-- Session Settings -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Session Settings</h3>
-                    <div class="grid grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-500 mb-1">Duration per Game (min)</label>
                             <input type="number" name="duration_per_game" value="{{ game.duration_per_game }}" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
@@ -605,7 +608,7 @@ Klik link untuk lihat info tim kamu
                 <!-- Services -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Services</h3>
-                    <div class="grid grid-cols-3 gap-6">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <label class="flex items-center gap-2">
                             <input type="checkbox" name="is_video" {% if game.is_video %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent">
                             <span>Video</span>
@@ -636,7 +639,7 @@ Klik link untuk lihat info tim kamu
             <!-- Partners & Services (separate form) -->
             <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mt-6">
                 <h3 class="font-medium mb-4">Partners & Services</h3>
-                <div class="grid grid-cols-3 gap-6 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                     <label class="flex items-center gap-2">
                         <input type="checkbox" {% if game.is_video %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
                         <span>Video</span>
@@ -655,7 +658,7 @@ Klik link untuk lihat info tim kamu
                 <form method="POST" action="/manage/games/{{ game.id }}/partners/new" class="border-t border-gray-200 pt-4">
                     <h4 class="text-sm font-medium text-gray-500 mb-3">Add Partner</h4>
                     <div class="flex flex-wrap gap-2 mb-3">
-                        <select name="partner_id" id="partner-select" onchange="fillPartnerFields()" class="flex-1 min-w-48 px-4 py-2 border border-gray-300 rounded-lg">
+                        <select name="partner_id" id="partner-select" onchange="fillPartnerFields()" class="flex-1 min-w-32 md:min-w-48 px-4 py-2 border border-gray-300 rounded-lg">
                             <option value="">-- Select Partner --</option>
                             {% for p in all_partners %}
                             <option value="{{ p.id }}" data-name="{{ p.name }}" data-types="{{ p.types or '' }}" data-fee="{{ p.default_fee or 0 }}">{{ p.name }} ({{ p.types or 'no type' }})</option>
@@ -731,7 +734,7 @@ Klik link untuk lihat info tim kamu
                 <!-- Bulk Add Player Form -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Add Existing Players</h3>
-                    <div class="flex gap-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
                         <select id="player-select" onchange="addToBulkList()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
                             <option value="">Select player...</option>
                             {% for p in all_players %}
@@ -816,8 +819,8 @@ Klik link untuk lihat info tim kamu
                     </span>
                 </div>
 
-                <!-- Attendee List -->
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <!-- Attendee List - Desktop Table -->
+                <div class="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
@@ -904,6 +907,60 @@ Klik link untuk lihat info tim kamu
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Attendee List - Mobile Cards -->
+                <div class="md:hidden space-y-3">
+                    {% set max_players = game.max_players or 25 %}
+                    {% for i in range(max_players) %}
+                    {% set a = attendees[i] if i < attendees|length else none %}
+                    {% if a %}
+                    <div class="bg-white rounded-xl border border-gray-200 p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-medium">{{ a.name }}</p>
+                                <p class="text-sm text-gray-500">{{ a.nickname or '-' }}</p>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="openEditModal('{{ a.id }}', '{{ a.name }}', '{{ a.nickname or '' }}', '{{ a.position_1 or '' }}', '{{ a.position_2 or '' }}', '{{ a.skill_level or 3 }}')" class="p-1.5 text-gray-500 hover:text-accent hover:bg-gray-100 rounded" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                </button>
+                                <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
+                                    <button type="submit" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded" title="Remove">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs mb-3">
+                            <span class="px-2 py-1 bg-gray-100 rounded">{{ a.position_1 or '-' }}</span>
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">{{ skill_labels.get(a.skill_level, 'Intermediate') }}</span>
+                            {% if a.team_name_assigned %}
+                            <span class="px-2 py-1 rounded text-white text-xs" style="background-color: {{ a.team_color or '#6B7280' }}">{{ a.team_name_assigned }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button"
+                                onclick="toggleAttendee('{{ a.id }}', 'pay', this)"
+                                data-state="{{ '1' if a.is_paid else '0' }}"
+                                class="flex-1 px-2 py-1.5 rounded text-sm font-medium
+                                    {% if a.is_paid %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                {{ 'Paid' if a.is_paid else 'Unpaid' }}
+                            </button>
+                            <button type="button"
+                                onclick="toggleAttendee('{{ a.id }}', 'attend', this)"
+                                data-state="{{ '1' if a.is_attend else '0' }}"
+                                class="flex-1 px-2 py-1.5 rounded text-sm font-medium
+                                    {% if a.is_attend %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                {{ 'Attend: Yes' if a.is_attend else 'Attend: No' }}
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% if not attendees %}
+                    <p class="text-center text-gray-400 py-8">No players yet.</p>
+                    {% endif %}
                 </div>
 
                 <!-- Edit Player Modal -->
@@ -1003,7 +1060,7 @@ Klik link untuk lihat info tim kamu
                 <!-- Attending Players (always visible, always first) -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-3 text-gray-600">Attending Players ({{ attendees|length }})</h3>
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                         {% for a in attendees %}
                         {% set val = player_values.get(a.id, 0) %}
                         <div class="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
@@ -1177,7 +1234,7 @@ Klik link untuk lihat info tim kamu
                 {% endif %}
 
                 <!-- Team Columns: max 3 per row, wraps automatically -->
-                <div id="teams" class="grid grid-cols-3 gap-4">
+                <div id="teams" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {% for team in teams %}
                     {% set team_members = [] %}
                     {% for a in attendees %}{% if a.team_id == team.id %}{% set _ = team_members.append(a) %}{% endif %}{% endfor %}
@@ -1363,13 +1420,13 @@ Klik link untuk lihat info tim kamu
                 </div>
 
                 <!-- Match Schedule Table -->
-                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm overflow-x-auto">
                     <h3 class="font-medium mb-4">Match Schedule</h3>
                     {% if matches %}
                     <form id="reorderForm" method="post" action="/manage/games/{{ game.id }}/schedule/reorder">
                         <input type="hidden" name="match_ids" id="matchIds">
                     </form>
-                    <table class="w-full">
+                    <table class="w-full min-w-[500px]">
                         <thead class="border-b">
                             <tr>
                                 <th class="w-8 py-2 text-sm text-gray-500"></th>
@@ -1666,7 +1723,7 @@ Klik link untuk lihat info tim kamu
             <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
                 <h3 class="font-medium mb-5">Finance Report</h3>
 
-                <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
                     <!-- Income -->
                     <div>
                         <h4 class="text-sm font-medium text-gray-500 mb-3">Income</h4>
