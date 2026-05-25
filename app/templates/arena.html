@@ -39,10 +39,10 @@
         <!-- Main Content -->
         <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
             <!-- Top Bar -->
-            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-lg font-display">Arena</h1>
-                <div class="flex items-center gap-4">
-                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <div class="flex items-center gap-3">
+                    <span class="hidden md:inline text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -50,35 +50,29 @@
                 </div>
             </header>
 
-            <div class="p-8">
+            <div class="p-4 md:p-8">
                 <!-- Stats -->
-                <div class="grid grid-cols-3 gap-4 mb-8">
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 md:mb-8">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-accent">{{ stats.arenas_played }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider">Arena Played</p>
                     </div>
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-accent">{{ stats.total }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider">Total Arenas</p>
                     </div>
-                    <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-4 md:p-6 shadow-sm">
                         <p class="text-2xl font-display text-gray-400">{{ stats.total - stats.arenas_played }}</p>
                         <p class="text-xs text-gray-500 uppercase tracking-wider">Never Played</p>
                     </div>
-                </div>
-
-                <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm mb-8">
-                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Games per Arena</p>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {% for a in arena_game_list %}
-                        {% if a.game_count > 0 %}
-                        <div class="flex justify-between items-center bg-gray-50 px-4 py-2 rounded-lg">
-                            <span class="font-bold text-gray-700 truncate">{{ a.location_name }}</span>
-                            <span class="text-lg font-display text-accent">{{ a.game_count }}</span>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
+                    {% for a in arena_game_list %}
+                    {% if a.game_count > 0 %}
+                    <div class="bg-white border-2 border-accent/30 rounded-xl p-4 md:p-6 shadow-sm">
+                        <p class="text-2xl font-display text-accent">{{ a.game_count }}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider truncate">{{ a.location_name }}</p>
                     </div>
+                    {% endif %}
+                    {% endfor %}
                 </div>
 
                 <!-- Arena Cards -->

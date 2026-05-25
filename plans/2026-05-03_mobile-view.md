@@ -8,6 +8,48 @@
 - `md:` = 768px+ (tablet/desktop) — use as the desktop threshold
 - `sm:` = 640px+ — use for intermediate 2-column layouts
 
+---
+
+## Lessons Learned (from implementation)
+
+### 1. Don't mask overflow — fix the source
+`overflow-x: hidden` on `<body>` does NOT prevent viewport-level horizontal scroll (body propagation only works when body has `overflow: visible`). Adding it to `<html>` stops scrolling but clips real content instead. **Always find and fix the actual overflowing element.**
+
+### 2. Bangers `text-3xl` in a flex row overflows on mobile
+Long titles using the Bangers display font at `text-3xl` (e.g. "SAT, 02 MAY 2026 @ JETZ STADIUM") exceed 400–430px viewport width. When a title sits in a `flex` row with a sibling button, the row overflows and the button goes off-screen.
+
+**Pattern:**
+```html
+<div class="flex items-center gap-2">
+  <h1 class="text-xl md:text-3xl font-display tracking-wide flex-1 min-w-0">{{ title }}</h1>
+  <form class="flex-shrink-0">...</form>
+</div>
+```
+- `flex-1 min-w-0` on the title allows it to shrink and wrap
+- `flex-shrink-0` on the sibling keeps it visible
+- `text-xl md:text-3xl` reduces font size on mobile to help fit single-line
+
+### 3. Stat cards with currency values need reduced padding on mobile
+`p-6` + `grid-cols-3` gives ~100px inner width per card — too narrow for "Rp400,000". Currency values also need smaller font on mobile.
+
+**Pattern:**
+```html
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+  <div class="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+    <div class="text-xl md:text-2xl font-bold">Rp{{ value }}</div>
+    <div class="text-gray-500 text-sm">Label</div>
+  </div>
+</div>
+```
+
+### 4. Check detail pages when fixing list pages
+The plan listed `partners/list.html` but not `partners/detail.html`. When a list page links to a detail page, the detail page also needs mobile fixes (table → cards, padding, stat grids). Always check the full flow.
+
+### 5. Implementation order: simplest first
+Start with pages that have no table→card conversion needed (arena, partners/list). Use them to establish and verify the pattern, then apply to complex pages (players, members, games/detail).
+
+---
+
 **Core pattern for table → cards:**
 ```html
 <!-- Table: hidden on mobile, shown on md+ -->
@@ -460,9 +502,15 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
-### 9. `app/templates/partners/detail.html`, `partners/edit.html`, `partners/new.html`
+### 9. `app/templates/partners/detail.html` ✅ DONE, `partners/edit.html`, `partners/new.html`
 
-Read each file and apply:
+**partners/detail.html** (done):
+- `p-8` → `p-4 md:p-8` on main
+- Header: `flex-wrap gap-3`, button `px-4 py-2 md:px-6 md:py-3 flex-shrink-0`
+- Stats: `grid-cols-3 gap-6` → `grid-cols-2 md:grid-cols-4 gap-4`, `p-6` → `p-4 md:p-6`, added Rating as 4th card, removed stars from header
+- Game History table → `hidden md:block` + mobile card list (`md:hidden divide-y`)
+
+**partners/edit.html**, **partners/new.html** (pending):
 - `p-8` padding → `p-4 md:p-8`
 - `grid-cols-2` or `grid-cols-3` forms → `grid-cols-1 md:grid-cols-2` / `grid-cols-1 md:grid-cols-3`
 - Any wide `flex` rows with many items → `flex-wrap`
