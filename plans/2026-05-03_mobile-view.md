@@ -109,7 +109,7 @@ Start with pages that have no table→card conversion needed (arena, partners/li
 
 ---
 
-### 2. `app/templates/games/list.html`
+### 2. `app/templates/games/list.html` ✅ DONE
 
 **Problem areas and exact fixes:**
 

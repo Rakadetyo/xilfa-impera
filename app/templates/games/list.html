@@ -37,23 +37,23 @@
 
         <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 flex flex-col">
             <!-- Header -->
-            <div class="px-8 py-3 border-b border-gray-200 bg-white">
-                <div class="flex justify-between items-center">
+            <div class="px-4 md:px-8 py-3 border-b border-gray-200 bg-white">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h1 class="text-3xl font-display tracking-wide">Games</h1>
                         <p class="text-gray-500 mt-1">Manage basketball sessions</p>
                     </div>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <!-- View Toggle -->
                         <div class="flex bg-gray-100 rounded-lg p-1">
-                            <button onclick="setView('cards')" id="btn-cards" class="px-4 py-2 rounded-md text-sm font-bold transition-all bg-white shadow-sm text-accent">
+                            <button onclick="setView('cards')" id="btn-cards" class="px-3 py-1.5 md:px-4 md:py-2 rounded-md text-sm font-bold transition-all bg-white shadow-sm text-accent">
                                 Cards
                             </button>
-                            <button onclick="setView('calendar')" id="btn-calendar" class="px-4 py-2 rounded-md text-sm font-bold transition-all text-gray-400 hover:text-gray-600">
+                            <button onclick="setView('calendar')" id="btn-calendar" class="px-3 py-1.5 md:px-4 md:py-2 rounded-md text-sm font-bold transition-all text-gray-400 hover:text-gray-600">
                                 Calendar
                             </button>
                         </div>
-                        <a href="/manage/games/new" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition">
+                        <a href="/manage/games/new" class="bg-accent text-white px-4 py-2 md:px-6 md:py-3 rounded-lg font-medium text-sm md:text-base hover:bg-accent/90 transition">
                             + New Game
                         </a>
                     </div>
@@ -65,7 +65,7 @@
                 {% if games %}
                 <div id="card-carousel" class="card-carousel w-full max-w-5xl">
                     <!-- Cards Container -->
-                    <div class="relative h-[85vh] flex items-center justify-center">
+                    <div class="relative h-[70vh] md:h-[85vh] flex items-center justify-center">
                         {% for game in games %}
                         <div class="game-card absolute w-80 bg-gradient-to-br from-white to-gray-50 rounded-2xl p-0 shadow-xl border border-gray-200 overflow-hidden cursor-pointer"
                             style="z-index: {{ 100 - loop.index0 }};"
@@ -163,7 +163,7 @@
                 </div>
 
                 <!-- Calendar View -->
-                <div id="calendar-view" class="hidden w-full max-w-4xl mx-auto">
+                <div id="calendar-view" class="hidden w-full max-w-4xl mx-auto overflow-x-auto px-2">
                     <!-- Calendar Header -->
                     <div class="flex items-center justify-between mb-6">
                         <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-accent hover:text-accent transition-all font-bold text-gray-600">
