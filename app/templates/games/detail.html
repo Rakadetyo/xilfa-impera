@@ -1614,12 +1614,11 @@ Klik link untuk lihat info tim kamu
                 </div>
 
                 <!-- Feedback -->
-                {% set feedbacks = ratings | selectattr('feedback') | list %}
-                {% if feedbacks %}
+                {% if ratings %}
                 <div class="border-t border-gray-100 pt-4">
-                    <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Feedback ({{ feedbacks|length }})</h4>
+                    <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Feedback ({{ ratings|length }})</h4>
                     <div class="space-y-3" id="feedback-list">
-                        {% for r in feedbacks %}
+                        {% for r in ratings %}
                         <div class="bg-gray-50 rounded-lg p-3 {% if loop.index > 3 %}hidden feedback-extra{% endif %}">
                             <!-- Rating stars -->
                             <div class="flex items-center gap-0.5 mb-1.5">
@@ -1641,7 +1640,9 @@ Klik link untuk lihat info tim kamu
                             </div>
                             {% endif %}
                             <!-- Text -->
+                            {% if r.feedback %}
                             <p class="text-sm text-gray-700">"{{ r.feedback }}"</p>
+                            {% endif %}
                             <p class="text-xs text-gray-400 mt-1">
                                 {% if r.is_anonymous and not is_superadmin(user) %}Anonymous
                                 {% else %}{{ r.player_nickname or r.player_name }}{% if r.is_anonymous %} <span class="italic">(anonymous)</span>{% endif %}
@@ -1650,9 +1651,9 @@ Klik link untuk lihat info tim kamu
                         </div>
                         {% endfor %}
                     </div>
-                    {% if feedbacks|length > 3 %}
-                    <button onclick="toggleFeedback(this)" data-label="Show all {{ feedbacks|length }} responses" class="mt-3 text-xs text-accent hover:underline">
-                        Show all {{ feedbacks|length }} responses
+                    {% if ratings|length > 3 %}
+                    <button onclick="toggleFeedback(this)" data-label="Show all {{ ratings|length }} responses" class="mt-3 text-xs text-accent hover:underline">
+                        Show all {{ ratings|length }} responses
                     </button>
                     {% endif %}
                 </div>
