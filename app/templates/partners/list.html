@@ -34,7 +34,7 @@
         {% include '_sidebar.html' %}
 
         <!-- Main Content -->
-        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-8">
+        <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1 p-4 md:p-8">
             <div class="flex justify-between items-center mb-8">
                 <h1 class="text-3xl font-display tracking-wide">Partners</h1>
                 <a href="/manage/partners/new" class="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">
@@ -44,7 +44,7 @@
 
             <!-- Filter Tabs -->
             {% if all_types %}
-            <div class="flex gap-2 mb-6 border-b border-gray-200 pb-3">
+            <div class="flex gap-2 mb-6 border-b border-gray-200 pb-3 overflow-x-auto">
                 <a href="/manage/partners" class="px-4 py-2 rounded-lg text-sm font-medium transition {% if not type_filter %}bg-gray-100 text-gray-900{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
                     All
                 </a>
@@ -57,7 +57,7 @@
             {% endif %}
 
             {% if partners %}
-            <div class="grid grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
                 {% for p in partners %}
                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-accent/40 transition-all group overflow-hidden flex flex-col">
 
