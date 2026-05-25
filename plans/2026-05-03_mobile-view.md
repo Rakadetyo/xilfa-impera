@@ -502,7 +502,7 @@ Read the schedule tab content (lines 1100+) and apply similar responsive grid fi
 
 ---
 
-### 9. `app/templates/partners/detail.html` ✅ DONE, `partners/edit.html`, `partners/new.html`
+### 9. `app/templates/partners/detail.html` ✅ DONE, `partners/edit.html` ✅ DONE, `partners/new.html` ✅ DONE
 
 **partners/detail.html** (done):
 - `p-8` → `p-4 md:p-8` on main
