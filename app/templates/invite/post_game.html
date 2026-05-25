@@ -154,6 +154,18 @@
                     'supporting_partners': 'Videographer, photographer, or referee added value'
                 } %}
 
+                {% set tag_tooltips_negative = {
+                    'team': 'Teams felt unbalanced or unfair',
+                    'competitiveness': 'Games lacked intensity or were one-sided',
+                    'atmosphere': 'Energy and vibe could be better',
+                    'punctuality': 'Session started late or ran overtime',
+                    'organization': 'Flow, scheduling, or communication issues',
+                    'price': 'Cost felt too high for the experience',
+                    'court': 'Court condition or facilities were lacking',
+                    'sportsmanship': 'Some players were not respectful',
+                    'supporting_partners': 'Partners added little or no value'
+                } %}
+
                 <!-- What was great -->
                 <div class="bg-white/80 border border-white/20 rounded-2xl p-5">
                     <p class="text-sm text-gray-600 mb-3">What worked well?</p>
@@ -174,7 +186,7 @@
                         {% for tag in rating_tags %}
                         <span class="tag-btn improve">
                             <input type="checkbox" name="could_be_improved" value="{{ tag }}" id="improve-{{ tag }}">
-                            <label for="improve-{{ tag }}" data-tooltip="{{ tag_tooltips.get(tag, '') }}">{{ tag.replace('_', ' ') }}</label>
+                            <label for="improve-{{ tag }}" data-tooltip="{{ tag_tooltips_negative.get(tag, '') }}">{{ tag.replace('_', ' ') }}</label>
                         </span>
                         {% endfor %}
                     </div>
