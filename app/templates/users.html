@@ -36,10 +36,10 @@
         <!-- Main Content -->
         <main class="ml-0 md:ml-64 pt-14 md:pt-0 flex-1">
             <!-- Top Bar -->
-            <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-lg font-display">Users</h1>
-                <div class="flex items-center gap-4">
-                    <span class="text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
+                <div class="flex items-center gap-3">
+                    <span class="hidden md:inline text-xs text-gray-600">Hi, <strong>{{ user.username }}</strong> <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">{{ user.role }}</span></span>
                     <a href="/manage" class="text-sm text-accent hover:underline">Dashboard</a>
                     <form method="POST" action="/manage/logout">
                         <button type="submit" class="text-sm text-red-600 hover:text-red-700">Logout</button>
@@ -47,7 +47,7 @@
                 </div>
             </header>
 
-            <div class="p-8">
+            <div class="p-4 md:p-8">
                 <!-- Messages -->
                 {% if request.query_params.get('error') %}
                 <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 mb-6 rounded-lg">
@@ -64,7 +64,7 @@
                 <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                     <h2 class="text-lg font-bold mb-1">Invite New Admin</h2>
                     <p class="text-sm text-gray-500 mb-4">Creates an account and generates an invite link for them to set their password.</p>
-                    <form action="/manage/users" method="POST" class="flex gap-4">
+                    <form action="/manage/users" method="POST" class="flex flex-col sm:flex-row gap-3">
                         <input
                             type="text"
                             name="username"
@@ -83,7 +83,7 @@
                         </select>
                         <button
                             type="submit"
-                            class="bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light transition-colors"
+                            class="w-full sm:w-auto bg-accent text-black font-bold px-6 py-2 hover:bg-accent-light transition-colors"
                         >
                             Create & Get Invite Link
                         </button>
@@ -91,7 +91,7 @@
                 </div>
 
                 <!-- Users Table -->
-                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <div class="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
@@ -152,6 +152,49 @@
                     <div class="p-12 text-center text-gray-500">
                         No users yet.
                     </div>
+                    {% endif %}
+                </div>
+
+                <!-- Mobile user cards -->
+                <div class="md:hidden space-y-3">
+                    {% for u in users %}
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-bold">{{ u.username }}</p>
+                                <p class="text-xs text-gray-400">ID: {{ u.id }} · Created: {{ u.created_at[:10] }}</p>
+                            </div>
+                            <div class="flex flex-col gap-1 items-end">
+                                <span class="px-2 py-0.5 text-xs font-bold rounded {% if u.role == 'superadmin' %}bg-purple-100 text-purple-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ u.role }}</span>
+                                {% if u.invite_token %}
+                                <span class="px-2 py-0.5 text-xs font-bold rounded bg-yellow-100 text-yellow-700">Invite Pending</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 text-xs font-bold rounded bg-green-100 text-green-700">Active</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if u.id != user.id %}
+                        <div class="flex gap-2 flex-wrap mt-2">
+                            {% if u.invite_token %}
+                            <button onclick="showInviteModal('{{ u.username }}', '{{ u.invite_token }}')"
+                                class="px-3 py-1 text-xs font-bold text-accent border border-accent rounded hover:bg-accent hover:text-black transition-colors">Show Invite Link</button>
+                            {% else %}
+                            <form method="POST" action="/manage/users/{{ u.id }}/invite" style="display:inline;">
+                                <button type="submit" class="px-3 py-1 text-xs font-bold text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition-colors">Resend Invite</button>
+                            </form>
+                            {% endif %}
+                            {% if user.role == 'superadmin' %}
+                            <button onclick="deleteUser({{ u.id }}, '{{ u.username }}')"
+                                class="px-3 py-1 text-xs font-bold text-red-600 hover:text-red-700">Delete</button>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="text-xs text-gray-400 mt-2">(you)</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if not users %}
+                    <p class="text-center text-gray-400 py-8">No users yet.</p>
                     {% endif %}
                 </div>
             </div>
