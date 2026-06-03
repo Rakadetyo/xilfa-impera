@@ -7,7 +7,7 @@ def _fmt_month(ym: str) -> str:
     return datetime.strptime(ym, "%Y-%m").strftime("%B %Y")
 
 
-def get_game_activity(conn) -> dict:
+def get_game_activity(conn, packed_months: int = 6) -> dict:
     cursor = conn.cursor()
 
     # Per-game: date + actual attendees + fill rate
@@ -47,10 +47,15 @@ def get_game_activity(conn) -> dict:
     """)
     monthly = [dict(r) for r in cursor.fetchall()]
 
-    # Most / least packed month (by total players, min 1 game)
+    # Most / least packed month (by total players, limited to packed_months window)
     months_with_games = [m for m in monthly if m["game_count"] > 0]
-    most_packed  = max(months_with_games, key=lambda m: m["total_players"]) if months_with_games else None
-    least_packed = min(months_with_games, key=lambda m: m["total_players"]) if months_with_games else None
+    if packed_months:
+        cutoff = sorted(set(m["month"] for m in monthly), reverse=True)[:packed_months]
+        packed_pool = [m for m in months_with_games if m["month"] in cutoff]
+    else:
+        packed_pool = months_with_games
+    most_packed  = max(packed_pool, key=lambda m: m["total_players"]) if packed_pool else None
+    least_packed = min(packed_pool, key=lambda m: m["total_players"]) if packed_pool else None
     if most_packed:
         most_packed  = {**most_packed,  "month": _fmt_month(most_packed["month"])}
     if least_packed:
