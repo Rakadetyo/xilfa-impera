@@ -567,6 +567,7 @@ Klik link untuk lihat info tim kamu
                                 <option value="open" {% if game.status == 'open' %}selected{% endif %}>Open</option>
                                 <option value="closed" {% if game.status == 'closed' %}selected{% endif %}>Closed</option>
                             </select>
+                            <p class="text-xs text-gray-400 mt-1">Open = invite link active. Closed = registration stopped.</p>
                         </div>
                     </div>
                 </div>
@@ -576,11 +577,17 @@ Klik link untuk lihat info tim kamu
                     <h3 class="font-medium mb-4">Pricing & Capacity</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-500 mb-1">Price per Person</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                Price per Person
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Charged to non-members attending this session.</span></span>
+                            </label>
                             <input type="number" name="price_per_person" value="{{ game.price_per_person }}" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500 mb-1">Price per Member</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                Price per Member
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Discounted rate for players with an active membership this month.</span></span>
+                            </label>
                             <input type="number" name="price_per_member" value="{{ game.price_per_member }}" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         </div>
                         <div>
@@ -595,11 +602,17 @@ Klik link untuk lihat info tim kamu
                     <h3 class="font-medium mb-4">Session Settings</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-500 mb-1">Duration per Game (min)</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                Duration per Game (min)
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">How long one match between two teams runs (e.g. 8 min). Used when generating the schedule.</span></span>
+                            </label>
                             <input type="number" name="duration_per_game" value="{{ game.duration_per_game }}" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500 mb-1">Session Duration (min)</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-500 mb-1">
+                                Session Duration (min)
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Total court time booked (e.g. 120 min). Used to check if the full schedule fits within the session.</span></span>
+                            </label>
                             <input type="number" name="session_duration" value="{{ game.session_duration }}" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         </div>
                     </div>
@@ -607,7 +620,8 @@ Klik link untuk lihat info tim kamu
 
                 <!-- Services -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-4">Services</h3>
+                    <h3 class="font-medium mb-1">Services</h3>
+                    <p class="text-xs text-gray-400 mb-4">Flag add-on services for this session. Used to track and assign partners below.</p>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <label class="flex items-center gap-2">
                             <input type="checkbox" name="is_video" {% if game.is_video %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent">
@@ -638,21 +652,7 @@ Klik link untuk lihat info tim kamu
 
             <!-- Partners & Services (separate form) -->
             <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mt-6">
-                <h3 class="font-medium mb-4">Partners & Services</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" {% if game.is_video %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
-                        <span>Video</span>
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" {% if game.is_photo %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
-                        <span>Photo</span>
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" {% if game.is_referee %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 text-accent" disabled>
-                        <span>Referee</span>
-                    </label>
-                </div>
+                <h3 class="font-medium mb-4">Partners</h3>
 
                 <!-- Add Partner Form -->
                 <form method="POST" action="/manage/games/{{ game.id }}/partners/new" class="border-t border-gray-200 pt-4">
@@ -665,7 +665,8 @@ Klik link untuk lihat info tim kamu
                             {% endfor %}
                         </select>
                         <input type="hidden" name="partner_name" id="partner-name-hidden">
-                        <input type="text" name="types" id="partner-types-input" placeholder="Types (e.g. referee)" class="w-40 px-4 py-2 border border-gray-300 rounded-lg">
+                        <span class="relative group/tip inline-flex items-center self-center"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none">Comma-separated roles this partner fills (e.g. referee, videographer, photographer).</span></span>
+                        <input type="text" name="types" id="partner-types-input" placeholder="Role (e.g. referee)" class="w-40 px-4 py-2 border border-gray-300 rounded-lg">
                         <input type="number" name="fee" id="partner-fee-input" placeholder="Fee" min="0" step="1000" class="w-32 px-4 py-2 border border-gray-300 rounded-lg">
                         <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Add</button>
                     </div>
@@ -727,13 +728,15 @@ Klik link untuk lihat info tim kamu
             {% elif tab == 'players' %}
             <div class="space-y-6">
                 <!-- New Player Button -->
-                <div class="flex justify-end">
+                <div class="flex justify-end items-center gap-2">
+                    <span class="text-xs text-gray-400">Creates a new player record</span>
                     <button type="button" onclick="document.getElementById('new-player-modal').classList.remove('hidden')" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm">+ New Player</button>
                 </div>
 
                 <!-- Bulk Add Player Form -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-medium mb-4">Add Existing Players</h3>
+                    <h3 class="font-medium mb-1">Add Existing Players</h3>
+                    <p class="text-xs text-gray-400 mb-4">Pick from your player roster. To add someone new, use the New Player button above.</p>
                     <div class="flex flex-col sm:flex-row gap-3">
                         <select id="player-select" onchange="addToBulkList()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
                             <option value="">Select player...</option>
@@ -828,8 +831,12 @@ Klik link untuk lihat info tim kamu
                                 <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">Position</th>
                                 <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">Skill</th>
                                 <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">Team</th>
-                                <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">Paid</th>
-                                <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">Attend</th>
+                                <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">
+                                    <span class="flex items-center gap-1">Paid <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Game session fee collected from this player.</span></span></span>
+                                </th>
+                                <th class="text-left px-6 py-3 text-sm font-medium text-gray-500">
+                                    <span class="flex items-center gap-1">Attend <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Player physically showed up. Tracked separately from payment.</span></span></span>
+                                </th>
                                 <th class="text-right px-6 py-3 text-sm font-medium text-gray-500">Actions</th>
                             </tr>
                         </thead>
@@ -1110,10 +1117,10 @@ Klik link untuk lihat info tim kamu
 
                         <!-- Value Score Weights -->
                         <div class="mb-5 p-4 bg-gray-50 rounded-lg">
-                            <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center justify-between mb-1">
                                 <label class="text-sm font-medium text-gray-600">Player Value Weights</label>
-                                <span class="text-xs text-gray-400">Controls how player value score is calculated</span>
                             </div>
+                            <p class="text-xs text-gray-400 mb-3">Value score = (skill percentile × skill%) + (position scarcity × position%). Controls how balanced teams are calculated — higher skill weight favors leveling out strong vs weak players; higher position weight favors distributing positions evenly.</p>
                             <div class="flex items-center gap-4">
                                 <span class="text-xs text-gray-500 w-16 flex-shrink-0">Skill</span>
                                 <div class="flex-1">
@@ -1140,11 +1147,14 @@ Klik link untuk lihat info tim kamu
                                 </div>
                                 <span id="pos-pct-label" class="text-xs font-medium text-gray-600 w-10 text-right">{{ 100 - ((game.skill_weight or 0.6) * 100) | int }}%</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2">Value score = (skill percentile × skill%) + (position scarcity × position%). Applies to players in this game only.</p>
                         </div>
 
-                        <div class="flex items-center gap-3">
-                            <button type="submit" class="px-5 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Generate Teams</button>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <span class="relative group/tip inline-flex items-center gap-2">
+                                <button type="submit" class="px-5 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 font-medium">Generate Teams</button>
+                                <svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span class="absolute left-0 bottom-full mb-2 w-56 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none">Distributes players into balanced teams using their value scores (skill + position weights above).</span>
+                            </span>
                             {% if teams %}
                             <button type="button" onclick="document.getElementById('clear-form').submit()" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Clear & Reset</button>
                             {% endif %}
@@ -1153,14 +1163,18 @@ Klik link untuk lihat info tim kamu
 
                     {% if teams %}
                     <form method="post" action="/manage/games/{{ game.id }}/teams/randomize">
-                        <button type="submit" class="mt-3 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Randomize</button>
+                        <span class="relative group/tip inline-flex items-center gap-2 mt-3">
+                            <button type="submit" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Randomize</button>
+                            <svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span class="absolute left-0 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none">Assigns players to teams randomly, ignoring skill balance.</span>
+                        </span>
                     </form>
                     {% endif %}
 
                     <!-- Player Groups: standalone forms, NOT inside generate-form -->
                     <div class="border-t border-gray-100 pt-5 mt-5">
                         <h4 class="font-medium text-sm mb-1">Player Groups</h4>
-                        <p class="text-xs text-gray-400 mb-4">Players in the same group always stay on the same team — they draft last</p>
+                        <p class="text-xs text-gray-400 mb-4">Players in the same group always stay on the same team — they draft last. Players in a group show a <span class="px-1 bg-purple-100 text-purple-600 rounded text-xs font-medium">G</span> badge in the player list above.</p>
 
                         {% if groups %}
                         <div class="space-y-3 mb-4">
@@ -1391,21 +1405,25 @@ Klik link untuk lihat info tim kamu
                             <div>
                                 <label class="block text-sm text-gray-500 mb-1">Game start at</label>
                                 <input type="time" name="start_time" value="{{ game_datetime.split('T')[1][:5] if game_datetime else '18:00' }}" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <p class="text-xs text-gray-400 mt-1">Tip-off time for the first match.</p>
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-500 mb-1">Game duration (min)</label>
                                 <input type="number" name="duration" value="{{ game.duration_per_game or 8 }}" min="1" class="px-4 py-2 border border-gray-300 rounded-lg w-20">
                             </div>
                             <div>
-                                <label class="block text-sm text-gray-500 mb-1">Break between (min)</label>
+                                <label class="flex items-center gap-1 text-sm text-gray-500 mb-1">
+                                    Break between (min)
+                                    <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Rest time between consecutive matches. 0 = back-to-back.</span></span>
+                                </label>
                                 <input type="number" name="break_time" value="0" min="0" class="px-4 py-2 border border-gray-300 rounded-lg w-20">
                             </div>
                             <div class="w-full md:w-auto">
                                 <label class="block text-sm text-gray-500 mb-1">Format</label>
                                 <select name="format" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg">
-                                    <option value="round_robin" {% if game.schedule_format == 'round_robin' %}selected{% endif %}>Round Robin — everyone vs everyone</option>
-                                    <option value="king_of_court" {% if game.schedule_format == 'king_of_court' %}selected{% endif %}>King of the Court — winner stays</option>
-                                    <option value="custom" {% if game.schedule_format == 'custom' %}selected{% endif %}>Custom — manual</option>
+                                    <option value="round_robin" {% if game.schedule_format == 'round_robin' %}selected{% endif %}>Round Robin — every team plays every other team</option>
+                                    <option value="king_of_court" {% if game.schedule_format == 'king_of_court' %}selected{% endif %}>King of the Court — winner stays, loser rotates out</option>
+                                    <option value="custom" {% if game.schedule_format == 'custom' %}selected{% endif %}>Custom — add matches manually</option>
                                 </select>
                             </div>
                         </div>
