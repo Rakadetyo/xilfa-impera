@@ -191,7 +191,24 @@ def init_db():
     if 'games_played' not in member_columns:
         cursor.execute("ALTER TABLE member ADD COLUMN games_played INTEGER DEFAULT 0")
 
-    # Migrate member_period from "YYYY-MM" format to "Month Year" format
+    # Migrate member_period from "YYYY-MM" format to "Month Year" format.
+    # Delete old-format rows that already have a new-format counterpart to avoid UNIQUE conflicts.
+    cursor.execute("""
+        DELETE FROM member
+        WHERE length(member_period) = 7 AND substr(member_period, 5, 1) = '-'
+          AND EXISTS (
+              SELECT 1 FROM member m2
+              WHERE m2.player_id = member.player_id
+                AND m2.member_period = (
+                    CASE CAST(substr(member.member_period, 6, 2) AS INTEGER)
+                        WHEN 1 THEN 'January' WHEN 2 THEN 'February' WHEN 3 THEN 'March'
+                        WHEN 4 THEN 'April' WHEN 5 THEN 'May' WHEN 6 THEN 'June'
+                        WHEN 7 THEN 'July' WHEN 8 THEN 'August' WHEN 9 THEN 'September'
+                        WHEN 10 THEN 'October' WHEN 11 THEN 'November' WHEN 12 THEN 'December'
+                    END || ' ' || substr(member.member_period, 1, 4)
+                )
+          )
+    """)
     cursor.execute("""
         UPDATE member SET member_period =
             CASE CAST(substr(member_period, 6, 2) AS INTEGER)
