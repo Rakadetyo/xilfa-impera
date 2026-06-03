@@ -17,8 +17,17 @@ case $COMMAND in
         source .venv/bin/activate
         uvicorn main:app --reload --port "$PORT"
         ;;
+    deploy)
+        git checkout master
+        git merge develop --no-edit
+        git push origin master
+        git checkout develop
+        echo "Deployed: develop → master"
+        ;;
     *)
-        echo "Usage: ./manage.sh run -p [port]"
+        echo "Usage: ./manage.sh <command>"
+        echo "  run [-p port]  Start dev server"
+        echo "  deploy         Merge develop into master and push"
         exit 1
         ;;
 esac
