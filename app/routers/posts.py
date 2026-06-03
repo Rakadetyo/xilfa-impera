@@ -61,7 +61,7 @@ async def admin_dashboard(request: Request):
 
     conn.close()
 
-    return templates.TemplateResponse(request, "dashboard.html", {
+    return templates.TemplateResponse(request, "manage/dashboard.html", {
         "request": request,
         "user": user,
         "stats": {
@@ -101,7 +101,7 @@ async def list_posts(request: Request):
     published = cursor.fetchone()["total"]
     conn.close()
 
-    return templates.TemplateResponse(request, "admin.html", {
+    return templates.TemplateResponse(request, "manage/admin.html", {
         "request": request,
         "user": user,
         "posts": posts,
@@ -114,7 +114,7 @@ async def new_post_page(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
-    return templates.TemplateResponse(request, "post_form.html", {"request": request, "post": None, "user": user})
+    return templates.TemplateResponse(request, "manage/post_form.html", {"request": request, "post": None, "user": user})
 
 @router.post("/manage/posts")
 async def create_post(request: Request, title: str = Form(...), body: str = Form(...), summary: str = Form(""), post_type: str = Form("HIGHLIGHT"), status: str = Form("draft")):
@@ -153,7 +153,7 @@ async def edit_post_page(request: Request, post_id: int):
     images = cursor.fetchall()
     conn.close()
 
-    return templates.TemplateResponse(request, "post_form.html", {
+    return templates.TemplateResponse(request, "manage/post_form.html", {
         "request": request,
         "post": post,
         "images": images,

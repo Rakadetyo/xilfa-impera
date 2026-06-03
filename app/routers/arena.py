@@ -82,7 +82,7 @@ async def arena_page(request: Request):
 
     conn.close()
 
-    return templates.TemplateResponse(request, "arena.html", {
+    return templates.TemplateResponse(request, "manage/arena.html", {
         "request": request,
         "user": user,
         "arenas": arenas,

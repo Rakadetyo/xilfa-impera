@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     settings = get_page_settings("homepage")
-    return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "public/index.html", {"request": request, "settings": settings})
 
 @router.get("/blog", response_class=HTMLResponse)
 async def blog(request: Request):
@@ -30,7 +30,7 @@ async def blog(request: Request):
     """)
     posts = cursor.fetchall()
     conn.close()
-    return templates.TemplateResponse(request, "blog.html", {"request": request, "posts": posts})
+    return templates.TemplateResponse(request, "public/blog.html", {"request": request, "posts": posts})
 
 @router.get("/api/blog/{post_id}")
 async def get_post(post_id: int):

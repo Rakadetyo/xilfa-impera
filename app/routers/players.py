@@ -142,7 +142,7 @@ async def list_players(request: Request):
 
     conn.close()
 
-    return templates.TemplateResponse(request, "players.html", {
+    return templates.TemplateResponse(request, "manage/players.html", {
         "request": request,
         "user": user,
         "players": players,

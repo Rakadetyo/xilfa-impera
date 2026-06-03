@@ -172,7 +172,7 @@ async def members_page(request: Request):
     months = [(i, datetime.date(2000, i, 1).strftime("%B")) for i in range(1, 13)]
     years = [now.year - i for i in range(5)] + [now.year + 1]
 
-    return templates.TemplateResponse(request, "members.html", {
+    return templates.TemplateResponse(request, "manage/members.html", {
         "request": request,
         "user": user,
         "members": members,

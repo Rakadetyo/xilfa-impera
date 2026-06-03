@@ -16,10 +16,10 @@ async def setup_password_page(request: Request, token: str):
     row = cursor.fetchone()
     conn.close()
     if not row:
-        return templates.TemplateResponse(request, "setup_password.html", {
+        return templates.TemplateResponse(request, "auth/setup_password.html", {
             "request": request, "error": "Invalid or expired invite link.", "token": token, "invalid": True
         })
-    return templates.TemplateResponse(request, "setup_password.html", {
+    return templates.TemplateResponse(request, "auth/setup_password.html", {
         "request": request, "token": token, "username": row["username"], "error": None, "invalid": False
     })
 
@@ -32,19 +32,19 @@ async def setup_password(request: Request, token: str, password: str = Form(...)
     conn.close()
 
     if not row:
-        return templates.TemplateResponse(request, "setup_password.html", {
+        return templates.TemplateResponse(request, "auth/setup_password.html", {
             "request": request, "error": "Invalid or expired invite link.", "token": token, "invalid": True
         })
 
     username = row["username"]
 
     if password != confirm_password:
-        return templates.TemplateResponse(request, "setup_password.html", {
+        return templates.TemplateResponse(request, "auth/setup_password.html", {
             "request": request, "token": token, "username": username, "error": "Passwords don't match.", "invalid": False
         })
 
     if len(password) < 6:
-        return templates.TemplateResponse(request, "setup_password.html", {
+        return templates.TemplateResponse(request, "auth/setup_password.html", {
             "request": request, "token": token, "username": username, "error": "Password must be at least 6 characters.", "invalid": False
         })
 
@@ -62,7 +62,7 @@ async def login_page(request: Request):
     error = request.query_params.get("error")
     success = request.query_params.get("success")
     prefill_username = request.query_params.get("username", "")
-    return templates.TemplateResponse(request, "login.html", {"request": request, "error": error, "success": success, "prefill_username": prefill_username})
+    return templates.TemplateResponse(request, "auth/login.html", {"request": request, "error": error, "success": success, "prefill_username": prefill_username})
 
 @router.post("/masukgan")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -81,7 +81,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 @router.get("/joinbang", response_class=HTMLResponse)
 async def register_page(request: Request):
     error = request.query_params.get("error")
-    return templates.TemplateResponse(request, "register.html", {"request": request, "error": error})
+    return templates.TemplateResponse(request, "auth/register.html", {"request": request, "error": error})
 
 @router.post("/joinbang")
 async def register(request: Request, username: str = Form(...), password: str = Form(...)):

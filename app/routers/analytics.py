@@ -21,7 +21,7 @@ async def analytics_page(request: Request, packed_months: int = 6):
         game_activity = analytics_service.get_game_activity(conn, packed_months=packed_months)
     finally:
         conn.close()
-    return templates.TemplateResponse(request, "analytics.html", {
+    return templates.TemplateResponse(request, "manage/analytics.html", {
         "user": user,
         "active": "analytics",
         "game_activity": game_activity,

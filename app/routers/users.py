@@ -22,7 +22,7 @@ async def list_users(request: Request):
     users = cursor.fetchall()
     conn.close()
 
-    return templates.TemplateResponse(request, "users.html", {
+    return templates.TemplateResponse(request, "manage/users.html", {
         "request": request,
         "user": user,
         "users": users,

@@ -20,7 +20,7 @@ async def page_settings(request: Request):
         return RedirectResponse("/masukgan", status_code=302)
 
     settings = get_page_settings("homepage")
-    return templates.TemplateResponse(request, "page_settings.html", {
+    return templates.TemplateResponse(request, "manage/page_settings.html", {
         "request": request,
         "user": user,
         "settings": settings,
@@ -98,4 +98,4 @@ async def preview_homepage(request: Request):
             if not settings[section].get(key):
                 settings[section][key] = defaults[section][key]
 
-    return templates.TemplateResponse(request, "index.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "public/index.html", {"request": request, "settings": settings})
