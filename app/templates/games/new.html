@@ -66,22 +66,34 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Price per Person (Rp)</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+                                Price per Person (Rp)
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Charged to non-members attending this session.</span></span>
+                            </label>
                             <input type="number" name="price_per_person" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Price per Member (Rp)</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+                                Price per Member (Rp)
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Discounted rate for players with an active membership this month.</span></span>
+                            </label>
                             <input type="number" name="price_per_member" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Duration per Match (min)</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+                                Duration per Match (min)
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">How long one match between two teams runs (e.g. 8 min).</span></span>
+                            </label>
                             <input type="number" name="duration_per_game" value="8" min="1" max="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Session Duration (min)</label>
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+                                Session Duration (min)
+                                <span class="relative group/tip inline-block"><svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-52 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none font-normal">Total court time booked (e.g. 120 min). Used to check if the full schedule fits.</span></span>
+                            </label>
                             <input type="number" name="session_duration" value="120" min="30" max="480" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
                         </div>
                         <div>
@@ -97,6 +109,7 @@
                             <option value="closed">Closed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
+                        <p class="text-xs text-gray-400 mt-1">Open = invite link active and players can register. Closed = registration stopped.</p>
                     </div>
 
                     <div>

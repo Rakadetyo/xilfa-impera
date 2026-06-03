@@ -10,19 +10,22 @@ router = APIRouter()
 
 
 @router.get("/manage/analytics", response_class=HTMLResponse)
-async def analytics_page(request: Request):
+async def analytics_page(request: Request, packed_months: int = 6):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
+    if packed_months not in (3, 6, 12, 0):
+        packed_months = 6
     conn = get_db()
     try:
-        game_activity = analytics_service.get_game_activity(conn)
+        game_activity = analytics_service.get_game_activity(conn, packed_months=packed_months)
     finally:
         conn.close()
     return templates.TemplateResponse(request, "analytics.html", {
         "user": user,
         "active": "analytics",
         "game_activity": game_activity,
+        "packed_months": packed_months,
     })
 
 

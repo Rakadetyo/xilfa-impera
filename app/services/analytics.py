@@ -7,7 +7,7 @@ def _fmt_month(ym: str) -> str:
     return datetime.strptime(ym, "%Y-%m").strftime("%B %Y")
 
 
-def get_game_activity(conn) -> dict:
+def get_game_activity(conn, packed_months: int = 6) -> dict:
     cursor = conn.cursor()
 
     # Per-game: date + actual attendees + fill rate
@@ -47,16 +47,24 @@ def get_game_activity(conn) -> dict:
     """)
     monthly = [dict(r) for r in cursor.fetchall()]
 
-    # Most / least packed month (by total players, min 1 game)
+    # Filter games to packed_months window (heatmap keeps all-time)
     months_with_games = [m for m in monthly if m["game_count"] > 0]
-    most_packed  = max(months_with_games, key=lambda m: m["total_players"]) if months_with_games else None
-    least_packed = min(months_with_games, key=lambda m: m["total_players"]) if months_with_games else None
+    if packed_months:
+        cutoff_months = set(sorted(set(m["month"] for m in monthly), reverse=True)[:packed_months])
+        filtered_games = [g for g in games if g["datetime"][:7] in cutoff_months]
+        packed_pool = [m for m in months_with_games if m["month"] in cutoff_months]
+    else:
+        filtered_games = games
+        packed_pool = months_with_games
+
+    most_packed  = max(packed_pool, key=lambda m: m["total_players"]) if packed_pool else None
+    least_packed = min(packed_pool, key=lambda m: m["total_players"]) if packed_pool else None
     if most_packed:
         most_packed  = {**most_packed,  "month": _fmt_month(most_packed["month"])}
     if least_packed:
         least_packed = {**least_packed, "month": _fmt_month(least_packed["month"])}
 
-    # Community momentum: avg attendance last 8 games vs previous 8
+    # Community momentum: avg attendance last 8 games vs previous 8 (always all-time)
     cursor.execute("""
         SELECT cnt, rn FROM (
             SELECT
@@ -75,10 +83,10 @@ def get_game_activity(conn) -> dict:
     prev_avg   = round(sum(prev)   / len(prev),   1) if prev   else 0
     momentum_pct = round((recent_avg - prev_avg) / prev_avg * 100, 1) if prev_avg else None
 
-    # Overall stats
-    total_games = len(games)
-    avg_fill    = round(sum(g["fill_rate"]      for g in games) / total_games, 1) if total_games else 0
-    avg_players = round(sum(g["attendee_count"] for g in games) / total_games, 1) if total_games else 0
+    # Summary stats — scoped to filtered window
+    total_games = len(filtered_games)
+    avg_fill    = round(sum(g["fill_rate"]      for g in filtered_games) / total_games, 1) if total_games else 0
+    avg_players = round(sum(g["attendee_count"] for g in filtered_games) / total_games, 1) if total_games else 0
 
     return {
         "games": games,

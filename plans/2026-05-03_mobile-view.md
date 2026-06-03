@@ -594,7 +594,7 @@ For each page, verify at 375px wide (iPhone SE viewport):
 
 - [ ] `dashboard.html` — stats show 2 columns, buttons wrap, no horizontal scroll
 - [ ] `games/list.html` — header wraps, card carousel shows, + New Game button visible
-- [ ] `games/detail.html` — all tabs accessible, players tab shows cards, forms stack vertically
+- [x] `games/detail.html` — all tabs accessible, players tab shows cards, forms stack vertically
 - [ ] `players.html` — cards show with correct data, pagination works, filter form wraps
 - [ ] `members.html` — cards show with paid toggle working, action buttons visible
 - [ ] `arena.html` — stats show 2 columns, arena cards single column
