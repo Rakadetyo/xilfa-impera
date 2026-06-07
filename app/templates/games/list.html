@@ -337,8 +337,8 @@
         let closestDiff = Infinity;
         gamesData.forEach((game, index) => {
             const gameDate = new Date(game.datetime);
-            const diff = gameDate - now;
-            if (diff >= 0 && diff < closestDiff) {
+            const diff = Math.abs(gameDate - now);
+            if (diff < closestDiff) {
                 closestDiff = diff;
                 currentIndex = index;
             }

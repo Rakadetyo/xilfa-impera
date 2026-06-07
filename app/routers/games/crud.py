@@ -92,7 +92,6 @@ async def list_games(request: Request):
         games = games_list
     else:
         now = datetime.now()
-        # Find closest game to now
         closest_idx = 0
         closest_diff = float('inf')
         for i, g in enumerate(games_list):
@@ -100,16 +99,18 @@ async def list_games(request: Request):
             if game_dt:
                 if isinstance(game_dt, str):
                     game_dt = datetime.fromisoformat(game_dt.replace("Z", "+00:00").replace("+00:00", ""))
-                diff = (game_dt - now).total_seconds()
-                if diff >= 0 and diff < closest_diff:
+                diff = abs((game_dt - now).total_seconds())
+                if diff < closest_diff:
                     closest_diff = diff
                     closest_idx = i
-        # If no upcoming, use last game
-        if closest_diff == float('inf'):
-            closest_idx = len(games_list) - 1
 
         start = max(0, closest_idx - 3)
         end = min(len(games_list), closest_idx + 4)
+        if end - start < 7:
+            if start == 0:
+                end = min(len(games_list), 7)
+            else:
+                start = max(0, end - 7)
         games = games_list[start:end]
 
     cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
@@ -379,6 +380,37 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     """, (game_id,))
     matches = cursor.fetchall()
 
+    # Per-match player stats keyed by match_id -> team_id -> [player rows]
+    cursor.execute("""
+        SELECT gps.match_id, gps.team_id, gps.player_id, p.name,
+               gps.points, gps.rebounds, gps.assists,
+               gps.steals, gps.blocks, gps.turnovers, gps.fouls
+        FROM game_player_stat gps
+        JOIN player p ON gps.player_id = p.id
+        WHERE gps.game_id = ?
+        ORDER BY gps.match_id, gps.team_id, gps.points DESC
+    """, (game_id,))
+    match_player_stats: dict = {}
+    for row in cursor.fetchall():
+        row = dict(row)
+        mid, tid = row["match_id"], row["team_id"]
+        match_player_stats.setdefault(mid, {}).setdefault(tid, []).append(row)
+
+    # Aggregated player stats for the whole game
+    cursor.execute("""
+        SELECT gps.player_id, p.name,
+               SUM(gps.points) as points, SUM(gps.rebounds) as rebounds,
+               SUM(gps.assists) as assists, SUM(gps.steals) as steals,
+               SUM(gps.blocks) as blocks, SUM(gps.turnovers) as turnovers,
+               SUM(gps.fouls) as fouls
+        FROM game_player_stat gps
+        JOIN player p ON gps.player_id = p.id
+        WHERE gps.game_id = ?
+        GROUP BY gps.player_id, p.name
+        ORDER BY points DESC
+    """, (game_id,))
+    player_stats_totals = [dict(r) for r in cursor.fetchall()]
+
     # Get all players for adding attendees - current members first
     cursor.execute("""
         SELECT p.*,
@@ -584,7 +616,9 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "finance": finance,
         "finance_entries": finance_entries,
         "is_superadmin": is_superadmin,
-        "active": "games"
+        "active": "games",
+        "match_player_stats": match_player_stats,
+        "player_stats_totals": player_stats_totals,
     })
 
 
