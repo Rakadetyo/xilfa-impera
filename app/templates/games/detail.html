@@ -1623,6 +1623,164 @@ Klik link untuk lihat info tim kamu
                 {% endif %}
             </div>
 
+            {% if matches %}
+            <!-- Match Results -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-medium">Match Results</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for match in matches %}
+                    {% set is_free = not match.team_home_id and not match.team_away_id %}
+                    {% set has_scores = match.score_home is not none and match.score_away is not none %}
+                    {% set home_wins = has_scores and match.score_home > match.score_away %}
+                    {% set away_wins = has_scores and match.score_away > match.score_home %}
+                    {% set match_stats = match_player_stats.get(match.id, {}) %}
+                    <details class="group">
+                        <summary class="flex items-center justify-between px-6 py-4 cursor-pointer select-none hover:bg-gray-50 list-none">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <span class="text-xs text-gray-400 w-6 shrink-0">#{{ loop.index }}</span>
+                                {% if is_free %}
+                                <span class="italic text-gray-400 text-sm">Free Game</span>
+                                {% else %}
+                                <span class="font-medium text-sm truncate {{ 'text-accent font-semibold' if home_wins }}">
+                                    {{ match.home_team or '—' }}
+                                </span>
+                                <span class="shrink-0 flex items-center gap-1.5 tabular-nums mx-2">
+                                    {% if has_scores %}
+                                    <span class="text-lg font-bold {{ 'text-accent' if home_wins }}">{{ match.score_home }}</span>
+                                    <span class="text-gray-300 font-normal text-base">:</span>
+                                    <span class="text-lg font-bold {{ 'text-accent' if away_wins }}">{{ match.score_away }}</span>
+                                    {% else %}
+                                    <span class="text-sm text-gray-400 font-normal">vs</span>
+                                    {% endif %}
+                                </span>
+                                <span class="font-medium text-sm truncate {{ 'text-accent font-semibold' if away_wins }}">
+                                    {{ match.away_team or '—' }}
+                                </span>
+                                {% if not has_scores %}
+                                <span class="ml-2 shrink-0 text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">not played</span>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </summary>
+
+                        {% if match_stats %}
+                        <div class="px-6 pb-5 pt-1 space-y-4 bg-gray-50">
+                            {% for team_id, players in match_stats.items() %}
+                            {% set team_name = match.home_team if team_id | int == match.team_home_id else match.away_team %}
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{{ team_name }}</p>
+                                <div class="space-y-2">
+                                    {% for p in players %}
+                                    <div class="bg-white rounded-lg border border-gray-200 px-4 py-2.5 flex items-center gap-4 text-sm">
+                                        <span class="font-medium w-28 truncate">{{ p.name }}</span>
+                                        <div class="flex items-center gap-3 text-gray-600 flex-wrap">
+                                            {% for stat, label in [('points','PTS'),('rebounds','REB'),('assists','AST'),('steals','STL'),('blocks','BLK'),('turnovers','TO'),('fouls','FLS')] %}
+                                            <span class="{{ 'text-accent font-semibold' if stat == 'points' and p[stat] and p[stat] > 0 }}">
+                                                {{ p[stat] if p[stat] is not none else '—' }}
+                                                <span class="text-xs text-gray-400">{{ label }}</span>
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="px-6 pb-4 pt-1 bg-gray-50">
+                            <p class="text-sm text-gray-400">No player stats recorded for this match.</p>
+                        </div>
+                        {% endif %}
+                    </details>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if player_stats_totals %}
+            <!-- Player Stats -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-medium">Player Stats</h3>
+                    <span class="text-xs text-gray-400">All matches combined</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="player-stats-tbl" class="w-full text-sm">
+                        <thead>
+                            <tr class="text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                                <th data-col="name" data-type="str" class="px-6 py-3 text-left font-medium cursor-pointer select-none hover:text-gray-600">
+                                    Player <span class="sort-ind ml-1"></span>
+                                </th>
+                                {% for label, col in [('PTS','points'),('REB','rebounds'),('AST','assists'),('STL','steals'),('BLK','blocks'),('TO','turnovers'),('FLS','fouls')] %}
+                                <th data-col="{{ col }}" data-type="num" class="px-3 py-3 text-right font-medium cursor-pointer select-none hover:text-gray-600">
+                                    {{ label }} <span class="sort-ind ml-0.5"></span>
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for p in player_stats_totals %}
+                            <tr>
+                                <td class="px-6 py-3 font-medium" data-val="{{ p.name }}">{{ p.name }}</td>
+                                {% for stat in ['points','rebounds','assists','steals','blocks','turnovers','fouls'] %}
+                                <td class="px-3 py-3 text-right tabular-nums text-gray-700" data-val="{{ p[stat] or 0 }}">{{ p[stat] or 0 }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+            (function() {
+                const tbl = document.getElementById('player-stats-tbl');
+                if (!tbl) return;
+                let sortCol = null, sortAsc = false;
+
+                function applyFirstRowStyle() {
+                    tbl.querySelectorAll('tbody tr').forEach((tr, i) => {
+                        tr.classList.toggle('bg-accent/5', i === 0);
+                        tr.querySelector('td').classList.toggle('text-accent', i === 0);
+                    });
+                }
+
+                tbl.querySelectorAll('thead th').forEach(th => {
+                    th.addEventListener('click', () => {
+                        const col = th.dataset.col;
+                        const isNum = th.dataset.type === 'num';
+                        sortAsc = sortCol === col ? !sortAsc : (isNum ? false : true);
+                        sortCol = col;
+
+                        const thIndex = Array.from(th.parentNode.children).indexOf(th);
+                        const rows = Array.from(tbl.tBodies[0].rows);
+                        rows.sort((a, b) => {
+                            const av = a.cells[thIndex].dataset.val;
+                            const bv = b.cells[thIndex].dataset.val;
+                            const cmp = isNum ? (parseFloat(av) - parseFloat(bv)) : av.localeCompare(bv);
+                            return sortAsc ? cmp : -cmp;
+                        });
+                        rows.forEach(r => tbl.tBodies[0].appendChild(r));
+                        applyFirstRowStyle();
+
+                        tbl.querySelectorAll('thead th .sort-ind').forEach(s => s.textContent = '');
+                        th.querySelector('.sort-ind').textContent = sortAsc ? '▲' : '▼';
+                    });
+                });
+
+                // default sort indicator: PTS desc (column index 1)
+                const ptsTh = tbl.querySelector('thead th[data-col="points"]');
+                if (ptsTh) ptsTh.querySelector('.sort-ind').textContent = '▼';
+                applyFirstRowStyle();
+            })();
+            </script>
+            {% endif %}
+
             {% elif tab == 'results' %}
 
             <!-- Ratings -->

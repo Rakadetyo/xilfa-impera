@@ -379,6 +379,37 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     """, (game_id,))
     matches = cursor.fetchall()
 
+    # Per-match player stats keyed by match_id -> team_id -> [player rows]
+    cursor.execute("""
+        SELECT gps.match_id, gps.team_id, gps.player_id, p.name,
+               gps.points, gps.rebounds, gps.assists,
+               gps.steals, gps.blocks, gps.turnovers, gps.fouls
+        FROM game_player_stat gps
+        JOIN player p ON gps.player_id = p.id
+        WHERE gps.game_id = ?
+        ORDER BY gps.match_id, gps.team_id, gps.points DESC
+    """, (game_id,))
+    match_player_stats: dict = {}
+    for row in cursor.fetchall():
+        row = dict(row)
+        mid, tid = row["match_id"], row["team_id"]
+        match_player_stats.setdefault(mid, {}).setdefault(tid, []).append(row)
+
+    # Aggregated player stats for the whole game
+    cursor.execute("""
+        SELECT gps.player_id, p.name,
+               SUM(gps.points) as points, SUM(gps.rebounds) as rebounds,
+               SUM(gps.assists) as assists, SUM(gps.steals) as steals,
+               SUM(gps.blocks) as blocks, SUM(gps.turnovers) as turnovers,
+               SUM(gps.fouls) as fouls
+        FROM game_player_stat gps
+        JOIN player p ON gps.player_id = p.id
+        WHERE gps.game_id = ?
+        GROUP BY gps.player_id, p.name
+        ORDER BY points DESC
+    """, (game_id,))
+    player_stats_totals = [dict(r) for r in cursor.fetchall()]
+
     # Get all players for adding attendees - current members first
     cursor.execute("""
         SELECT p.*,
@@ -584,7 +615,9 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "finance": finance,
         "finance_entries": finance_entries,
         "is_superadmin": is_superadmin,
-        "active": "games"
+        "active": "games",
+        "match_player_stats": match_player_stats,
+        "player_stats_totals": player_stats_totals,
     })
 
 
