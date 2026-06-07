@@ -92,7 +92,6 @@ async def list_games(request: Request):
         games = games_list
     else:
         now = datetime.now()
-        # Find closest game to now
         closest_idx = 0
         closest_diff = float('inf')
         for i, g in enumerate(games_list):
@@ -100,16 +99,18 @@ async def list_games(request: Request):
             if game_dt:
                 if isinstance(game_dt, str):
                     game_dt = datetime.fromisoformat(game_dt.replace("Z", "+00:00").replace("+00:00", ""))
-                diff = (game_dt - now).total_seconds()
-                if diff >= 0 and diff < closest_diff:
+                diff = abs((game_dt - now).total_seconds())
+                if diff < closest_diff:
                     closest_diff = diff
                     closest_idx = i
-        # If no upcoming, use last game
-        if closest_diff == float('inf'):
-            closest_idx = len(games_list) - 1
 
         start = max(0, closest_idx - 3)
         end = min(len(games_list), closest_idx + 4)
+        if end - start < 7:
+            if start == 0:
+                end = min(len(games_list), 7)
+            else:
+                start = max(0, end - 7)
         games = games_list[start:end]
 
     cursor.execute("SELECT id, location_name FROM arena ORDER BY location_name")
