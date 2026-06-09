@@ -41,7 +41,12 @@
 
         <!-- Headline -->
         <div class="mb-6 text-center">
-            <h1 class="text-2xl font-display tracking-wide mb-1">You're Invited 🏀</h1>
+            {% if game.game_name %}
+            <p class="text-gray-400 text-sm tracking-widest uppercase mb-1">You're Invited</p>
+            <h1 class="text-4xl font-display tracking-wide text-accent mb-2">{{ game.game_name }}</h1>
+            {% else %}
+            <h1 class="text-2xl font-display tracking-wide mb-1">You're Invited</h1>
+            {% endif %}
             <p class="text-gray-400 text-sm">Select your name to see your game details</p>
         </div>
 

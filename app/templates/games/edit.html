@@ -39,6 +39,11 @@
 
                 <form method="post" class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm space-y-6">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Game Name <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <input type="text" name="game_name" value="{{ game.game_name or '' }}" placeholder="e.g. Sat Night Balling, Casual Pickup" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
                         <input type="datetime-local" name="datetime" value="{{ game.datetime[:16] }}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
                     </div>

@@ -210,6 +210,7 @@ def run_migrations(conn) -> None:
         ('best_of', 'INTEGER DEFAULT 1'),
         ('break_time', 'INTEGER DEFAULT 0'),
         ('invite_token', 'TEXT'),
+        ('game_name', 'TEXT'),
     ]:
         if col not in game_columns:
             cursor.execute(f"ALTER TABLE game ADD COLUMN {col} {defn}")

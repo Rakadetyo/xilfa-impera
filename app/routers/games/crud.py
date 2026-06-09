@@ -209,7 +209,8 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     if len(dt_str) == 16:
         dt_str += ":00"
     dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-    game_dict["title"] = dt.strftime("%a, %d %b %Y") + " @ " + (game_dict["arena_name"] or "No arena")
+    base_title = dt.strftime("%a, %d %b %Y") + " @ " + (game_dict["arena_name"] or "No arena")
+    game_dict["title"] = f"{game_dict['game_name']} — {base_title}" if game_dict.get("game_name") else base_title
 
     # Get attendees with player info
     cursor.execute("""
@@ -740,6 +741,7 @@ async def update_game(
     is_video: bool = Form(default=False),
     is_photo: bool = Form(default=False),
     is_referee: bool = Form(default=False),
+    game_name: str = Form(""),
     add_partner: str = Form(None),
     partner_type: str = Form(None),
     partner_name: str = Form(None),
@@ -757,12 +759,13 @@ async def update_game(
         UPDATE game SET datetime = ?, arena_id = ?, price_per_person = ?,
                        price_per_member = ?, duration_per_game = ?,
                        session_duration = ?, max_players = ?, status = ?, notes = ?,
-                       is_video = ?, is_photo = ?, is_referee = ?,
+                       is_video = ?, is_photo = ?, is_referee = ?, game_name = ?,
                        updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
     """, (datetime, arena_id, price_per_person, price_per_member,
           duration_per_game, session_duration, max_players, status, notes,
-          1 if is_video else 0, 1 if is_photo else 0, 1 if is_referee else 0, game_id))
+          1 if is_video else 0, 1 if is_photo else 0, 1 if is_referee else 0,
+          game_name or None, game_id))
 
     # Handle add partner
     if add_partner and partner_type:
