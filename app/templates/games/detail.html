@@ -547,6 +547,10 @@ Klik link untuk lihat info tim kamu
                 <!-- Event Details -->
                 <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 class="font-medium mb-4">Event Details</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-500 mb-1">Game Name <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <input type="text" name="game_name" value="{{ game.game_name or '' }}" placeholder="e.g. Sat Night Balling, Casual Pickup" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-500 mb-1">Date & Time</label>
