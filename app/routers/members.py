@@ -217,15 +217,15 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
     months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     member_period = f"{months[month - 1]} {year}"
 
-    conn = get_db()
-    cursor = conn.cursor()
-
-    # Check if member exists for this period
-    cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
-    existing = cursor.fetchone()
-
     username = user["username"]
+    conn = get_db()
     try:
+        cursor = conn.cursor()
+
+        # Check if member exists for this period
+        cursor.execute("SELECT id FROM member WHERE player_id = ? AND member_period = ?", (player_id, member_period))
+        existing = cursor.fetchone()
+
         if existing:
             cursor.execute(
                 """UPDATE member SET member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP
@@ -239,7 +239,6 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
             member_count = cursor.fetchone()["total"]
 
             if member_count >= 25:
-                conn.close()
                 return RedirectResponse(f"/manage/members?error=Member limit reached for {member_period} (max 25)&month={month}&year={year}", status_code=302)
 
             cursor.execute(
@@ -249,12 +248,12 @@ async def create_member(request: Request, player_id: int = Form(...), member_sta
             )
             logger.info(f"[MEMBER] CREATE: player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
         conn.commit()
-        conn.close()
         return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
     except Exception as e:
         logger.error(f"[MEMBER] CREATE/UPDATE ERROR: player_id={player_id}, period={member_period}, by={username}, error={str(e)}")
-        conn.close()
         return RedirectResponse(f"/manage/members?error=Operation failed: {str(e)}&month={month}&year={year}", status_code=302)
+    finally:
+        conn.close()
 
 @router.post("/api/import-whatsapp-members")
 async def import_whatsapp_members(request: Request):
@@ -501,11 +500,12 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
     if not user:
         return RedirectResponse("/masukgan", status_code=302)
 
-    member_period = f"{year}-{month:02d}"
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    member_period = f"{months[month - 1]} {year}"
     username = user["username"]
 
+    conn = get_db()
     try:
-        conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE member SET player_id = ?, member_period = ?, member_start_date = ?, member_end_date = ?, membership_price = ?, is_paid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -513,11 +513,12 @@ async def update_member(request: Request, member_id: int, player_id: int = Form(
         )
         logger.info(f"[MEMBER] UPDATE: member_id={member_id}, player_id={player_id}, period={member_period}, start={member_start_date}, end={member_end_date}, price={membership_price}, paid={is_paid}, by={username}")
         conn.commit()
-        conn.close()
         return RedirectResponse(f"/manage/members?month={month}&year={year}", status_code=302)
     except Exception as e:
         logger.error(f"[MEMBER] UPDATE ERROR: member_id={member_id}, by={username}, error={str(e)}")
         return RedirectResponse(f"/manage/members?error=Update failed: {str(e)}&month={month}&year={year}", status_code=302)
+    finally:
+        conn.close()
 
 @router.post("/manage/members/{member_id}/delete")
 async def delete_member(request: Request, member_id: int, month: int = Form(1), year: int = Form(2024)):
