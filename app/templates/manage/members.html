@@ -321,21 +321,27 @@
     </div>
 
     <script>
+        function dateToLocalISO(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
         function getFirstSaturday(year, month) {
             const firstDay = new Date(year, month - 1, 1);
             const dayOfWeek = firstDay.getDay();
             const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
-            if (daysUntilSaturday === 0 && dayOfWeek !== 6) return null;
             const firstSaturday = new Date(year, month - 1, 1 + daysUntilSaturday);
-            return firstSaturday.toISOString().split('T')[0];
+            return dateToLocalISO(firstSaturday);
         }
 
         function getLastSaturday(year, month) {
             const lastDay = new Date(year, month, 0);
             const dayOfWeek = lastDay.getDay();
             const daysBack = (dayOfWeek - 6 + 7) % 7;
-            const lastSaturday = new Date(year, month, -daysBack);
-            return lastSaturday.toISOString().split('T')[0];
+            const lastSaturday = new Date(year, month - 1, lastDay.getDate() - daysBack);
+            return dateToLocalISO(lastSaturday);
         }
 
         function openMemberModal(id, playerId, startDate, endDate, isPaid, price) {
