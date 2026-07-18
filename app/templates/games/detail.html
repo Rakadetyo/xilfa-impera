@@ -901,7 +901,7 @@ Klik link untuk lihat info tim kamu
                                 <td class="px-6 py-4 text-right">
                                     {% if a %}
                                     <div class="flex items-center justify-end gap-2">
-                                        <button type="button" onclick="openEditModal('{{ a.id }}', '{{ a.name }}', '{{ a.nickname or '' }}', '{{ a.position_1 or '' }}', '{{ a.position_2 or '' }}', '{{ a.skill_level or 3 }}')" class="p-1.5 text-gray-500 hover:text-accent hover:bg-gray-100 rounded" title="Edit">
+                                        <button type="button" onclick="openEditModal(this)" data-id="{{ a.id }}" data-name="{{ a.name }}" data-nickname="{{ a.nickname or '' }}" data-pos1="{{ a.position_1 or '' }}" data-pos2="{{ a.position_2 or '' }}" data-skill="{{ a.skill_level or 3 }}" class="p-1.5 text-gray-500 hover:text-accent hover:bg-gray-100 rounded" title="Edit">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
                                         <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
@@ -933,8 +933,8 @@ Klik link untuk lihat info tim kamu
                                 <p class="text-sm text-gray-500">{{ a.nickname or '-' }}</p>
                             </div>
                             <div class="flex items-center gap-1">
-                                <button type="button" onclick="openEditModal('{{ a.id }}', '{{ a.name }}', '{{ a.nickname or '' }}', '{{ a.position_1 or '' }}', '{{ a.position_2 or '' }}', '{{ a.skill_level or 3 }}')" class="p-1.5 text-gray-500 hover:text-accent hover:bg-gray-100 rounded" title="Edit">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                <button type="button" onclick="openEditModal(this)" data-id="{{ a.id }}" data-name="{{ a.name }}" data-nickname="{{ a.nickname or '' }}" data-pos1="{{ a.position_1 or '' }}" data-pos2="{{ a.position_2 or '' }}" data-skill="{{ a.skill_level or 3 }}" class="p-1.5 text-gray-500 hover:text-accent hover:bg-gray-100 rounded" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.72L16.732 3.732z"/></svg>
                                 </button>
                                 <form method="post" action="/manage/games/{{ game.id }}/attendees/{{ a.id }}/delete" onsubmit="return confirm('Remove player?')">
                                     <button type="submit" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded" title="Remove">
@@ -1052,13 +1052,14 @@ Klik link untuk lihat info tim kamu
                         btn.disabled = false;
                     }
                 }
-                function openEditModal(id, name, nickname, pos1, pos2, skill) {
+                function openEditModal(btn) {
+                    const id = btn.dataset.id;
                     document.getElementById('edit-attendee-id').value = id;
-                    document.getElementById('edit-name').value = name;
-                    document.getElementById('edit-nickname').value = nickname;
-                    document.getElementById('edit-position-1').value = pos1;
-                    document.getElementById('edit-position-2').value = pos2;
-                    document.getElementById('edit-skill-level').value = skill;
+                    document.getElementById('edit-name').value = btn.dataset.name;
+                    document.getElementById('edit-nickname').value = btn.dataset.nickname;
+                    document.getElementById('edit-position-1').value = btn.dataset.pos1;
+                    document.getElementById('edit-position-2').value = btn.dataset.pos2;
+                    document.getElementById('edit-skill-level').value = btn.dataset.skill;
                     document.getElementById('edit-player-form').action = '/manage/games/{{ game.id }}/attendees/' + id + '/edit';
                     document.getElementById('edit-player-modal').classList.remove('hidden');
                 }
