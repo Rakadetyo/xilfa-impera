@@ -853,12 +853,19 @@ function renderQualityTab(data) {
         </div>
 
         <div class="bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <p class="text-xs text-gray-500 uppercase tracking-wider">Player Feedback</p>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs text-gray-400">Filter:</span>
+                    <span class="text-xs text-gray-400">Stars:</span>
                     ${starBtns}
                 </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 mb-5">
+                <span class="text-xs text-gray-400">Period:</span>
+                <input type="date" id="fb-date-from" oninput="fbRender()" class="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
+                <span class="text-xs text-gray-400">—</span>
+                <input type="date" id="fb-date-until" oninput="fbRender()" class="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
+                <button onclick="fbClearDates()" class="text-xs text-gray-400 hover:text-red-400 transition-colors">Clear</button>
             </div>
             ${tagBtns ? `<div class="flex flex-wrap gap-1.5 mb-5">${tagBtns}</div>` : ''}
             ${data.recent_feedback?.length ? `
@@ -1006,8 +1013,12 @@ function fbRender() {
     const list  = document.getElementById('fb-list');
     const empty = document.getElementById('fb-empty');
     if (!list) return;
+    const dateFrom  = document.getElementById('fb-date-from')?.value  || '';
+    const dateUntil = document.getElementById('fb-date-until')?.value || '';
     const filtered = _fbData.filter(f => {
         if (_fbActiveStar && f.rating !== _fbActiveStar) return false;
+        if (dateFrom  && f.game_datetime.slice(0, 10) < dateFrom)  return false;
+        if (dateUntil && f.game_datetime.slice(0, 10) > dateUntil) return false;
         if (_fbActiveTags.size === 0) return true;
         const tags = [
             ...(f.great_things || '').split(','),
@@ -1036,6 +1047,14 @@ function fbRender() {
 }
 function fbToggleAll() {
     _fbShowAll = !_fbShowAll;
+    fbRender();
+}
+function fbClearDates() {
+    const from  = document.getElementById('fb-date-from');
+    const until = document.getElementById('fb-date-until');
+    if (from)  from.value  = '';
+    if (until) until.value = '';
+    _fbShowAll = false;
     fbRender();
 }
 function fbToggleStar(star) {
