@@ -863,7 +863,8 @@ function renderQualityTab(data) {
             ${tagBtns ? `<div class="flex flex-wrap gap-1.5 mb-5">${tagBtns}</div>` : ''}
             ${data.recent_feedback?.length ? `
                 <div id="fb-list" class="space-y-3"></div>
-                <p id="fb-empty" class="text-sm text-gray-400 hidden">No feedback matches this filter.</p>`
+                <p id="fb-empty" class="text-sm text-gray-400 hidden">No ratings match this filter.</p>
+                <button id="fb-show-all" onclick="fbToggleAll()" class="hidden mt-4 text-xs text-accent hover:underline font-medium"></button>`
             : '<p class="text-sm text-gray-400">No ratings yet.</p>'}
         </div>`;
 
@@ -911,10 +912,11 @@ function renderQualityTab(data) {
     }
 
     // Feedback feed
-    _fbData     = data.recent_feedback || [];
-    _fbAllTags  = data.all_tags        || [];
+    _fbData       = data.recent_feedback || [];
+    _fbAllTags    = data.all_tags        || [];
     _fbActiveStar = 0;
     _fbActiveTags = new Set();
+    _fbShowAll    = false;
     fbRender();
 }
 
@@ -976,8 +978,29 @@ function dwPage(dir) {
 
 // ── Feedback feed ─────────────────────────────────────────────
 const STAR_COLORS = { 5:'#C9A84C', 4:'#fbbf24', 3:'#9ca3af', 2:'#f87171', 1:'#ef4444' };
+const FB_PAGE_SIZE = 10;
+let _fbShowAll = false;
 
 function fbStars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+function fbCard(f) {
+    const name  = f.is_anonymous ? 'Anonymous' : f.player_name;
+    const color = STAR_COLORS[f.rating] || '#9ca3af';
+    const gtags = (f.great_things || '').split(',').map(t => t.trim()).filter(Boolean);
+    const itags = (f.could_be_improved || '').split(',').map(t => t.trim()).filter(Boolean);
+    const tagHtml = [
+        ...gtags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-teal-50 text-teal-700 border border-teal-100">${t}</span>`),
+        ...itags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100">${t}</span>`),
+    ].join('');
+    return `<div class="flex gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+        <div class="shrink-0 text-lg font-stat" style="color:${color}">${fbStars(f.rating)}</div>
+        <div class="flex-1 min-w-0">
+            ${f.feedback ? `<p class="text-sm text-gray-800 mb-2">${f.feedback}</p>` : ''}
+            ${tagHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>` : ''}
+            <p class="text-xs text-gray-400">${name} · ${fmtDate(f.game_datetime)}</p>
+        </div>
+    </div>`;
+}
 
 function fbRender() {
     const list  = document.getElementById('fb-list');
@@ -995,36 +1018,36 @@ function fbRender() {
     if (!filtered.length) {
         list.innerHTML = '';
         empty?.classList.remove('hidden');
+        document.getElementById('fb-show-all')?.classList.add('hidden');
         return;
     }
     empty?.classList.add('hidden');
-    list.innerHTML = filtered.map(f => {
-        const name  = f.is_anonymous ? 'Anonymous' : f.player_name;
-        const color = STAR_COLORS[f.rating] || '#9ca3af';
-        const gtags = (f.great_things || '').split(',').map(t => t.trim()).filter(Boolean);
-        const itags = (f.could_be_improved || '').split(',').map(t => t.trim()).filter(Boolean);
-        const tagHtml = [
-            ...gtags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-teal-50 text-teal-700 border border-teal-100">${t}</span>`),
-            ...itags.map(t => `<span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100">${t}</span>`),
-        ].join('');
-        return `<div class="flex gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
-            <div class="shrink-0 text-lg font-stat" style="color:${color}">${fbStars(f.rating)}</div>
-            <div class="flex-1 min-w-0">
-                ${f.feedback ? `<p class="text-sm text-gray-800 mb-2">${f.feedback}</p>` : ''}
-                ${tagHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>` : ''}
-                <p class="text-xs text-gray-400">${name} · ${fmtDate(f.game_datetime)}</p>
-            </div>
-        </div>`;
-    }).join('');
+    const visible = _fbShowAll ? filtered : filtered.slice(0, FB_PAGE_SIZE);
+    list.innerHTML = visible.map(fbCard).join('');
+    const btn = document.getElementById('fb-show-all');
+    if (btn) {
+        if (filtered.length > FB_PAGE_SIZE) {
+            btn.classList.remove('hidden');
+            btn.textContent = _fbShowAll ? 'Show less' : `Show all ${filtered.length} ratings`;
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+}
+function fbToggleAll() {
+    _fbShowAll = !_fbShowAll;
+    fbRender();
 }
 function fbToggleStar(star) {
     _fbActiveStar = _fbActiveStar === star ? 0 : star;
+    _fbShowAll = false;
     document.querySelectorAll('.fb-star-btn').forEach(btn => btn.classList.remove('bg-accent','text-black','border-accent'));
     const active = document.getElementById(`fb-star-${_fbActiveStar}`);
     if (active) active.classList.add('bg-accent','text-black','border-accent');
     fbRender();
 }
 function fbToggleTag(tag) {
+    _fbShowAll = false;
     _fbActiveTags.has(tag) ? _fbActiveTags.delete(tag) : _fbActiveTags.add(tag);
     document.querySelectorAll('.fb-tag-btn').forEach(btn => {
         const on = _fbActiveTags.has(btn.dataset.tag);
