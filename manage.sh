@@ -18,6 +18,8 @@ case $COMMAND in
         uvicorn main:app --reload --port "$PORT"
         ;;
     deploy)
+        # Clear stale git lock files (can be left behind by sandbox operations)
+        rm -f .git/HEAD.lock .git/index.lock
         git checkout master
         git merge develop --no-edit
         git push origin master
