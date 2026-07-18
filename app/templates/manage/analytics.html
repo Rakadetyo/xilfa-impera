@@ -1083,6 +1083,8 @@ initOverviewCharts();
 
 // ── All Players Modal ─────────────────────────────────────────
 let _apYear = '';
+let _apDateFrom = '';
+let _apDateUntil = '';
 let _apData = [];
 
 async function openAllPlayersModal() {
@@ -1094,10 +1096,19 @@ async function openAllPlayersModal() {
 function closeAllPlayersModal() {
     document.getElementById('allPlayersModal').classList.add('hidden');
     document.body.style.overflow = '';
+    _apDateFrom = ''; _apDateUntil = '';
+    const df = document.getElementById('ap-date-from');
+    const du = document.getElementById('ap-date-until');
+    if (df) df.value = '';
+    if (du) du.value = '';
 }
 
 async function fetchAllPlayers() {
-    const url = _apYear ? `/manage/analytics/players/all?year=${_apYear}` : '/manage/analytics/players/all';
+    const params = new URLSearchParams();
+    if (_apDateFrom)  { params.set('date_from',  _apDateFrom);  }
+    if (_apDateUntil) { params.set('date_until', _apDateUntil); }
+    if (_apYear && !_apDateFrom && !_apDateUntil) { params.set('year', _apYear); }
+    const url = `/manage/analytics/players/all${params.toString() ? '?' + params : ''}`;
     document.getElementById('ap-loading').classList.remove('hidden');
     document.getElementById('ap-table-wrap').classList.add('hidden');
     try {
@@ -1155,11 +1166,21 @@ function renderAllPlayersTable(rows) {
             <button onclick="closeAllPlayersModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
         </div>
         <!-- Filters -->
-        <div class="flex items-center gap-3 px-6 py-3 border-b border-gray-100">
-            <select id="ap-year-select" onchange="_apYear=this.value; fetchAllPlayers()"
-                class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
+        <div class="flex flex-wrap items-center gap-2 px-6 py-3 border-b border-gray-100">
+            <select id="ap-year-select" onchange="_apYear=this.value; _apDateFrom=''; _apDateUntil=''; document.getElementById('ap-date-from').value=''; document.getElementById('ap-date-until').value=''; fetchAllPlayers()"
+                class="border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
                 <option value="">All Time</option>
             </select>
+            <span class="text-xs text-gray-400">or</span>
+            <input id="ap-date-from" type="date" placeholder="From"
+                onchange="_apDateFrom=this.value; _apYear=''; document.getElementById('ap-year-select').value=''; fetchAllPlayers()"
+                class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
+            <span class="text-xs text-gray-400">—</span>
+            <input id="ap-date-until" type="date" placeholder="Until"
+                onchange="_apDateUntil=this.value; _apYear=''; document.getElementById('ap-year-select').value=''; fetchAllPlayers()"
+                class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
+        </div>
+        <div class="flex items-center gap-3 px-6 py-2 border-b border-gray-100">
             <input id="ap-search" type="text" placeholder="Search player…"
                 oninput="renderAllPlayersTable(_apData)"
                 class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40">

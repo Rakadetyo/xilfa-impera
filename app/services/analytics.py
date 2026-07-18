@@ -273,40 +273,42 @@ def get_player_stats(conn) -> dict:
     }
 
 
-def get_all_player_games(conn, year: int | None = None) -> dict:
+def get_all_player_games(conn, year: int | None = None,
+                         date_from: str | None = None,
+                         date_until: str | None = None) -> dict:
     cursor = conn.cursor()
 
     # Available years for the filter
     cursor.execute("SELECT DISTINCT strftime('%Y', datetime) as yr FROM game ORDER BY yr DESC")
     years = [r["yr"] for r in cursor.fetchall() if r["yr"]]
 
-    if year:
-        cursor.execute("""
-            SELECT
-                p.id,
-                p.name,
-                p.nickname,
-                COUNT(ga.id) as games_attended
-            FROM player p
-            JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
-            JOIN game g ON g.id = ga.game_id
-            WHERE p.status = 1 AND strftime('%Y', g.datetime) = ?
-            GROUP BY p.id
-            ORDER BY games_attended DESC, p.name
-        """, (str(year),))
-    else:
-        cursor.execute("""
-            SELECT
-                p.id,
-                p.name,
-                p.nickname,
-                COUNT(ga.id) as games_attended
-            FROM player p
-            JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
-            WHERE p.status = 1
-            GROUP BY p.id
-            ORDER BY games_attended DESC, p.name
-        """)
+    conditions = ["p.status = 1"]
+    params = []
+
+    if date_from:
+        conditions.append("g.datetime >= ?")
+        params.append(date_from)
+    if date_until:
+        conditions.append("g.datetime <= ?")
+        params.append(date_until + "T23:59:59")
+    if year and not (date_from or date_until):
+        conditions.append("strftime('%Y', g.datetime) = ?")
+        params.append(str(year))
+
+    where = " AND ".join(conditions)
+    cursor.execute(f"""
+        SELECT
+            p.id,
+            p.name,
+            p.nickname,
+            COUNT(ga.id) as games_attended
+        FROM player p
+        JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
+        JOIN game g ON g.id = ga.game_id
+        WHERE {where}
+        GROUP BY p.id
+        ORDER BY games_attended DESC, p.name
+    """, params)
     players = [dict(r) for r in cursor.fetchall()]
 
     return {"players": players, "years": years}
