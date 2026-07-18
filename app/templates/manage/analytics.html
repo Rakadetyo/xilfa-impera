@@ -485,7 +485,10 @@ function renderPlayersTab(data) {
     document.getElementById('tab-players-content').innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
             <div class="md:col-span-3 bg-white border-2 border-accent/30 rounded-xl p-6 shadow-sm">
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-4">Most Games — Top 15</p>
+                <div class="flex items-center justify-between mb-4">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Most Games — Top 15</p>
+                    <button onclick="openAllPlayersModal()" class="text-xs text-accent hover:underline font-medium">View All →</button>
+                </div>
                 ${leaderboardRows ? `<table class="w-full text-sm">
                     <thead><tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
                         <th class="text-left pb-2 font-medium">#</th>
@@ -861,7 +864,7 @@ function renderQualityTab(data) {
             ${data.recent_feedback?.length ? `
                 <div id="fb-list" class="space-y-3"></div>
                 <p id="fb-empty" class="text-sm text-gray-400 hidden">No feedback matches this filter.</p>`
-            : '<p class="text-sm text-gray-400">No written feedback yet.</p>'}
+            : '<p class="text-sm text-gray-400">No ratings yet.</p>'}
         </div>`;
 
     // Radar charts
@@ -1007,7 +1010,7 @@ function fbRender() {
         return `<div class="flex gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
             <div class="shrink-0 text-lg font-stat" style="color:${color}">${fbStars(f.rating)}</div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-800 mb-2">${f.feedback}</p>
+                ${f.feedback ? `<p class="text-sm text-gray-800 mb-2">${f.feedback}</p>` : ''}
                 ${tagHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>` : ''}
                 <p class="text-xs text-gray-400">${name} · ${fmtDate(f.game_datetime)}</p>
             </div>
@@ -1035,6 +1038,111 @@ function fbToggleTag(tag) {
 // ── Boot ──────────────────────────────────────────────────────
 renderHeatmap();
 initOverviewCharts();
+
+// ── All Players Modal ─────────────────────────────────────────
+let _apYear = '';
+let _apData = [];
+
+async function openAllPlayersModal() {
+    document.getElementById('allPlayersModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    await fetchAllPlayers();
+}
+
+function closeAllPlayersModal() {
+    document.getElementById('allPlayersModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+async function fetchAllPlayers() {
+    const url = _apYear ? `/manage/analytics/players/all?year=${_apYear}` : '/manage/analytics/players/all';
+    document.getElementById('ap-loading').classList.remove('hidden');
+    document.getElementById('ap-table-wrap').classList.add('hidden');
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        _apData = data.players || [];
+
+        // Populate year filter (only on first load)
+        const sel = document.getElementById('ap-year-select');
+        if (sel.options.length <= 1) {
+            (data.years || []).forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                sel.appendChild(opt);
+            });
+        }
+
+        renderAllPlayersTable(_apData);
+    } catch(e) {
+        document.getElementById('ap-loading').innerHTML = '<p class="text-red-400 text-sm">Failed to load.</p>';
+    }
+}
+
+function renderAllPlayersTable(rows) {
+    const search = document.getElementById('ap-search').value.toLowerCase();
+    const filtered = search ? rows.filter(p =>
+        (p.name || '').toLowerCase().includes(search) ||
+        (p.nickname || '').toLowerCase().includes(search)
+    ) : rows;
+
+    const tbody = document.getElementById('ap-tbody');
+    tbody.innerHTML = filtered.map((p, i) => `
+        <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <td class="py-2 font-stat text-gray-300 text-lg w-8">${i + 1}</td>
+            <td class="py-2">
+                <span class="font-medium text-sm">${p.name}</span>
+                ${p.nickname ? `<span class="text-gray-400 text-xs ml-1">"${p.nickname}"</span>` : ''}
+            </td>
+            <td class="py-2 text-right font-stat text-xl text-accent">${p.games_attended}</td>
+        </tr>`).join('') || '<tr><td colspan="3" class="py-6 text-center text-sm text-gray-400">No data.</td></tr>';
+
+    document.getElementById('ap-count').textContent = `${filtered.length} player${filtered.length !== 1 ? 's' : ''}`;
+    document.getElementById('ap-loading').classList.add('hidden');
+    document.getElementById('ap-table-wrap').classList.remove('hidden');
+}
 </script>
+
+<!-- All Players Modal -->
+<div id="allPlayersModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAllPlayersModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">Games Played — All Players</h3>
+            <button onclick="closeAllPlayersModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+        <!-- Filters -->
+        <div class="flex items-center gap-3 px-6 py-3 border-b border-gray-100">
+            <select id="ap-year-select" onchange="_apYear=this.value; fetchAllPlayers()"
+                class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent/40">
+                <option value="">All Time</option>
+            </select>
+            <input id="ap-search" type="text" placeholder="Search player…"
+                oninput="renderAllPlayersTable(_apData)"
+                class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40">
+            <span id="ap-count" class="text-xs text-gray-400 shrink-0"></span>
+        </div>
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-6 py-2">
+            <div id="ap-loading" class="py-12 flex items-center justify-center">
+                <div class="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full"></div>
+            </div>
+            <div id="ap-table-wrap" class="hidden">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
+                            <th class="text-left pb-2 font-medium">#</th>
+                            <th class="text-left pb-2 font-medium">Player</th>
+                            <th class="text-right pb-2 font-medium">Games</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ap-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

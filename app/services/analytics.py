@@ -273,6 +273,45 @@ def get_player_stats(conn) -> dict:
     }
 
 
+def get_all_player_games(conn, year: int | None = None) -> dict:
+    cursor = conn.cursor()
+
+    # Available years for the filter
+    cursor.execute("SELECT DISTINCT strftime('%Y', datetime) as yr FROM game ORDER BY yr DESC")
+    years = [r["yr"] for r in cursor.fetchall() if r["yr"]]
+
+    if year:
+        cursor.execute("""
+            SELECT
+                p.id,
+                p.name,
+                p.nickname,
+                COUNT(ga.id) as games_attended
+            FROM player p
+            JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
+            JOIN game g ON g.id = ga.game_id
+            WHERE p.status = 1 AND strftime('%Y', g.datetime) = ?
+            GROUP BY p.id
+            ORDER BY games_attended DESC, p.name
+        """, (str(year),))
+    else:
+        cursor.execute("""
+            SELECT
+                p.id,
+                p.name,
+                p.nickname,
+                COUNT(ga.id) as games_attended
+            FROM player p
+            JOIN game_attendee ga ON ga.player_id = p.id AND ga.is_attend = 1
+            WHERE p.status = 1
+            GROUP BY p.id
+            ORDER BY games_attended DESC, p.name
+        """)
+    players = [dict(r) for r in cursor.fetchall()]
+
+    return {"players": players, "years": years}
+
+
 def get_finance_stats(conn) -> dict:
     cursor = conn.cursor()
 
@@ -396,7 +435,7 @@ def get_quality_stats(conn) -> dict:
     cursor.execute("SELECT ROUND(AVG(rating), 2) as avg, COUNT(*) as total FROM game_rating")
     overall = dict(cursor.fetchone())
 
-    # Recent feedback (non-empty feedback text, most recent first)
+    # All ratings, most recent first (feedback text shown only when present)
     cursor.execute("""
         SELECT
             gr.id,
@@ -411,9 +450,8 @@ def get_quality_stats(conn) -> dict:
         FROM game_rating gr
         JOIN player p ON p.id = gr.player_id
         JOIN game g ON g.id = gr.game_id
-        WHERE gr.feedback IS NOT NULL AND TRIM(gr.feedback) != ''
         ORDER BY gr.created_at DESC
-        LIMIT 100
+        LIMIT 200
     """)
     recent_feedback = [dict(r) for r in cursor.fetchall()]
 

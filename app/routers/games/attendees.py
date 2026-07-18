@@ -122,9 +122,9 @@ async def edit_attendee(
     cursor = conn.cursor()
     # Update player info
     cursor.execute("""
-        UPDATE player SET nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?
+        UPDATE player SET name = ?, nickname = ?, position_1 = ?, position_2 = ?, skill_level = ?
         WHERE id = (SELECT player_id FROM game_attendee WHERE id = ? AND game_id = ?)
-    """, (nickname, position_1, position_2, skill_level, attendee_id, game_id))
+    """, (name, nickname, position_1, position_2, skill_level, attendee_id, game_id))
     conn.commit()
     conn.close()
 
