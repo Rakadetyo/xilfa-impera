@@ -41,6 +41,18 @@ async def analytics_players(request: Request):
         conn.close()
 
 
+@router.get("/manage/analytics/players/all")
+async def analytics_players_all(request: Request, year: int = None):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    conn = get_db()
+    try:
+        return JSONResponse(analytics_service.get_all_player_games(conn, year=year))
+    finally:
+        conn.close()
+
+
 @router.get("/manage/analytics/finance")
 async def analytics_finance(request: Request):
     user = get_current_user(request)
