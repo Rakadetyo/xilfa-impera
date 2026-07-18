@@ -864,7 +864,7 @@ function renderQualityTab(data) {
             ${data.recent_feedback?.length ? `
                 <div id="fb-list" class="space-y-3"></div>
                 <p id="fb-empty" class="text-sm text-gray-400 hidden">No feedback matches this filter.</p>`
-            : '<p class="text-sm text-gray-400">No written feedback yet.</p>'}
+            : '<p class="text-sm text-gray-400">No ratings yet.</p>'}
         </div>`;
 
     // Radar charts
@@ -1010,7 +1010,7 @@ function fbRender() {
         return `<div class="flex gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
             <div class="shrink-0 text-lg font-stat" style="color:${color}">${fbStars(f.rating)}</div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-800 mb-2">${f.feedback}</p>
+                ${f.feedback ? `<p class="text-sm text-gray-800 mb-2">${f.feedback}</p>` : ''}
                 ${tagHtml ? `<div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>` : ''}
                 <p class="text-xs text-gray-400">${name} · ${fmtDate(f.game_datetime)}</p>
             </div>

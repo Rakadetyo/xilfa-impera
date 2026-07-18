@@ -435,7 +435,7 @@ def get_quality_stats(conn) -> dict:
     cursor.execute("SELECT ROUND(AVG(rating), 2) as avg, COUNT(*) as total FROM game_rating")
     overall = dict(cursor.fetchone())
 
-    # Recent feedback (non-empty feedback text, most recent first)
+    # All ratings, most recent first (feedback text shown only when present)
     cursor.execute("""
         SELECT
             gr.id,
@@ -450,9 +450,8 @@ def get_quality_stats(conn) -> dict:
         FROM game_rating gr
         JOIN player p ON p.id = gr.player_id
         JOIN game g ON g.id = gr.game_id
-        WHERE gr.feedback IS NOT NULL AND TRIM(gr.feedback) != ''
         ORDER BY gr.created_at DESC
-        LIMIT 100
+        LIMIT 200
     """)
     recent_feedback = [dict(r) for r in cursor.fetchall()]
 
