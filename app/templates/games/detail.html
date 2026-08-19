@@ -1505,7 +1505,7 @@ Klik link untuk lihat info tim kamu
                                 </td>
                                 <td class="py-2">
                                     <form method="post" action="/manage/games/{{ game.id }}/schedule/{{ m.id }}/update-teams" class="inline">
-                                        <select name="team_home_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                        <select name="team_home_id" data-team-select="home" onchange="markScheduleDirty()" class="text-sm border rounded px-2 py-1">
                                             <option value="">Pickup / Free</option>
                                             {% for t in teams %}
                                             <option value="{{ t.id }}" {% if m.team_home_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
@@ -1513,7 +1513,7 @@ Klik link untuk lihat info tim kamu
                                         </select>
                                 </td>
                                 <td class="py-2">
-                                        <select name="team_away_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                        <select name="team_away_id" data-team-select="away" onchange="markScheduleDirty()" class="text-sm border rounded px-2 py-1">
                                             <option value="">Pickup / Free</option>
                                             {% for t in teams %}
                                             <option value="{{ t.id }}" {% if m.team_away_id == t.id %}selected{% endif %}>{{ t.team_name }}</option>
@@ -1566,7 +1566,8 @@ Klik link untuk lihat info tim kamu
                             return ok;
                         }
                     </script>
-                        <button type="button" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
+                        <button type="button" id="save-order-btn" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
+                        <span id="schedule-dirty" class="hidden self-center text-sm text-amber-600">Unsaved changes</span>
                         <form method="post" action="/manage/games/{{ game.id }}/schedule/save-template" class="inline flex gap-2" onsubmit="return fillTemplateForm(this)">
                             <input type="text" name="name" placeholder="Name this format" maxlength="60"
                                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48">
@@ -1680,20 +1681,36 @@ Klik link untuk lihat info tim kamu
                     });
                 }
 
+                function markScheduleDirty() {
+                    const flag = document.getElementById('schedule-dirty');
+                    if (flag) flag.classList.remove('hidden');
+                }
+
                 function saveOrder() {
-                    const rows = document.querySelectorAll('#matchTableBody tr');
+                    const rows = document.querySelectorAll('#matchTableBody tr[data-match-id]');
                     const matchIds = Array.from(rows).map(row => row.dataset.matchId);
-                    document.getElementById('matchIds').value = matchIds.join(',');
+                    const idsField = document.getElementById('matchIds');
+                    if (idsField) idsField.value = matchIds.join(',');
+
+                    const teams = Array.from(rows).map(row => ({
+                        match_id: parseInt(row.dataset.matchId),
+                        home: row.querySelector('[data-team-select="home"]').value || null,
+                        away: row.querySelector('[data-team-select="away"]').value || null
+                    }));
+
+                    const btn = document.getElementById('save-order-btn');
+                    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
                     fetch(`/manage/games/{{ game.id }}/schedule/reorder`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ match_ids: matchIds })
+                        body: JSON.stringify({ match_ids: matchIds, teams: teams })
                     }).then(r => {
                         if (r.ok) {
                             window.location.reload();
                         } else {
-                            alert('Failed to save order');
+                            if (btn) { btn.disabled = false; btn.textContent = 'Save Order'; }
+                            alert('Failed to save schedule');
                         }
                     });
                 }
