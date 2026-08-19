@@ -1544,10 +1544,14 @@ Klik link untuk lihat info tim kamu
                         const PLAYER_STATS = {{ player_stat_count or 0 }};
                         function fillTemplateForm(form) {
                             const rows = document.querySelectorAll('#matchTableBody tr[data-match-id]');
-                            if (!rows.length) { alert('There is no schedule to save.'); return false; }
-                            const name = prompt('Save this schedule as a format named:');
-                            if (name === null || !name.trim()) return false;
-                            form.name.value = name.trim();
+                            const field = form.elements['name'];
+                            if (!rows.length) return false;
+                            if (!field.value.trim()) {
+                                field.focus();
+                                field.classList.add('border-red-400');
+                                return false;
+                            }
+                            field.classList.remove('border-red-400');
                             form.match_order.value = Array.from(rows)
                                 .map(r => r.dataset.matchId).join(',');
                             return true;
@@ -1563,10 +1567,11 @@ Klik link untuk lihat info tim kamu
                         }
                     </script>
                         <button type="button" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
-                        <form method="post" action="/manage/games/{{ game.id }}/schedule/save-template" class="inline" onsubmit="return fillTemplateForm(this)">
-                            <input type="hidden" name="name" value="">
+                        <form method="post" action="/manage/games/{{ game.id }}/schedule/save-template" class="inline flex gap-2" onsubmit="return fillTemplateForm(this)">
+                            <input type="text" name="name" placeholder="Name this format" maxlength="60"
+                                   class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48">
                             <input type="hidden" name="match_order" value="">
-                            <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">Save as format</button>
+                            <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10 whitespace-nowrap">Save as format</button>
                         </form>
                         {% if schedule_templates %}
                         <button type="button" onclick="document.getElementById('manage-formats').classList.toggle('hidden')" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Manage formats</button>
