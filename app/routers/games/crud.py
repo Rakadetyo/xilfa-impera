@@ -452,6 +452,9 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         for m in members:
             grouped_player_ids.add(m["player_id"])
 
+    from app.services.invite_theme import style_choices
+    invite_styles = style_choices()
+
     # Saved formats for the schedule tab's Format dropdown
     from app.services import schedule_template as tpl
     schedule_templates = tpl.list_templates(cursor, team_count=len(teams))
@@ -615,6 +618,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         ),
         "player_stat_count": player_stat_count,
         "schedule_templates": schedule_templates,
+        "invite_styles": invite_styles,
         "all_players": all_players,
         "arenas": arenas,
         "tab": tab,
@@ -857,4 +861,23 @@ async def regenerate_invite(request: Request, game_id: int):
     cursor.execute("UPDATE game SET invite_token = ? WHERE id = ?", (token, game_id))
     conn.commit()
     conn.close()
+    return RedirectResponse(f"/manage/games/{game_id}?tab=overview", status_code=302)
+
+
+@router.post("/manage/games/{game_id}/invite/background")
+async def set_invite_background(request: Request, game_id: int, invite_background: str = Form("purple")):
+    """Pick which background the whole invite flow renders on for this game."""
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    from app.services.invite_theme import STYLES, DEFAULT_STYLE
+    style = invite_background if invite_background in STYLES else DEFAULT_STYLE
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE game SET invite_background = ? WHERE id = ?", (style, game_id))
+    conn.commit()
+    conn.close()
+
     return RedirectResponse(f"/manage/games/{game_id}?tab=overview", status_code=302)

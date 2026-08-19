@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="/assets/impera-logo-only-white.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitation Page — Impera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { accent: '#C9A84C', 'accent-light': '#E5C878' },
+            fontFamily: { display: ['Bangers', 'sans-serif'] } } } }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    {% include "manage/_sidebar.html" %}
+    <main class="md:ml-64 p-6 pt-20 md:pt-6">
+<div class="mb-6">
+    <h1 class="text-2xl font-display tracking-wide">Invitation Page</h1>
+    <p class="text-gray-500 text-sm mt-1">
+        Background styles for the invite flow. Each game picks one from its Overview tab —
+        it applies to every page a player sees: landing, their details, teams, schedule and the post-game rating.
+    </p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {% for key, st in styles %}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-gray-100">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="font-medium">{{ st.name }}</h3>
+                    <p class="text-sm text-gray-500 mt-1">{{ st.description }}</p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 whitespace-nowrap">
+                    {{ usage.get(key, 0) }} game{{ '' if usage.get(key, 0) == 1 else 's' }}
+                </span>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 font-mono">{{ key }}</p>
+        </div>
+        <div class="bg-gray-50 p-4">
+            <div class="rounded-lg overflow-hidden border border-gray-200 bg-white">
+                <iframe src="/manage/page_settings/invitation/preview/{{ key }}"
+                        title="{{ st.name }} preview"
+                        class="w-full block"
+                        style="height: 520px; border: 0;"
+                        loading="lazy"></iframe>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 text-center">
+                Live preview — rendered from the real invitation template with sample data.
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <h3 class="font-medium text-sm mb-2">Adding more styles</h3>
+    <p class="text-sm text-gray-500">
+        Styles are defined in <span class="font-mono text-xs">app/services/invite_theme.py</span>, versioned
+        alongside the templates they have to stay in step with. Editing them from this screen is not built yet —
+        a new style needs a background plus the overrides that keep text readable on it.
+    </p>
+</div>
+    </main>
+</body>
+</html>

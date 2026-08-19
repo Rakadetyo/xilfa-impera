@@ -99,3 +99,75 @@ async def preview_homepage(request: Request):
                 settings[section][key] = defaults[section][key]
 
     return templates.TemplateResponse(request, "public/index.html", {"request": request, "settings": settings})
+
+
+@router.get("/manage/page_settings/invitation", response_class=HTMLResponse)
+async def invitation_settings(request: Request):
+    """Background styles for the invite flow, each with a live preview."""
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    from app.services.invite_theme import style_choices
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COALESCE(NULLIF(invite_background, ''), 'purple') AS style, COUNT(*) AS n
+        FROM game GROUP BY style
+    """)
+    usage = {r["style"]: r["n"] for r in cursor.fetchall()}
+    conn.close()
+
+    return templates.TemplateResponse(request, "manage/invitation_settings.html", {
+        "user": user,
+        "active": "invitation_settings",
+        "styles": style_choices(),
+        "usage": usage,
+    })
+
+
+@router.get("/manage/page_settings/invitation/preview/{style_key}", response_class=HTMLResponse)
+async def invitation_preview(request: Request, style_key: str):
+    """Render the real invite landing with sample data, so a preview cannot
+    drift from what players actually see."""
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/masukgan", status_code=302)
+
+    from app.services.invite_theme import get_style
+
+    sample_game = {
+        "id": 0,
+        "game_name": "Saturday Session",
+        "datetime": "2026-08-22T19:00",
+        "session_duration": 120,
+        "arena_name": "Jetz Stadium",
+        "arena_address": "Jl. Kenangan, Curug Sangereng, Kelapa Dua, Tangerang",
+        "arena_map_url": "",
+        "price_per_person": 50000,
+        "price_per_member": 40000,
+    }
+    sample_attendees = [
+        {"attendee_id": 1, "player_id": 1, "name": "Alvin Darmadi"},
+        {"attendee_id": 2, "player_id": 2, "name": "Bunardi"},
+        {"attendee_id": 3, "player_id": 3, "name": "Kurniawan"},
+    ]
+    sample_partners = [
+        {"name": "Gerzon", "type": "Referee", "types": "Referee", "partner_name": "Gerzon"},
+        {"name": "Dink", "type": "Videographer", "types": "Videographer", "partner_name": "Dink"},
+    ]
+
+    return templates.TemplateResponse(request, "invite/landing.html", {
+        "invite_style": get_style(style_key),
+        "token": "preview",
+        "game": sample_game,
+        "attendees": sample_attendees,
+        "partners": sample_partners,
+        "start_fmt": "19:00",
+        "end_fmt": "21:00",
+        "date_fmt": "Saturday, 22 August 2026",
+        "arena_map_url": "",
+        "og_image": "",
+        "preview": True,
+    })

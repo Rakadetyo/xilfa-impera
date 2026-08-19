@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from app.database import get_db
+from app.services.invite_theme import get_style
 from app.templating import templates
 
 
@@ -49,6 +50,7 @@ async def invite_landing(request: Request, token: str):
         WHERE g.invite_token = ?
     """, (token,))
     game = cursor.fetchone()
+    invite_style = get_style(dict(game).get("invite_background") if game else None)
 
     if not game:
         conn.close()
@@ -93,6 +95,7 @@ async def invite_landing(request: Request, token: str):
     og_image = f"{base_url}/assets/short deck impera-04.jpg"
 
     return templates.TemplateResponse(request, "invite/landing.html", {
+        "invite_style": invite_style,
         "token": token,
         "game": game_dict,
         "attendees": attendees,
@@ -131,6 +134,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
         WHERE g.invite_token = ?
     """, (token,))
     game = cursor.fetchone()
+    invite_style = get_style(dict(game).get("invite_background") if game else None)
     if not game:
         conn.close()
         raise HTTPException(status_code=404)
@@ -287,6 +291,7 @@ async def invite_player(request: Request, token: str, attendee_id: int):
     conn2.close()
 
     return templates.TemplateResponse(request, "invite/player.html", {
+        "invite_style": invite_style,
         "token": token,
         "game": game_dict,
         "attendee": dict(attendee),
@@ -313,6 +318,7 @@ async def post_game_page(request: Request, token: str, attendee_id: int):
 
     cursor.execute("SELECT * FROM game WHERE invite_token = ?", (token,))
     game = cursor.fetchone()
+    invite_style = get_style(dict(game).get("invite_background") if game else None)
     if not game:
         conn.close()
         raise HTTPException(status_code=404)
@@ -404,6 +410,7 @@ async def post_game_page(request: Request, token: str, attendee_id: int):
                    'organization', 'price', 'court', 'sportsmanship', 'supporting_partners']
 
     return templates.TemplateResponse(request, "invite/post_game.html", {
+        "invite_style": invite_style,
         "token": token,
         "game": dict(game),
         "attendee": dict(attendee),
@@ -485,8 +492,9 @@ async def invite_teams(request: Request, token: str, attendee_id: int):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM game WHERE invite_token = ?", (token,))
+    cursor.execute("SELECT id, invite_background FROM game WHERE invite_token = ?", (token,))
     game = cursor.fetchone()
+    invite_style = get_style(dict(game).get("invite_background") if game else None)
     if not game:
         conn.close()
         raise HTTPException(status_code=404)
@@ -526,6 +534,7 @@ async def invite_teams(request: Request, token: str, attendee_id: int):
     conn.close()
 
     return templates.TemplateResponse(request, "invite/teams.html", {
+        "invite_style": invite_style,
         "token": token,
         "attendee_id": attendee_id,
         "teams": list(teams.values()),
@@ -543,6 +552,7 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
         WHERE g.invite_token = ?
     """, (token,))
     game = cursor.fetchone()
+    invite_style = get_style(dict(game).get("invite_background") if game else None)
     if not game:
         conn.close()
         raise HTTPException(status_code=404)
@@ -662,6 +672,7 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
     conn.close()
 
     return templates.TemplateResponse(request, "invite/schedule.html", {
+        "invite_style": invite_style,
         "token": token,
         "attendee_id": attendee_id,
         "game": game_dict,
