@@ -1,4 +1,5 @@
 import random
+from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -9,23 +10,56 @@ from app.services.team_balance import compute_player_values, generate_balanced_t
 
 router = APIRouter()
 
+TEAM_COLORS = ["#000000", "#9CA3AF", "#9B59B6", "#3498DB", "#E74C3C", "#2ECC71", "#F1C40F", "#E91E63", "#F39C12"]
+COLOR_NAMES = {
+    "#000000": "Black", "#9CA3AF": "Gray / White", "#9B59B6": "Purple", "#3498DB": "Blue",
+    "#E74C3C": "Red", "#2ECC71": "Green", "#F1C40F": "Yellow", "#E91E63": "Pink", "#F39C12": "Orange",
+}
+
+
+def _next_team_defaults(cursor, game_id):
+    """Pick a name and an unused colour for a team appended to an existing game."""
+    cursor.execute("SELECT team_name, team_color FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))
+    rows = cursor.fetchall()
+    used_colors = {r["team_color"] for r in rows}
+    used_names = {r["team_name"] for r in rows}
+
+    n = len(rows) + 1
+    while f"Team {n}" in used_names:
+        n += 1
+
+    color = next((c for c in TEAM_COLORS if c not in used_colors), TEAM_COLORS[len(rows) % len(TEAM_COLORS)])
+    return f"Team {n}", color, COLOR_NAMES.get(color, "")
+
 
 @router.post("/manage/games/{game_id}/teams")
 async def create_team(
     request: Request,
     game_id: int,
-    team_name: str = Form(...),
+    team_name: str = Form(""),
     team_color: str = Form(""),
     team_color_name: str = Form("")
 ):
+    """Append one team. Never touches existing teams or attendee assignments."""
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     conn = get_db()
     cursor = conn.cursor()
+
+    auto_name, auto_color, auto_color_name = _next_team_defaults(cursor, game_id)
+    team_name = team_name.strip() or auto_name
+    if not team_color:
+        team_color, team_color_name = auto_color, auto_color_name
+
     cursor.execute("INSERT INTO game_team (game_id, team_name, team_color, team_color_name) VALUES (?, ?, ?, ?)",
                   (game_id, team_name, team_color, team_color_name))
+
+    # Keep game.num_teams in step so the config box reflects reality.
+    cursor.execute("SELECT COUNT(*) AS n FROM game_team WHERE game_id = ?", (game_id,))
+    cursor.execute("UPDATE game SET num_teams = ? WHERE id = ?", (cursor.fetchone()["n"], game_id))
+
     conn.commit()
     conn.close()
 
@@ -119,9 +153,27 @@ async def generate_teams_route(
         (num_teams, players_per_team, skill_weight, game_id)
     )
 
-    # Clear existing
-    cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE game_id = ?", (game_id,))
-    cursor.execute("DELETE FROM game_team WHERE game_id = ?", (game_id,))
+    # Locked attendees keep their team. Only wipe what is not locked.
+    cursor.execute(
+        "SELECT id, team_id FROM game_attendee WHERE game_id = ? AND locked = 1 AND team_id IS NOT NULL",
+        (game_id,)
+    )
+    locked = {r["id"]: r["team_id"] for r in cursor.fetchall()}
+    locked_team_ids = []
+    for tid in locked.values():
+        if tid not in locked_team_ids:
+            locked_team_ids.append(tid)
+
+    if locked:
+        cursor.execute(
+            "UPDATE game_attendee SET team_id = NULL WHERE game_id = ? AND id NOT IN (%s)"
+            % ",".join("?" * len(locked)), (game_id, *locked.keys()))
+        cursor.execute(
+            "DELETE FROM game_team WHERE game_id = ? AND id NOT IN (%s)"
+            % ",".join("?" * len(locked_team_ids)), (game_id, *locked_team_ids))
+    else:
+        cursor.execute("UPDATE game_attendee SET team_id = NULL WHERE game_id = ?", (game_id,))
+        cursor.execute("DELETE FROM game_team WHERE game_id = ?", (game_id,))
 
     # Fetch attending players
     cursor.execute("""
@@ -150,32 +202,77 @@ async def generate_teams_route(
             "member_attendee_ids": [r["attendee_id"] for r in cursor.fetchall()]
         })
 
-    # Compute value scores then run algo
     value_scores = compute_player_values(attendees, skill_weight)
-    team_assignments = generate_balanced_teams(attendees, groups, num_teams, players_per_team, value_scores)
 
-    # Create teams
-    _TEAM_COLORS = ["#000000", "#9CA3AF", "#9B59B6", "#3498DB", "#E74C3C", "#2ECC71", "#F1C40F", "#E91E63", "#F39C12"]
-    team_ids = []
-    for i in range(num_teams):
+    if not locked:
+        # No locks: original behaviour — build every team from scratch.
+        team_assignments = generate_balanced_teams(attendees, groups, num_teams, players_per_team, value_scores)
+        team_ids = []
+        for i in range(num_teams):
+            cursor.execute(
+                "INSERT INTO game_team (game_id, team_name, team_color, team_color_name) VALUES (?, ?, ?, ?)",
+                (game_id, f"Team {i+1}", TEAM_COLORS[i % len(TEAM_COLORS)],
+                 COLOR_NAMES.get(TEAM_COLORS[i % len(TEAM_COLORS)], ""))
+            )
+            team_ids.append(cursor.lastrowid)
+
+        for team_idx, attendee_ids in enumerate(team_assignments):
+            for aid in attendee_ids:
+                cursor.execute(
+                    "UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+                    (team_ids[team_idx], aid, game_id)
+                )
+
+        conn.commit()
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+    # Locks present: preserved teams stay, remaining players fill the rest.
+    notice = None
+    if len(locked_team_ids) > num_teams:
+        notice = (f"{len(locked_team_ids)} teams hold locked players, so team count stayed at "
+                  f"{len(locked_team_ids)}. Unlock players first to go below that.")
+        num_teams = len(locked_team_ids)
+        cursor.execute("UPDATE game SET num_teams = ? WHERE id = ?", (num_teams, game_id))
+
+    team_ids = list(locked_team_ids)
+    for _ in range(num_teams - len(team_ids)):
+        name, color, color_name = _next_team_defaults(cursor, game_id)
         cursor.execute(
-            "INSERT INTO game_team (game_id, team_name, team_color) VALUES (?, ?, ?)",
-            (game_id, f"Team {i+1}", _TEAM_COLORS[i % len(_TEAM_COLORS)])
+            "INSERT INTO game_team (game_id, team_name, team_color, team_color_name) VALUES (?, ?, ?, ?)",
+            (game_id, name, color, color_name)
         )
         team_ids.append(cursor.lastrowid)
 
-    # Assign attendees to teams
-    for team_idx, attendee_ids in enumerate(team_assignments):
-        team_id = team_ids[team_idx]
-        for aid in attendee_ids:
-            cursor.execute(
-                "UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
-                (team_id, aid, game_id)
-            )
+    # Seed per-team load from the locked players already sitting there.
+    counts = {tid: 0 for tid in team_ids}
+    totals = {tid: 0.0 for tid in team_ids}
+    for aid, tid in locked.items():
+        counts[tid] = counts.get(tid, 0) + 1
+        totals[tid] = totals.get(tid, 0.0) + value_scores.get(aid, 0)
+
+    free = [a for a in attendees if a["id"] not in locked]
+    free.sort(key=lambda a: -value_scores.get(a["id"], 0))
+
+    for a in free:
+        open_teams = [t for t in team_ids if counts[t] < players_per_team]
+        if not open_teams:
+            break
+        target = min(open_teams, key=lambda t: (counts[t], totals[t]))
+        cursor.execute(
+            "UPDATE game_attendee SET team_id = ? WHERE id = ? AND game_id = ?",
+            (target, a["id"], game_id)
+        )
+        counts[target] += 1
+        totals[target] += value_scores.get(a["id"], 0)
 
     conn.commit()
     conn.close()
-    return RedirectResponse(f"/manage/games/{game_id}?tab=teams#teams", status_code=302)
+
+    url = f"/manage/games/{game_id}?tab=teams"
+    if notice:
+        url += f"&error={quote(notice)}"
+    return RedirectResponse(url + "#teams", status_code=302)
 
 
 @router.post("/manage/games/{game_id}/teams/randomize")
@@ -186,7 +283,7 @@ async def randomize_teams(request: Request, game_id: int):
     conn = get_db()
     cursor = conn.cursor()
     # Get all teams for this game
-    cursor.execute("SELECT id FROM game_team WHERE game_id = ?", (game_id,))
+    cursor.execute("SELECT id FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))
     teams = [row[0] for row in cursor.fetchall()]
     if not teams:
         conn.close()
