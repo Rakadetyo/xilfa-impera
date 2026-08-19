@@ -55,8 +55,9 @@ Same template, same fixture structure, each game keeps its own rosters.
 - **`court_label`.** The column exists but nothing writes to it.
 - **Adapting a template to a different team count.** Only coherent for complete
   round robins; silently wrong for anything custom.
-- **Start time.** Stays a property of the game, not the format. *Assumption —
-  say if sessions always start at the same time and it should travel.*
+- **Start time.** Stays a property of the game, not the format. Confirmed
+  2026-08-19: 19:00 belongs to that Saturday, not to the format. The form's
+  start time is what the replayed slots are computed from.
 
 ## Prerequisites
 
@@ -217,9 +218,9 @@ Extend `tests/`, which already has a throwaway-DB fixture per test.
 
 ## Checklist
 
-- [ ] P1 — guard `generate_schedule` against destroying results; delete
-      `game_player_stat` rows explicitly *(own commit)*
-- [ ] P2 — add `ORDER BY id` to `game_team` queries *(own commit)*
+- [x] P1 — guard `generate_schedule` against destroying results; delete
+      `game_player_stat` rows explicitly *(232fdf3)*
+- [x] P2 — add `ORDER BY id` to `game_team` queries *(232fdf3)*
 - [ ] Migrations: two tables, two `game` columns, fresh-DB guarded
 - [ ] `app/services/schedule_template.py` — save, load, resolve ordinals, apply
 - [ ] Save endpoint, with overwrite and ownership rules
@@ -232,8 +233,7 @@ Extend `tests/`, which already has a throwaway-DB fixture per test.
 - [ ] Review + commit
 - [ ] Deploy
 
-## Open question
+## Status
 
-Start time is assumed to stay per-game. If every session starts at the same time
-and you would rather the format carry it, that is one more column and one line
-in apply — say so before implementation starts.
+All design questions resolved. Both prerequisites are merged (`232fdf3`);
+implementation of the feature itself has not started.
