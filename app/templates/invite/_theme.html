@@ -1,0 +1,12 @@
+{# Background and colour theme for the public invite flow.
+   Included by every invite page so the look cannot drift between them.
+   `invite_style` is resolved by app.services.invite_theme. #}
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background: {{ invite_style.background|safe }};
+        color: {{ invite_style.color }};
+    }
+    select option { background: {{ invite_style.option_bg }}; color: {{ invite_style.option_color }}; }
+    {{ invite_style.overrides|safe }}
+</style>

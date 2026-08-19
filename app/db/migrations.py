@@ -213,6 +213,7 @@ def run_migrations(conn) -> None:
         ('game_name', 'TEXT'),
         ('schedule_template_id', 'INTEGER'),
         ('schedule_template_name', 'TEXT'),
+        ('invite_background', "TEXT DEFAULT 'purple'"),
     ]:
         if col not in game_columns:
             cursor.execute(f"ALTER TABLE game ADD COLUMN {col} {defn}")
