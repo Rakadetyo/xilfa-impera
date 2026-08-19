@@ -1167,7 +1167,14 @@ Klik link untuk lihat info tim kamu
                     </form>
 
                     {% if teams %}
-                    <form method="post" action="/manage/games/{{ game.id }}/teams/randomize">
+                    <form method="post" action="/manage/games/{{ game.id }}/teams" class="inline">
+                        <span class="relative group/tip inline-flex items-center gap-2 mt-3 mr-2">
+                            <button type="submit" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">+ Add Team</button>
+                            <svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span class="absolute left-0 bottom-full mb-2 w-56 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg shadow-lg invisible group-hover/tip:visible whitespace-normal z-20 pointer-events-none">Adds one empty team. Existing teams and player assignments are left untouched.</span>
+                        </span>
+                    </form>
+                    <form method="post" action="/manage/games/{{ game.id }}/teams/randomize" class="inline">
                         <span class="relative group/tip inline-flex items-center gap-2 mt-3">
                             <button type="submit" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Randomize</button>
                             <svg class="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
