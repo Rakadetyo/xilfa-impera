@@ -228,16 +228,6 @@ def run_migrations(conn) -> None:
         if col not in attendee_columns:
             cursor.execute(f"ALTER TABLE game_attendee ADD COLUMN {col} {defn}")
 
-    cursor.execute("PRAGMA table_info(game_match)")
-    match_columns = {row[1] for row in cursor.fetchall()}
-    for col, defn in [
-        ('bracket_slot', 'TEXT'),
-        ('next_match_id', 'INTEGER'),
-        ('is_tbd', 'INTEGER DEFAULT 0'),
-    ]:
-        if col not in match_columns:
-            cursor.execute(f"ALTER TABLE game_match ADD COLUMN {col} {defn}")
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS game_player_group (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -342,6 +332,17 @@ def run_migrations(conn) -> None:
             FOREIGN KEY (winner_team_id) REFERENCES game_team(id)
         )
     """)
+
+    cursor.execute("PRAGMA table_info(game_match)")
+    match_columns = {row[1] for row in cursor.fetchall()}
+    for col, defn in [
+        ('bracket_slot', 'TEXT'),
+        ('next_match_id', 'INTEGER'),
+        ('is_tbd', 'INTEGER DEFAULT 0'),
+    ]:
+        if match_columns and col not in match_columns:
+            cursor.execute(f"ALTER TABLE game_match ADD COLUMN {col} {defn}")
+
 
     cursor.execute("PRAGMA table_info(game_player_stat)")
     gps_cols = {row[1] for row in cursor.fetchall()}
