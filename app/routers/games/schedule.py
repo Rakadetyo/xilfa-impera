@@ -197,12 +197,29 @@ async def reorder_matches(request: Request, game_id: int):
 
     data = await request.json()
     match_ids = data.get("match_ids", [])
+    teams = data.get("teams", [])
 
     if not match_ids:
         return JSONResponse({"error": "No match IDs provided"}, status_code=400)
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Team pickers are staged in the browser and committed here, so changing a
+    # dropdown no longer reloads the page on every selection.
+    for t in teams:
+        try:
+            mid = int(t["match_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        home = t.get("home") or None
+        away = t.get("away") or None
+        home = int(home) if home else None
+        away = int(away) if away else None
+        cursor.execute(
+            """UPDATE game_match SET team_home_id = ?, team_away_id = ?, is_tbd = ?
+               WHERE id = ? AND game_id = ?""",
+            (home, away, 0 if home and away else 1, mid, game_id))
 
     # Get game datetime and durations
     cursor.execute("SELECT datetime, duration_per_game, break_time FROM game WHERE id = ?", (game_id,))

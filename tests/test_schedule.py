@@ -144,3 +144,75 @@ class TestTeamOrdering:
                 "SELECT team_home_id, team_away_id FROM game_match WHERE game_id = ?", (game_id,)):
             used.update([m["team_home_id"], m["team_away_id"]])
         assert used == set(ordered), "every team must appear in a round robin"
+
+
+class TestBatchedTeamEdits:
+    """Team pickers stage in the browser and commit on Save Order, so changing a
+    dropdown no longer reloads the page on every selection."""
+
+    def _schedule(self, conn, game_id):
+        cur = conn.cursor()
+        teams = [r["id"] for r in conn.execute(
+            "SELECT id FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))]
+        for i in range(3):
+            cur.execute("""INSERT INTO game_match (game_id, round_number, match_order,
+                           team_home_id, team_away_id, scheduled_start)
+                           VALUES (?, ?, ?, ?, ?, '19:00')""",
+                        (game_id, i + 1, i + 1, teams[0], teams[1]))
+        conn.commit()
+        ids = [r["id"] for r in conn.execute(
+            "SELECT id FROM game_match WHERE game_id = ? ORDER BY match_order", (game_id,))]
+        return ids, teams
+
+    def test_save_order_commits_team_changes(self, client, conn):
+        game_id, _, _ = make_game(conn)
+        ids, teams = self._schedule(conn, game_id)
+
+        client.post(f"/manage/games/{game_id}/schedule/reorder", json={
+            "match_ids": ids,
+            "teams": [{"match_id": ids[0], "home": teams[2], "away": teams[3]}],
+        })
+
+        m = conn.execute("SELECT * FROM game_match WHERE id = ?", (ids[0],)).fetchone()
+        assert (m["team_home_id"], m["team_away_id"]) == (teams[2], teams[3])
+
+    def test_pickup_free_saves_as_null(self, client, conn):
+        game_id, _, _ = make_game(conn)
+        ids, _ = self._schedule(conn, game_id)
+
+        client.post(f"/manage/games/{game_id}/schedule/reorder", json={
+            "match_ids": ids,
+            "teams": [{"match_id": ids[0], "home": None, "away": None}],
+        })
+
+        m = conn.execute("SELECT * FROM game_match WHERE id = ?", (ids[0],)).fetchone()
+        assert m["team_home_id"] is None and m["team_away_id"] is None
+        assert m["is_tbd"] == 1, "a pickup row is not a fully assigned match"
+
+    def test_order_and_teams_commit_together(self, client, conn):
+        game_id, _, _ = make_game(conn)
+        ids, teams = self._schedule(conn, game_id)
+
+        client.post(f"/manage/games/{game_id}/schedule/reorder", json={
+            "match_ids": [ids[2], ids[0], ids[1]],
+            "teams": [{"match_id": ids[2], "home": teams[3], "away": teams[0]}],
+        })
+
+        rows = list(conn.execute(
+            "SELECT id, match_order, team_home_id FROM game_match WHERE game_id = ? ORDER BY match_order",
+            (game_id,)))
+        assert [r["id"] for r in rows] == [ids[2], ids[0], ids[1]]
+        assert rows[0]["team_home_id"] == teams[3]
+
+    def test_reorder_without_teams_still_works(self, client, conn):
+        """Older payloads with no teams key must keep working."""
+        game_id, _, _ = make_game(conn)
+        ids, _ = self._schedule(conn, game_id)
+
+        r = client.post(f"/manage/games/{game_id}/schedule/reorder",
+                        json={"match_ids": [ids[1], ids[0], ids[2]]})
+
+        assert r.status_code == 200
+        assert [x["id"] for x in conn.execute(
+            "SELECT id FROM game_match WHERE game_id = ? ORDER BY match_order", (game_id,))] \
+            == [ids[1], ids[0], ids[2]]
