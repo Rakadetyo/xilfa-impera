@@ -172,3 +172,33 @@ class TestMigrations:
         finally:
             conn.close()
         assert "game_match" in tables
+
+
+class TestGameStartTime:
+    """The schedule tab must render whatever separator game.datetime uses.
+
+    A row written as "2026-08-22 19:00:00" (space) used to 500 the whole game
+    detail page: the template did game_datetime.split('T')[1], which raised
+    "list object has no element 1". Rows written by the datetime-local input
+    use "T"; scripts and manual edits do not.
+    """
+
+    import pytest
+
+    @pytest.mark.parametrize("stored,expected", [
+        ("2026-08-22T19:00", "19:00"),
+        ("2026-08-22T19:00:00", "19:00"),
+        ("2026-08-22 19:00:00", "19:00"),
+        ("2026-08-22 07:30:00", "07:30"),
+        ("2026-08-22", "18:00"),
+        ("", "18:00"),
+    ])
+    def test_schedule_tab_renders_for_any_datetime_format(self, client, conn, stored, expected):
+        game_id, _, _ = make_game(conn)
+        conn.execute("UPDATE game SET datetime = ? WHERE id = ?", (stored, game_id))
+        conn.commit()
+
+        r = client.get(f"/manage/games/{game_id}?tab=schedule")
+
+        assert r.status_code == 200, f"{stored!r} broke the page"
+        assert f'name="start_time" value="{expected}"' in r.text

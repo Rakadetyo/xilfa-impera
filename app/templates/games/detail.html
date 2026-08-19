@@ -1416,7 +1416,7 @@ Klik link untuk lihat info tim kamu
                         <div class="flex flex-wrap gap-4 items-center">
                             <div>
                                 <label class="block text-sm text-gray-500 mb-1">Game start at</label>
-                                <input type="time" name="start_time" value="{{ game_datetime.split('T')[1][:5] if game_datetime else '18:00' }}" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <input type="time" name="start_time" value="{{ game_start_time }}" class="px-4 py-2 border border-gray-300 rounded-lg">
                                 <p class="text-xs text-gray-400 mt-1">Tip-off time for the first match.</p>
                             </div>
                             <div>

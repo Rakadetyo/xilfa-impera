@@ -208,8 +208,14 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     dt_str = str(game_dict["datetime"]).replace("T", " ")
     if len(dt_str) == 16:
         dt_str += ":00"
-    dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-    base_title = dt.strftime("%a, %d %b %Y") + " @ " + (game_dict["arena_name"] or "No arena")
+    if len(dt_str) == 10:
+        dt_str += " 00:00:00"
+    try:
+        date_part = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S").strftime("%a, %d %b %Y")
+    except ValueError:
+        # Never let an odd datetime take down the whole page.
+        date_part = dt_str or "No date"
+    base_title = date_part + " @ " + (game_dict["arena_name"] or "No arena")
     game_dict["title"] = f"{game_dict['game_name']} — {base_title}" if game_dict.get("game_name") else base_title
 
     # Get attendees with player info
@@ -556,6 +562,14 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     ]
     overview_progress = round(sum(1 for s in overview_steps if s["done"]) / 4 * 100)
 
+    # Tip-off time for the schedule form. Accepts either separator: rows written
+    # by the datetime-local input use "T", scripts and manual edits use a space.
+    game_start_time = "18:00"
+    if game_dict.get("datetime"):
+        _parts = str(game_dict["datetime"]).replace("T", " ").split(" ")
+        if len(_parts) >= 2 and _parts[1][:5]:
+            game_start_time = _parts[1][:5]
+
     # End time calculation
     if game_dict.get("datetime") and game_dict.get("session_duration"):
         try:
@@ -582,6 +596,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "user": user,
         "game": game_dict,
         "game_datetime": game_dict.get("datetime", ""),
+        "game_start_time": game_start_time,
         "attendees": attendees,
         "partners": partners,
         "all_partners": all_partners,

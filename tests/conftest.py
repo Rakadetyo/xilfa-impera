@@ -53,10 +53,12 @@ def client(db_path, monkeypatch):
     conn.close()
 
     # Bypass the session cookie entirely — auth is not what these tests cover.
+    # Routers do `from app.deps import get_current_user`, so each module holds
+    # its own reference; patch every one that imported it.
+    import sys
     monkeypatch.setattr(deps, "get_current_user", lambda request: user)
-    for mod in ("app.routers.games.teams",):
-        __import__(mod)
-        import sys
-        monkeypatch.setattr(sys.modules[mod], "get_current_user", lambda request: user)
+    for name, mod in list(sys.modules.items()):
+        if name.startswith("app.routers") and hasattr(mod, "get_current_user"):
+            monkeypatch.setattr(mod, "get_current_user", lambda request: user)
 
     return TestClient(app)
