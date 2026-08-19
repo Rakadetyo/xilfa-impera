@@ -1440,7 +1440,18 @@ Klik link untuk lihat info tim kamu
                                 <select name="format" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg">
                                     <option value="round_robin" {% if game.schedule_format == 'round_robin' %}selected{% endif %}>Round Robin — every team plays every other team</option>
                                     <option value="king_of_court" {% if game.schedule_format == 'king_of_court' %}selected{% endif %}>King of the Court — winner stays, loser rotates out</option>
-                                    <option value="custom" {% if game.schedule_format == 'custom' %}selected{% endif %}>Custom — add matches manually</option>
+                                    <option value="custom" {% if game.schedule_format == 'custom' and not game.schedule_template_id %}selected{% endif %}>Custom — add matches manually</option>
+                                    {% if schedule_templates %}
+                                    <optgroup label="My formats">
+                                        {% for t in schedule_templates %}
+                                        <option value="template:{{ t.id }}"
+                                                {% if not t.usable %}disabled{% endif %}
+                                                {% if game.schedule_template_id == t.id %}selected{% endif %}>
+                                            {{ t.name }} — {{ t.match_count }} matches{% if t.created_by_name %}, by {{ t.created_by_name }}{% endif %}{% if not t.usable %} ({{ t.reason }}){% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    {% endif %}
                                 </select>
                             </div>
                         </div>
@@ -1531,6 +1542,16 @@ Klik link untuk lihat info tim kamu
                     <script>
                         const SCORED_MATCHES = {{ scored_match_count or 0 }};
                         const PLAYER_STATS = {{ player_stat_count or 0 }};
+                        function fillTemplateForm(form) {
+                            const rows = document.querySelectorAll('#matchTableBody tr[data-match-id]');
+                            if (!rows.length) { alert('There is no schedule to save.'); return false; }
+                            const name = prompt('Save this schedule as a format named:');
+                            if (name === null || !name.trim()) return false;
+                            form.name.value = name.trim();
+                            form.match_order.value = Array.from(rows)
+                                .map(r => r.dataset.matchId).join(',');
+                            return true;
+                        }
                         function confirmRegenerate(form) {
                             if (SCORED_MATCHES === 0 && PLAYER_STATS === 0) return true;
                             const ok = confirm(
@@ -1542,12 +1563,54 @@ Klik link untuk lihat info tim kamu
                         }
                     </script>
                         <button type="button" onclick="saveOrder()" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90">Save Order</button>
+                        <form method="post" action="/manage/games/{{ game.id }}/schedule/save-template" class="inline" onsubmit="return fillTemplateForm(this)">
+                            <input type="hidden" name="name" value="">
+                            <input type="hidden" name="match_order" value="">
+                            <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">Save as format</button>
+                        </form>
+                        {% if schedule_templates %}
+                        <button type="button" onclick="document.getElementById('manage-formats').classList.toggle('hidden')" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm">Manage formats</button>
+                        {% endif %}
                         {% if game.schedule_format in ['round_robin', 'king_of_court', 'custom'] %}
                         <form method="post" action="/manage/games/{{ game.id }}/schedule/add">
                             <button type="submit" class="px-4 py-2 border border-accent text-accent rounded-lg hover:bg-accent/10">+ Add Match</button>
                         </form>
                         {% endif %}
                     </div>
+
+                    {% if schedule_templates %}
+                    <div id="manage-formats" class="hidden mt-4 border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-medium mb-3 text-sm">Saved formats</h4>
+                        <table class="w-full text-sm">
+                            <thead class="text-gray-500 text-xs">
+                                <tr><th class="text-left py-1">Name</th><th class="text-left">Teams</th><th class="text-left">Matches</th><th class="text-left">Created by</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                {% for t in schedule_templates %}
+                                <tr class="border-t border-gray-100">
+                                    <td class="py-2">
+                                        <form method="post" action="/manage/schedule-templates/{{ t.id }}/rename" class="inline">
+                                            <input type="hidden" name="game_id" value="{{ game.id }}">
+                                            <input type="text" name="name" value="{{ t.name }}" class="border border-transparent hover:border-gray-300 focus:border-accent rounded px-1 py-0.5 text-sm focus:outline-none">
+                                        </form>
+                                    </td>
+                                    <td>{{ t.team_count }}</td>
+                                    <td>{{ t.match_count }}</td>
+                                    <td class="text-gray-500">{{ t.created_by_name or '—' }}</td>
+                                    <td class="text-right">
+                                        <form method="post" action="/manage/schedule-templates/{{ t.id }}/delete" class="inline"
+                                              onsubmit="return confirm('Delete the format \'{{ t.name }}\'? Games that already used it are not affected.')">
+                                            <input type="hidden" name="game_id" value="{{ game.id }}">
+                                            <button type="submit" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <p class="text-xs text-gray-400 mt-3">You can rename or delete only the formats you created. Press Enter to rename.</p>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <p class="text-gray-500 text-center py-8">No matches yet. Generate a schedule above.</p>
                     {% endif %}

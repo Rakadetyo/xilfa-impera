@@ -221,19 +221,27 @@ Extend `tests/`, which already has a throwaway-DB fixture per test.
 - [x] P1 — guard `generate_schedule` against destroying results; delete
       `game_player_stat` rows explicitly *(232fdf3)*
 - [x] P2 — add `ORDER BY id` to `game_team` queries *(232fdf3)*
-- [ ] Migrations: two tables, two `game` columns, fresh-DB guarded
-- [ ] `app/services/schedule_template.py` — save, load, resolve ordinals, apply
-- [ ] Save endpoint, with overwrite and ownership rules
-- [ ] Rename and delete endpoints, with ownership checks and manual cleanup
-- [ ] Extend `generate_schedule` to accept and split `template:<id>`
-- [ ] Format select grouping, with greyed-out mismatches
-- [ ] Save as format button and Manage formats list
-- [ ] Tests
-- [ ] Verify in browser on a real game
-- [ ] Review + commit
+- [x] Migrations: two tables, two `game` columns, fresh-DB guarded
+- [x] `app/services/schedule_template.py` — save, load, resolve ordinals, apply
+- [x] Save endpoint, with overwrite and ownership rules
+- [x] Rename and delete endpoints, with ownership checks and manual cleanup
+- [x] Extend `generate_schedule` to accept and split `template:<id>`
+- [x] Format select grouping, with greyed-out mismatches
+- [x] Save as format button and Manage formats list
+- [x] Tests
+- [x] Verify in browser on a real game
+- [x] Review + commit
 - [ ] Deploy
 
 ## Status
 
-All design questions resolved. Both prerequisites are merged (`232fdf3`);
-implementation of the feature itself has not started.
+Implemented and verified. Only deployment remains.
+
+Two things surfaced during implementation that the plan had not anticipated:
+
+- **Route ordering.** `/schedule/save-template` was being matched by the earlier
+  `/schedule/{match_id}` route, so `match_id="save-template"` failed int parsing
+  and returned a 422. The save route is now registered before it.
+- **A blank name arrives as a missing form field**, not an empty string, so
+  `Form(...)` returned a 422 before our own validation could produce a readable
+  message. Name fields use `Form("")` and validate in the handler.

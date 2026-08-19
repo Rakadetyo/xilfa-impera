@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from app.database import get_db
 from app.deps import get_current_user
+from app.services import schedule_template as tpl
 from app.services.schedule import (
     generate_round_robin,
     generate_single_elimination,
@@ -87,11 +88,27 @@ async def generate_schedule(
     else:
         new_datetime = f"2025-01-01T{start_time}:00"
 
-    # Update only schedule settings, NOT datetime
-    cursor.execute(
-        "UPDATE game SET schedule_format = ?, duration_per_game = ?, break_time = ? WHERE id = ?",
-        (format, duration, break_time, game_id)
-    )
+    # A saved format arrives as "template:<id>" on the wire only; the prefix is
+    # split here so game.schedule_format keeps its closed set of values.
+    template = None
+    if format.startswith("template:"):
+        try:
+            template_id = int(format.split(":", 1)[1])
+        except ValueError:
+            template_id = 0
+        cursor.execute("SELECT * FROM schedule_template WHERE id = ?", (template_id,))
+        template = cursor.fetchone()
+        if not template:
+            conn.close()
+            msg = "That saved format no longer exists."
+            return RedirectResponse(
+                f"/manage/games/{game_id}?tab=schedule&error={quote(msg)}", status_code=302)
+        if template["team_count"] != len(teams):
+            conn.close()
+            msg = (f"\"{template['name']}\" needs {template['team_count']} teams, "
+                   f"this game has {len(teams)}. Nothing was changed.")
+            return RedirectResponse(
+                f"/manage/games/{game_id}?tab=schedule&error={quote(msg)}", status_code=302)
 
     # Regenerating destroys results. Require explicit confirmation first.
     scored, stats = count_results(cursor, game_id)
@@ -103,6 +120,19 @@ async def generate_schedule(
             f"/manage/games/{game_id}?tab=schedule&error={quote(msg)}", status_code=302)
 
     delete_matches(cursor, game_id)
+
+    if template is not None:
+        tpl.apply_template(cursor, game_id, template, start_time)
+        conn.commit()
+        conn.close()
+        return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+    # Update only schedule settings, NOT datetime
+    cursor.execute(
+        """UPDATE game SET schedule_format = ?, duration_per_game = ?, break_time = ?,
+           schedule_template_id = NULL, schedule_template_name = NULL WHERE id = ?""",
+        (format, duration, break_time, game_id)
+    )
 
     # Generate matches based on format
     if format == "round_robin":
@@ -252,6 +282,58 @@ async def add_match(request: Request, game_id: int):
     return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
 
 
+@router.post("/manage/games/{game_id}/schedule/save-template")
+async def save_schedule_template(
+    request: Request,
+    game_id: int,
+    name: str = Form(""),
+    match_order: str = Form(""),
+):
+    """Save the current on-screen schedule as a named format.
+
+    `match_order` is the DOM row order, so what is saved is what the user is
+    looking at rather than what was last persisted.
+    """
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    name = name.strip()
+    if not name:
+        return RedirectResponse(
+            f"/manage/games/{game_id}?tab=schedule&error={quote('Give the format a name.')}",
+            status_code=302)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if match_order.strip():
+        match_ids = [int(x) for x in match_order.split(",") if x.strip().isdigit()]
+    else:
+        cursor.execute(
+            "SELECT id FROM game_match WHERE game_id = ? ORDER BY match_order", (game_id,))
+        match_ids = [r["id"] for r in cursor.fetchall()]
+
+    if not match_ids:
+        conn.close()
+        return RedirectResponse(
+            f"/manage/games/{game_id}?tab=schedule&error={quote('There is no schedule to save.')}",
+            status_code=302)
+
+    existing = tpl.find_by_name(cursor, name)
+    if existing and not tpl.can_modify(existing, user):
+        conn.close()
+        msg = f'"{name}" belongs to someone else. Pick another name.'
+        return RedirectResponse(
+            f"/manage/games/{game_id}?tab=schedule&error={quote(msg)}", status_code=302)
+
+    tpl.save_template(cursor, game_id, name, dict(user)["id"], match_ids)
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
 @router.post("/manage/games/{game_id}/schedule/{match_id}")
 async def update_match(
     request: Request,
@@ -333,3 +415,67 @@ async def delete_match(request: Request, game_id: int, match_id: int):
     conn.close()
 
     return RedirectResponse(f"/manage/games/{game_id}?tab=schedule", status_code=302)
+
+
+@router.post("/manage/schedule-templates/{template_id}/rename")
+async def rename_schedule_template(
+    request: Request, template_id: int, name: str = Form(""), game_id: int = Form(0)
+):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    back = f"/manage/games/{game_id}?tab=schedule" if game_id else "/manage/games"
+    name = name.strip()
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM schedule_template WHERE id = ?", (template_id,))
+    template = cursor.fetchone()
+
+    if not template or not tpl.can_modify(template, user):
+        conn.close()
+        return RedirectResponse(
+            f"{back}&error={quote('You can only rename formats you created.')}"
+            if game_id else back, status_code=302)
+
+    clash = tpl.find_by_name(cursor, name)
+    if not name or (clash and clash["id"] != template_id):
+        conn.close()
+        msg = "That name is already taken." if name else "Give the format a name."
+        return RedirectResponse(
+            f"{back}&error={quote(msg)}" if game_id else back, status_code=302)
+
+    cursor.execute(
+        "UPDATE schedule_template SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (name, template_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(back, status_code=302)
+
+
+@router.post("/manage/schedule-templates/{template_id}/delete")
+async def delete_schedule_template(request: Request, template_id: int, game_id: int = Form(0)):
+    """Deleting a format never touches games that already used it — applying a
+    template copies rows into game_match, so past schedules stand on their own."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    back = f"/manage/games/{game_id}?tab=schedule" if game_id else "/manage/games"
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM schedule_template WHERE id = ?", (template_id,))
+    template = cursor.fetchone()
+
+    if not template or not tpl.can_modify(template, user):
+        conn.close()
+        return RedirectResponse(
+            f"{back}&error={quote('You can only delete formats you created.')}"
+            if game_id else back, status_code=302)
+
+    tpl.delete_template(cursor, template_id)
+    conn.commit()
+    conn.close()
+    return RedirectResponse(back, status_code=302)

@@ -452,6 +452,10 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         for m in members:
             grouped_player_ids.add(m["player_id"])
 
+    # Saved formats for the schedule tab's Format dropdown
+    from app.services import schedule_template as tpl
+    schedule_templates = tpl.list_templates(cursor, team_count=len(teams))
+
     # How much a schedule wipe would destroy (shown in the confirm prompt)
     cursor.execute("SELECT COUNT(*) AS n FROM game_player_stat WHERE game_id = ?", (game_id,))
     player_stat_count = cursor.fetchone()["n"]
@@ -610,6 +614,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
             1 for m in matches if m["score_home"] is not None or m["score_away"] is not None
         ),
         "player_stat_count": player_stat_count,
+        "schedule_templates": schedule_templates,
         "all_players": all_players,
         "arenas": arenas,
         "tab": tab,

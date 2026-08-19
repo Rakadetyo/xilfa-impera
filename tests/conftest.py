@@ -46,7 +46,7 @@ def client(db_path, monkeypatch):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES ('tester', 'x', 'superadmin')"
+        "INSERT INTO users (username, password_hash, role) VALUES ('tester', 'x', 'admin')"
     )
     conn.commit()
     user = conn.execute("SELECT id, username, role FROM users WHERE username='tester'").fetchone()
