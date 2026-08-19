@@ -135,3 +135,34 @@ class TestSettingsScreen:
         r = client.get("/manage/page_settings/invitation/preview/nope")
         assert r.status_code == 200
         assert "#0f0a1a" in r.text
+
+
+class TestPreviewIsInert:
+    """The preview renders the real page, so its controls have to be disabled.
+
+    Regression: the sample token is "preview", so submitting the name form from
+    inside the preview posted to /invite/preview/identify, 404'd, and replaced
+    the frame with a JSON error page.
+    """
+
+    def test_the_real_page_keeps_a_working_form(self, client, conn):
+        _, _ = game_with_invite(conn)
+        body = client.get("/invite/tok123").text
+        assert "disabled" not in body.split("Who are you?")[1][:600]
+
+    def test_preview_disables_the_name_form(self, client):
+        body = client.get("/manage/page_settings/invitation/preview/purple").text
+        form = body.split("Who are you?")[1][:800]
+        assert form.count("disabled") >= 2, "select and button must both be disabled"
+        assert 'onsubmit="return false"' in body
+
+    def test_preview_cannot_reach_the_identify_route(self, client, conn):
+        """Even if the markup regressed, the fake token has nowhere to go."""
+        r = client.post("/invite/preview/identify", data={"attendee_id": 1},
+                        follow_redirects=False)
+        assert r.status_code == 404
+
+    def test_settings_page_sandboxes_the_frames(self, client):
+        body = client.get("/manage/page_settings/invitation").text
+        assert body.count('sandbox="allow-scripts allow-same-origin"') >= 2
+        assert "allow-forms" not in body, "forms must not be permitted in a preview"

@@ -109,9 +109,9 @@
         </div>
 
         <!-- Name selection form -->
-        <form method="post" action="/invite/{{ token }}/identify">
+        <form method="post" action="/invite/{{ token }}/identify"{% if preview %} onsubmit="return false"{% endif %}>
             <label class="block text-xs text-gray-400 uppercase tracking-widest mb-2">Who are you?</label>
-            <select name="attendee_id" required
+            <select name="attendee_id" required{% if preview %} disabled{% endif %}
                     class="w-full px-4 py-3.5 bg-white/10 backdrop-blur border border-white/20 rounded-xl text-white
                            focus:outline-none focus:border-accent text-sm mb-4 appearance-none">
                 <option value="">Select your name...</option>
@@ -119,9 +119,9 @@
                 <option value="{{ a.attendee_id }}">{{ a.name }}</option>
                 {% endfor %}
             </select>
-            <button type="submit"
+            <button type="submit"{% if preview %} disabled{% endif %}
                     class="w-full py-4 bg-accent hover:bg-accent-light text-black font-bold rounded-xl
-                           text-base tracking-wide transition-colors">
+                           text-base tracking-wide transition-colors{% if preview %} cursor-default{% endif %}">
                 Let's Go →
             </button>
         </form>
