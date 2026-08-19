@@ -1,4 +1,5 @@
 from datetime import datetime as dt, timedelta
+from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -17,6 +18,36 @@ from app.services.schedule import (
 router = APIRouter()
 
 
+def count_results(cursor, game_id: int) -> tuple:
+    """(scored_matches, player_stat_rows) for a game — what a wipe would destroy."""
+    cursor.execute(
+        "SELECT COUNT(*) AS n FROM game_match WHERE game_id = ? "
+        "AND (score_home IS NOT NULL OR score_away IS NOT NULL)",
+        (game_id,)
+    )
+    scored = cursor.fetchone()["n"]
+    cursor.execute(
+        "SELECT COUNT(*) AS n FROM game_player_stat WHERE game_id = ?", (game_id,)
+    )
+    return scored, cursor.fetchone()["n"]
+
+
+def delete_matches(cursor, game_id: int, match_id: int = None) -> None:
+    """Delete matches and their player stats.
+
+    Foreign keys are not enforced (PRAGMA foreign_keys = 0), so the declared
+    ON DELETE CASCADE does nothing — dependent rows must go explicitly or they
+    are orphaned, not removed.
+    """
+    if match_id is None:
+        cursor.execute("DELETE FROM game_player_stat WHERE game_id = ?", (game_id,))
+        cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
+    else:
+        cursor.execute("DELETE FROM game_player_stat WHERE match_id = ?", (match_id,))
+        cursor.execute("DELETE FROM game_match WHERE id = ? AND game_id = ?", (match_id, game_id))
+
+
+
 @router.post("/manage/games/{game_id}/schedule/generate")
 async def generate_schedule(
     request: Request,
@@ -24,7 +55,8 @@ async def generate_schedule(
     format: str = Form("round_robin"),
     start_time: str = Form("18:00"),
     duration: int = Form(8),
-    break_time: int = Form(0)
+    break_time: int = Form(0),
+    confirm_destructive: str = Form("")
 ):
     user = get_current_user(request)
     if not user:
@@ -34,7 +66,7 @@ async def generate_schedule(
     cursor = conn.cursor()
 
     # Get teams
-    cursor.execute("SELECT id, team_name FROM game_team WHERE game_id = ?", (game_id,))
+    cursor.execute("SELECT id, team_name FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))
     teams = cursor.fetchall()
 
     if len(teams) < 2:
@@ -48,7 +80,9 @@ async def generate_schedule(
 
     # Use start_time from form for schedule calculation, but don't save to game.datetime
     if current_datetime:
-        current_date = current_datetime.split("T")[0]
+        # Accepts either separator — the datetime-local input writes "T",
+        # scripts and manual edits write a space.
+        current_date = str(current_datetime).replace("T", " ").split(" ")[0]
         new_datetime = f"{current_date}T{start_time}:00"
     else:
         new_datetime = f"2025-01-01T{start_time}:00"
@@ -59,8 +93,16 @@ async def generate_schedule(
         (format, duration, break_time, game_id)
     )
 
-    # Clear existing matches
-    cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
+    # Regenerating destroys results. Require explicit confirmation first.
+    scored, stats = count_results(cursor, game_id)
+    if (scored or stats) and confirm_destructive != "1":
+        conn.close()
+        msg = (f"Generating would delete {scored} match result(s) and {stats} player "
+               f"stat row(s). Nothing was changed.")
+        return RedirectResponse(
+            f"/manage/games/{game_id}?tab=schedule&error={quote(msg)}", status_code=302)
+
+    delete_matches(cursor, game_id)
 
     # Generate matches based on format
     if format == "round_robin":
@@ -172,7 +214,7 @@ async def clear_schedule(request: Request, game_id: int):
     cursor = conn.cursor()
 
     # Clear matches and reset format
-    cursor.execute("DELETE FROM game_match WHERE game_id = ?", (game_id,))
+    delete_matches(cursor, game_id)
     cursor.execute(
         "UPDATE game SET schedule_format = 'round_robin', best_of = 1 WHERE id = ?",
         (game_id,)
@@ -286,7 +328,7 @@ async def delete_match(request: Request, game_id: int, match_id: int):
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM game_match WHERE id = ? AND game_id = ?", (match_id, game_id))
+    delete_matches(cursor, game_id, match_id)
     conn.commit()
     conn.close()
 

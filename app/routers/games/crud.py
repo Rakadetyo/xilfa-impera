@@ -371,7 +371,7 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
     finance["net"] = finance["total_income"] - finance["total_expense"]
 
     # Get teams
-    cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game_id,))
+    cursor.execute("SELECT * FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))
     teams = cursor.fetchall()
 
     # Get matches
@@ -451,6 +451,10 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         groups.append({"id": g["id"], "name": g["name"], "members": members})
         for m in members:
             grouped_player_ids.add(m["player_id"])
+
+    # How much a schedule wipe would destroy (shown in the confirm prompt)
+    cursor.execute("SELECT COUNT(*) AS n FROM game_player_stat WHERE game_id = ?", (game_id,))
+    player_stat_count = cursor.fetchone()["n"]
 
     conn.close()
 
@@ -602,6 +606,10 @@ async def game_detail(request: Request, game_id: int, tab: str = "overview", err
         "all_partners": all_partners,
         "teams": teams,
         "matches": matches,
+        "scored_match_count": sum(
+            1 for m in matches if m["score_home"] is not None or m["score_away"] is not None
+        ),
+        "player_stat_count": player_stat_count,
         "all_players": all_players,
         "arenas": arenas,
         "tab": tab,

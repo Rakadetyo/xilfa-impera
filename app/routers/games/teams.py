@@ -19,7 +19,7 @@ COLOR_NAMES = {
 
 def _next_team_defaults(cursor, game_id):
     """Pick a name and an unused colour for a team appended to an existing game."""
-    cursor.execute("SELECT team_name, team_color FROM game_team WHERE game_id = ?", (game_id,))
+    cursor.execute("SELECT team_name, team_color FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))
     rows = cursor.fetchall()
     used_colors = {r["team_color"] for r in rows}
     used_names = {r["team_name"] for r in rows}
@@ -283,7 +283,7 @@ async def randomize_teams(request: Request, game_id: int):
     conn = get_db()
     cursor = conn.cursor()
     # Get all teams for this game
-    cursor.execute("SELECT id FROM game_team WHERE game_id = ?", (game_id,))
+    cursor.execute("SELECT id FROM game_team WHERE game_id = ? ORDER BY id", (game_id,))
     teams = [row[0] for row in cursor.fetchall()]
     if not teams:
         conn.close()

@@ -344,7 +344,7 @@ async def post_game_page(request: Request, token: str, attendee_id: int):
     already_rated = cursor.fetchone() is not None
 
     # Team standings
-    cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game["id"],))
+    cursor.execute("SELECT * FROM game_team WHERE game_id = ? ORDER BY id", (game["id"],))
     teams_raw = {t["id"]: dict(t) for t in cursor.fetchall()}
 
     cursor.execute("""
@@ -569,7 +569,7 @@ async def invite_schedule(request: Request, token: str, attendee_id: int):
     """, (game["id"],))
     all_matches = [dict(m) for m in cursor.fetchall()]
 
-    cursor.execute("SELECT * FROM game_team WHERE game_id = ?", (game["id"],))
+    cursor.execute("SELECT * FROM game_team WHERE game_id = ? ORDER BY id", (game["id"],))
     teams_raw = cursor.fetchall()
     team_rosters = {}
     for t in teams_raw:
