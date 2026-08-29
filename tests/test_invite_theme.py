@@ -166,3 +166,65 @@ class TestPreviewIsInert:
         body = client.get("/manage/page_settings/invitation").text
         assert body.count('sandbox="allow-scripts allow-same-origin"') >= 2
         assert "allow-forms" not in body, "forms must not be permitted in a preview"
+
+
+class TestLightThemeCoversEveryDarkColour:
+    """A background swap is not enough: the invite templates hardcode dark
+    colours, and anything the light style misses stays black on white.
+
+    This scans the templates rather than listing classes by hand, so a colour
+    added later fails here instead of shipping as a black card on a white page —
+    which is exactly how bg-[#1A1A1A] on the schedule page was missed.
+    """
+
+    INVITE_TEMPLATES = ["landing", "player", "post_game", "schedule", "teams"]
+
+    # Readable in both themes: the gold accent, and the neutral fallback dot.
+    ALLOWED = {"#C9A84C", "#6B7280", "#E5C878"}
+
+    def _templates(self):
+        for name in self.INVITE_TEMPLATES:
+            with open(f"app/templates/invite/{name}.html") as fh:
+                yield name, fh.read()
+
+    def test_arbitrary_dark_utilities_are_all_overridden(self):
+        import re
+        overrides = STYLES["light"]["overrides"]
+        missing = []
+        for name, body in self._templates():
+            for util in set(re.findall(r'\b((?:bg|text|border)-\[#[0-9A-Fa-f]{3,6}\])', body)):
+                hexval = re.search(r'#[0-9A-Fa-f]{3,6}', util).group(0)
+                if hexval.upper() in {a.upper() for a in self.ALLOWED}:
+                    continue
+                escaped = util.replace("[", "\\[").replace("#", "\\#").replace("]", "\\]")
+                if f".{escaped}" not in overrides:
+                    missing.append(f"{name}: {util}")
+        assert not missing, "light theme does not override: " + ", ".join(sorted(missing))
+
+    # Already readable on a light ground: dark text and light surfaces.
+    LIGHT_SAFE = {
+        "text-black", "text-gray-800", "text-gray-900",
+        "bg-white", "bg-gray-50", "bg-gray-100", "bg-gray-200",
+        "border-gray-100", "border-gray-200", "border-gray-300",
+    }
+
+    def test_named_dark_utilities_are_all_overridden(self):
+        """Jinja tags are stripped first — a class inside {% if %} is still a
+        class, and text-gray-300 hid there until the schedule page shipped with
+        washed-out team names."""
+        import re
+        overrides = STYLES["light"]["overrides"]
+        missing = []
+        for name, body in self._templates():
+            body = re.sub(r"\{%.*?%\}", " ", body, flags=re.S)
+            body = re.sub(r"\{\{.*?\}\}", " ", body, flags=re.S)
+            for cls in re.findall(r'class="([^"]+)"', body):
+                for util in cls.split():
+                    if not re.match(r"^(text|bg|border|divide|placeholder|ring)-(white|black|gray)", util):
+                        continue
+                    if util in self.LIGHT_SAFE:
+                        continue
+                    escaped = util.replace("/", "\\/")
+                    if f".{escaped}" not in overrides:
+                        missing.append(f"{name}: {util}")
+        assert not missing, "light theme does not override: " + ", ".join(sorted(set(missing)))
