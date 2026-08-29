@@ -54,6 +54,7 @@ STYLES = {
         # Retarget the dark-theme utilities the templates hardcode.
         "overrides": """
             .text-white { color: #1A1025 !important; }
+            .text-gray-300 { color: #4A4455 !important; }
             .text-gray-400 { color: #6B6478 !important; }
             .text-gray-500 { color: #5C5568 !important; }
             .text-gray-600 { color: #4A4455 !important; }
@@ -66,6 +67,9 @@ STYLES = {
             .border-white\\/10 { border-color: rgba(26,16,37,0.08) !important; }
             .backdrop-blur-lg { backdrop-filter: none !important; }
             .placeholder-gray-400::placeholder { color: #8A8394 !important; }
+            /* Arbitrary-value utilities the schedule and player pages hardcode. */
+            .bg-\\[\\#1A1A1A\\] { background-color: rgba(26,16,37,0.04) !important; }
+            .border-\\[\\#2A2A2A\\] { border-color: rgba(26,16,37,0.12) !important; }
         """,
     },
 }
